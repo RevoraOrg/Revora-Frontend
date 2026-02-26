@@ -1,0 +1,6 @@
+docs(design): finalize account & settings UI
+Completed Profile, Security, and Notifications screens for startups and investors, including security actions, notification preferences, and role-specific notes.
+
+https://www.figma.com/design/pYsYmM3TiqbnO8qHdSvtKM/Revora?node-id=4-2189&t=NMbo0sKTivrNExpP-1
+
+Closes #15

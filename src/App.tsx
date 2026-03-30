@@ -1,115 +1,74 @@
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Login } from './pages/Login';
+import { Signup } from './pages/Signup';
+import { ForgotPassword } from './pages/ForgotPassword';
+
 export function App() {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
-        background:
-          'radial-gradient(circle at top, #0f172a 0, #020617 40%, #000000 100%)',
-        color: '#e5e7eb',
-        padding: '2rem'
-      }}
-    >
-      <div
-        style={{
-          maxWidth: '720px',
-          width: '100%',
-          borderRadius: '1.5rem',
-          border: '1px solid rgba(148, 163, 184, 0.35)',
-          background:
-            'linear-gradient(to bottom right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.75))',
-          boxShadow:
-            '0 24px 80px rgba(15, 23, 42, 0.85), 0 0 0 1px rgba(15, 23, 42, 1)',
-          padding: '2rem 2.4rem'
-        }}
-      >
-        <h1
-          style={{
-            fontSize: '2rem',
-            marginBottom: '0.5rem',
-            fontWeight: 700,
-            letterSpacing: '-0.04em'
-          }}
-        >
-          Stellar RevenueShare – Revora
-        </h1>
-        <p style={{ marginBottom: '1.5rem', color: '#9ca3af' }}>
-          Tokenized revenue-sharing infrastructure on Stellar. This is a basic
-          frontend shell you can extend into startup and investor dashboards.
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/startup/dashboard" element={<Placeholder title="Startup Dashboard" />} />
+        <Route path="/investor/portal" element={<Placeholder title="Investor Portal" />} />
+      </Routes>
+    </Router>
+  );
+}
+
+function Home() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      <div className="w-full max-w-[720px] glass-card p-10 md:p-12">
+        <h1 className="text-4xl font-bold tracking-tight mb-4">Stellar RevenueShare – Revora</h1>
+        <p className="text-muted text-lg mb-8 max-w-lg mx-auto">
+          Tokenized revenue-sharing infrastructure on Stellar. 
+          Bridge the gap between visionaries and supporters.
         </p>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-            gap: '1.25rem'
-          }}
-        >
-          <section
-            style={{
-              borderRadius: '1rem',
-              border: '1px solid rgba(156, 163, 175, 0.4)',
-              padding: '1rem 1.2rem',
-              background: 'rgba(15, 23, 42, 0.9)'
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                marginBottom: '0.5rem'
-              }}
-            >
-              Startup Dashboard
-            </h2>
-            <ul style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
-              <li>Configure revenue-share offerings</li>
-              <li>Report monthly revenue</li>
-              <li>Track on-chain payouts</li>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          <section className="glass-card p-6 text-left border-[rgba(148,163,184,0.15)]">
+            <h2 className="text-xl font-semibold mb-3">Startup Dashboard</h2>
+            <ul className="text-muted text-sm space-y-2">
+              <li>• Configure revenue-share offerings</li>
+              <li>• Report monthly revenue</li>
+              <li>• Track on-chain payouts</li>
             </ul>
           </section>
-          <section
-            style={{
-              borderRadius: '1rem',
-              border: '1px solid rgba(156, 163, 175, 0.4)',
-              padding: '1rem 1.2rem',
-              background: 'rgba(15, 23, 42, 0.9)'
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '0.95rem',
-                fontWeight: 600,
-                marginBottom: '0.5rem'
-              }}
-            >
-              Investor Portal
-            </h2>
-            <ul style={{ fontSize: '0.85rem', color: '#9ca3af' }}>
-              <li>Discover offerings</li>
-              <li>Invest using USDC on Stellar</li>
-              <li>See revenue-share distributions</li>
+          
+          <section className="glass-card p-6 text-left border-[rgba(148,163,184,0.15)]">
+            <h2 className="text-xl font-semibold mb-3">Investor Portal</h2>
+            <ul className="text-muted text-sm space-y-2">
+              <li>• Discover high-potential offerings</li>
+              <li>• Invest using USDC on Stellar</li>
+              <li>• See real-time dividends</li>
             </ul>
           </section>
         </div>
-        <div
-          style={{
-            marginTop: '1.5rem',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            fontSize: '0.8rem',
-            color: '#6b7280'
-          }}
-        >
-          <span>revora-frontend (React + Vite + TS)</span>
-          <span>Connect this UI to your backend at `/api/*`</span>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link to="/signup" className="btn-primary sm:w-auto px-10">Get Started</Link>
+          <Link to="/login" className="btn-secondary sm:w-auto px-10">Sign In</Link>
+        </div>
+
+        <div className="mt-12 text-xs text-muted">
+          revora-frontend (React + Vite + TS) • Powered by Stellar
         </div>
       </div>
     </div>
   );
 }
 
+function Placeholder({ title }: { title: string }) {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-10">
+      <div className="glass-card p-20 text-center">
+        <h1 className="text-3xl font-bold mb-4">{title}</h1>
+        <p className="text-muted mb-8">This dashboard is currently under construction.</p>
+        <Link to="/" className="btn-secondary">Back to Home</Link>
+      </div>
+    </div>
+  );
+}

@@ -32,9 +32,9 @@ function Home() {
           <section className="glass-card p-6 text-left border-[rgba(148,163,184,0.15)]">
             <h2 className="text-xl font-semibold mb-3">Startup Dashboard</h2>
             <ul className="text-muted text-sm space-y-2">
-              <li>• Configure revenue-share offerings</li>
+              <li>• Configure RevenueShare offerings</li>
               <li>• Report monthly revenue</li>
-              <li>• Track on-chain payouts</li>
+              <li>• Track on-chain RevenueShare payouts</li>
             </ul>
           </section>
           
@@ -43,7 +43,7 @@ function Home() {
             <ul className="text-muted text-sm space-y-2">
               <li>• Discover high-potential offerings</li>
               <li>• Invest using USDC on Stellar</li>
-              <li>• See real-time dividends</li>
+              <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>
         </div>

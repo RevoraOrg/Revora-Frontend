@@ -16,7 +16,7 @@ export const Login: React.FC = () => {
   return (
     <AuthLayout 
       title="Welcome to Revora" 
-      subtitle="Sign in to manage your revenue-share offerings or track your portfolio."
+      subtitle="Sign in to manage your RevenueShare offerings or track your portfolio."
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="input-group">
@@ -30,7 +30,9 @@ export const Login: React.FC = () => {
               placeholder="name@company.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required 
+              required
+              aria-required="true"
+              aria-label="Email Address"
             />
           </div>
         </div>
@@ -49,7 +51,9 @@ export const Login: React.FC = () => {
               placeholder="••••••••••••" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              required 
+              required
+              aria-required="true"
+              aria-label="Password"
             />
           </div>
         </div>

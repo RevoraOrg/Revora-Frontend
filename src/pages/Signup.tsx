@@ -60,7 +60,7 @@ export const Signup: React.FC = () => {
             </div>
             <div>
               <div className="font-semibold text-main">Startup Founder</div>
-              <div className="text-xs text-muted">Create offerings and manage revenue sharing.</div>
+              <div className="text-xs text-muted">Create offerings and manage RevenueShare distributions.</div>
             </div>
           </button>
 
@@ -92,7 +92,9 @@ export const Signup: React.FC = () => {
                 id="name"
                 className="input-field pl-10" 
                 placeholder="John Doe" 
-                required 
+                required
+                aria-required="true"
+                aria-label="Full Name"
               />
             </div>
           </div>
@@ -108,7 +110,9 @@ export const Signup: React.FC = () => {
                 placeholder="name@company.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required 
+                required
+                aria-required="true"
+                aria-label="Email Address"
               />
             </div>
           </div>
@@ -124,10 +128,13 @@ export const Signup: React.FC = () => {
                 placeholder="••••••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required 
+                required
+                aria-required="true"
+                aria-label="Password"
+                aria-describedby="password-hint"
               />
             </div>
-            <p className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
+            <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
           </div>
 
           <button type="submit" className="btn-primary mt-4">Create Account</button>

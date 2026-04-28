@@ -1,18 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
   --bg-color: #020617;
-  --bg-gradient: radial-gradient(circle at top, #0f172a 0, #020617 40%, #000000 100%);
-  --card-bg: linear-gradient(to bottom right, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.75));
-  --border-color: rgba(148, 163, 184, 0.35);
-  --primary: #3b82f6; /* Stellar Blue */
+  --bg-gradient: radial-gradient(
+    circle at top,
+    #0f172a 0,
+    #020617 40%,
+    #000000 100%
+  );
+
+  /* Standardized Design Tokens - Issue #68 */
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-bg-accent: rgba(30, 41, 59, 0.5);
+  --glass-border: rgba(148, 163, 184, 0.15);
+  --glass-border-bright: rgba(148, 163, 184, 0.35);
+  --glass-blur: blur(12px);
+
+  /* Elevation Tokens */
+  --shadow-sm:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg:
+    0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 24px 80px rgba(0, 0, 0, 0.45); /* Standardized Card Elevation */
+
+  --primary: #3b82f6;
   --primary-hover: #2563eb;
   --text-main: #e5e7eb;
   --text-muted: #9ca3af;
   --text-accent: #38bdf8;
   --error: #ef4444;
   --success: #10b981;
-  --glass-blur: blur(12px);
 }
 
 * {
@@ -22,7 +41,11 @@
 }
 
 body {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
   background: var(--bg-gradient);
   color: var(--text-main);
   min-height: 100vh;
@@ -30,11 +53,19 @@ body {
 }
 
 .glass-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
   backdrop-filter: var(--glass-blur);
   border-radius: 1.5rem;
-  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.85);
+  box-shadow: var(--shadow-xl);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.glass-card-interactive:hover {
+  border-color: var(--glass-border-bright);
+  transform: translateY(-2px);
 }
 
 .btn-primary {
@@ -107,6 +138,12 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

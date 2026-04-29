@@ -52,7 +52,9 @@ export const ForgotPassword: React.FC = () => {
               placeholder="name@company.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required 
+              required
+              aria-required="true"
+              aria-label="Email Address"
             />
           </div>
         </div>

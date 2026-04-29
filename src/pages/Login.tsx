@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
-import { Mail, Lock, Wallet } from 'lucide-react';
+import { Mail, Lock, Wallet, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     console.log('Login attempt:', { email, password });
-    // In a real app, this would hit /api/auth/login
+    // Mock login failure for UI demonstration
+    setError('Invalid email or password. Please try again.');
   };
 
   return (
@@ -18,7 +21,18 @@ export const Login: React.FC = () => {
       title="Welcome to Revora" 
       subtitle="Sign in to manage your RevenueShare offerings or track your portfolio."
     >
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className={`space-y-4 ${error ? 'animate-shake' : ''}`} noValidate>
+        {error && (
+          <div 
+            className="p-3 mb-4 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-error text-sm flex items-start"
+            role="alert"
+            id="login-error"
+          >
+            <AlertCircle size={16} className="mt-0.5 mr-2 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="input-group">
           <label className="input-label" htmlFor="email">Email Address</label>
           <div className="relative">
@@ -26,7 +40,7 @@ export const Login: React.FC = () => {
             <input 
               id="email"
               type="email" 
-              className="input-field pl-10" 
+              className={`input-field pl-10 ${error ? 'input-error' : ''}`} 
               placeholder="name@company.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -46,8 +60,8 @@ export const Login: React.FC = () => {
             <Lock className="absolute left-3 top-3 text-muted" size={18} />
             <input 
               id="password"
-              type="password" 
-              className="input-field pl-10" 
+              type={showPassword ? "text" : "password"} 
+              className={`input-field pl-10 pr-10 ${error ? 'input-error' : ''}`} 
               placeholder="••••••••••••" 
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -55,6 +69,14 @@ export const Login: React.FC = () => {
               aria-required="true"
               aria-label="Password"
             />
+            <button
+              type="button"
+              className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
           </div>
         </div>
 

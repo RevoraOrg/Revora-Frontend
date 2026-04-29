@@ -54,6 +54,12 @@ body {
   transform: translateY(-1px);
 }
 
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .btn-secondary {
   background: rgba(148, 163, 184, 0.1);
   color: var(--text-main);
@@ -109,4 +115,42 @@ body {
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* Utilities for accessibility and consistency */
+.text-primary {
+  color: var(--primary);
+}
+
+.text-primary:hover {
+  color: var(--primary-hover);
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.link-styled {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  text-underline-offset: 2px;
+}
+
+.link-styled:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.link-styled:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }

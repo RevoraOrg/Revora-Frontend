@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
-import { Mail, Lock, User, Briefcase, TrendingUp } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type Step = 'persona' | 'form' | 'success';
@@ -10,6 +10,9 @@ export const Signup: React.FC = () => {
   const [persona, setPersona] = useState<'startup' | 'investor' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
@@ -18,7 +21,19 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Signup attempt:', { persona, email, password });
+    
+    // Mock validation
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = 'Full name is required';
+    if (!email.includes('@')) newErrors.email = 'Please enter a valid email address';
+    if (password.length < 12) newErrors.password = 'Password must be at least 12 characters long';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    console.log('Signup attempt:', { persona, name, email, password });
     setStep('success');
   };
 
@@ -83,18 +98,36 @@ export const Signup: React.FC = () => {
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className={`space-y-4 ${Object.keys(errors).length > 0 ? 'animate-shake' : ''}`} noValidate>
+          {Object.keys(errors).length > 0 && (
+            <div 
+              className="p-3 mb-4 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-error text-sm flex items-start"
+              role="alert"
+            >
+              <AlertCircle size={16} className="mt-0.5 mr-2 flex-shrink-0" />
+              <span>Please fix the errors below to continue.</span>
+            </div>
+          )}
+
           <div className="input-group">
             <label className="input-label" htmlFor="name">Full Name</label>
             <div className="relative">
               <User className="absolute left-3 top-3 text-muted" size={18} />
               <input 
                 id="name"
-                className="input-field pl-10" 
+                className={`input-field pl-10 ${errors.name ? 'input-error' : ''}`} 
                 placeholder="John Doe" 
+                value={name}
+                onChange={(e) => {
+                  setName(e.target.value);
+                  if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
+                }}
+                aria-invalid={!!errors.name}
+                aria-describedby={errors.name ? "name-error" : undefined}
                 required 
               />
             </div>
+            {errors.name && <p id="name-error" className="mt-1 text-xs text-error">{errors.name}</p>}
           </div>
 
           <div className="input-group">
@@ -104,13 +137,19 @@ export const Signup: React.FC = () => {
               <input 
                 id="email"
                 type="email" 
-                className="input-field pl-10" 
+                className={`input-field pl-10 ${errors.email ? 'input-error' : ''}`} 
                 placeholder="name@company.com" 
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
+                }}
+                aria-invalid={!!errors.email}
+                aria-describedby={errors.email ? "email-error" : undefined}
                 required 
               />
             </div>
+            {errors.email && <p id="email-error" className="mt-1 text-xs text-error">{errors.email}</p>}
           </div>
 
           <div className="input-group">
@@ -119,15 +158,32 @@ export const Signup: React.FC = () => {
               <Lock className="absolute left-3 top-3 text-muted" size={18} />
               <input 
                 id="password"
-                type="password" 
-                className="input-field pl-10" 
+                type={showPassword ? "text" : "password"} 
+                className={`input-field pl-10 pr-10 ${errors.password ? 'input-error' : ''}`} 
                 placeholder="••••••••••••" 
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
+                }}
+                aria-invalid={!!errors.password}
+                aria-describedby={errors.password ? "password-error" : "password-hint"}
                 required 
               />
+              <button
+                type="button"
+                className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-            <p className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
+            {errors.password ? (
+              <p id="password-error" className="mt-1 text-xs text-error">{errors.password}</p>
+            ) : (
+              <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
+            )}
           </div>
 
           <button type="submit" className="btn-primary mt-4">Create Account</button>

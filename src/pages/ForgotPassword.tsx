@@ -56,13 +56,10 @@ export const ForgotPassword: React.FC = () => {
               className={`input-field pl-10 ${error ? 'input-error' : ''}`} 
               placeholder="name@company.com" 
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError(null);
-              }}
-              aria-invalid={!!error}
-              aria-describedby={error ? "email-error" : undefined}
-              required 
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              aria-required="true"
+              aria-label="Email Address"
             />
           </div>
           {error && (

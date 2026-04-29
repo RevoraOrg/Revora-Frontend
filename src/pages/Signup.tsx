@@ -75,7 +75,7 @@ export const Signup: React.FC = () => {
             </div>
             <div>
               <div className="font-semibold text-main">Startup Founder</div>
-              <div className="text-xs text-muted">Create offerings and manage revenue sharing.</div>
+              <div className="text-xs text-muted">Create offerings and manage RevenueShare distributions.</div>
             </div>
           </button>
 
@@ -117,14 +117,9 @@ export const Signup: React.FC = () => {
                 id="name"
                 className={`input-field pl-10 ${errors.name ? 'input-error' : ''}`} 
                 placeholder="John Doe" 
-                value={name}
-                onChange={(e) => {
-                  setName(e.target.value);
-                  if (errors.name) setErrors(prev => ({ ...prev, name: '' }));
-                }}
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? "name-error" : undefined}
-                required 
+                required
+                aria-required="true"
+                aria-label="Full Name"
               />
             </div>
             {errors.name && <p id="name-error" className="mt-1 text-xs text-error">{errors.name}</p>}
@@ -140,13 +135,10 @@ export const Signup: React.FC = () => {
                 className={`input-field pl-10 ${errors.email ? 'input-error' : ''}`} 
                 placeholder="name@company.com" 
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors(prev => ({ ...prev, email: '' }));
-                }}
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? "email-error" : undefined}
-                required 
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                aria-required="true"
+                aria-label="Email Address"
               />
             </div>
             {errors.email && <p id="email-error" className="mt-1 text-xs text-error">{errors.email}</p>}
@@ -162,13 +154,11 @@ export const Signup: React.FC = () => {
                 className={`input-field pl-10 pr-10 ${errors.password ? 'input-error' : ''}`} 
                 placeholder="••••••••••••" 
                 value={password}
-                onChange={(e) => {
-                  setPassword(e.target.value);
-                  if (errors.password) setErrors(prev => ({ ...prev, password: '' }));
-                }}
-                aria-invalid={!!errors.password}
-                aria-describedby={errors.password ? "password-error" : "password-hint"}
-                required 
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                aria-required="true"
+                aria-label="Password"
+                aria-describedby="password-hint"
               />
               <button
                 type="button"
@@ -179,11 +169,7 @@ export const Signup: React.FC = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            {errors.password ? (
-              <p id="password-error" className="mt-1 text-xs text-error">{errors.password}</p>
-            ) : (
-              <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
-            )}
+            <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
           </div>
 
           <button type="submit" className="btn-primary mt-4">Create Account</button>

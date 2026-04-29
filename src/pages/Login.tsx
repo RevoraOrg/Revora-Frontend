@@ -19,7 +19,7 @@ export const Login: React.FC = () => {
   return (
     <AuthLayout 
       title="Welcome to Revora" 
-      subtitle="Sign in to manage your revenue-share offerings or track your portfolio."
+      subtitle="Sign in to manage your RevenueShare offerings or track your portfolio."
     >
       <form onSubmit={handleSubmit} className={`space-y-4 ${error ? 'animate-shake' : ''}`} noValidate>
         {error && (
@@ -43,13 +43,10 @@ export const Login: React.FC = () => {
               className={`input-field pl-10 ${error ? 'input-error' : ''}`} 
               placeholder="name@company.com" 
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                if (error) setError(null);
-              }}
-              aria-invalid={!!error}
-              aria-describedby={error ? "login-error" : undefined}
-              required 
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              aria-required="true"
+              aria-label="Email Address"
             />
           </div>
         </div>
@@ -67,13 +64,10 @@ export const Login: React.FC = () => {
               className={`input-field pl-10 pr-10 ${error ? 'input-error' : ''}`} 
               placeholder="••••••••••••" 
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                if (error) setError(null);
-              }}
-              aria-invalid={!!error}
-              aria-describedby={error ? "login-error" : undefined}
-              required 
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              aria-required="true"
+              aria-label="Password"
             />
             <button
               type="button"

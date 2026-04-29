@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
-import { Mail, ArrowLeft } from 'lucide-react';
+import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email.includes('@')) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     console.log('Password reset request:', email);
     setSubmitted(true);
   };
@@ -44,7 +49,7 @@ export const ForgotPassword: React.FC = () => {
       subtitle="Enter your email address and we'll send you a link to reset your password."
       helperText="For security, we never confirm whether an email is registered."
     >
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className={`space-y-6 ${error ? 'animate-shake' : ''}`} noValidate>
         <div className="input-group">
           <label className="input-label" htmlFor="email">Email Address</label>
           <div className="relative">
@@ -52,13 +57,21 @@ export const ForgotPassword: React.FC = () => {
             <input 
               id="email"
               type="email" 
-              className="input-field pl-10" 
+              className={`input-field pl-10 ${error ? 'input-error' : ''}`} 
               placeholder="name@company.com" 
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              required 
+              required
+              aria-required="true"
+              aria-label="Email Address"
             />
           </div>
+          {error && (
+            <div id="email-error" className="mt-2 flex items-center text-error text-sm">
+              <AlertCircle size={14} className="mr-1" />
+              {error}
+            </div>
+          )}
         </div>
 
         <button type="submit" className="btn-primary">Send Reset Link</button>

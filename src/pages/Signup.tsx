@@ -79,7 +79,7 @@ export const Signup: React.FC = () => {
           </button>
 
           <p className="mt-6 text-center text-sm text-muted">
-            Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 500 }}>Sign in</Link>
+            Already have an account? <Link to="/login" style={{ fontWeight: 500 }} className="text-primary hover:underline">Sign in</Link>
           </p>
         </div>
       ) : (

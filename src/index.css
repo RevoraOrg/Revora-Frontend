@@ -28,7 +28,7 @@
   --primary: #3b82f6;
   --primary-hover: #2563eb;
   --text-main: #e5e7eb;
-  --text-muted: #9ca3af;
+  --text-muted: #cbd5e1; /* Improved contrast for WCAG AA on dark backgrounds */
   --text-accent: #38bdf8;
   --error: #ef4444;
   --success: #10b981;
@@ -178,3 +178,25 @@ a:focus-visible {
     transform: translateY(0);
   }
 }
+
+/* Accessibility: Focus rings for interactive elements */
+a:focus-visible, 
+button:focus-visible, 
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Ensure focus states on specific buttons maintain their own radius */
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  border-radius: 0.75rem;
+}
+
+/* Utility Classes */
+.text-muted { color: var(--text-muted); }
+.text-main { color: var(--text-main); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }

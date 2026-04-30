@@ -52,9 +52,15 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="input-group">
-          <div className="flex justify-between mb-1">
-            <label className="input-label" htmlFor="password">Password</label>
-            <Link to="/forgot-password" style={{ fontSize: '0.8rem' }} className="text-primary hover:underline">Forgot Password?</Link>
+          <div className="flex flex-wrap gap-y-2 justify-between items-baseline mb-2">
+            <label className="input-label" style={{ marginBottom: 0 }} htmlFor="password">Password</label>
+            <Link
+              to="/forgot-password"
+              aria-label="Forgot your password? Go to account recovery"
+              className="link-styled text-sm"
+            >
+              Forgot password?
+            </Link>
           </div>
           <div className="relative">
             <Lock className="absolute left-3 top-3 text-muted" size={18} />
@@ -94,7 +100,7 @@ export const Login: React.FC = () => {
         </button>
 
         <p className="mt-8 text-center text-sm text-muted">
-          Don't have an account? <Link to="/signup" style={{ fontWeight: 500 }} className="text-primary hover:underline">Create an account</Link>
+          Don't have an account? <Link to="/signup" className="link-styled">Create an account</Link>
         </p>
       </form>
     </AuthLayout>

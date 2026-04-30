@@ -10,7 +10,16 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/setupTests.ts'
+    setupFiles: './src/test/setup.ts',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: [
+        'src/pages/Login.tsx',
+        'src/pages/Signup.tsx',
+        'src/pages/ForgotPassword.tsx',
+        'src/components/AuthLayout.tsx'
+      ]
+    }
   }
 });
-

@@ -85,16 +85,17 @@ body {
   transform: translateY(-1px);
 }
 
-/* WCAG 2.1 AA: Ensure sufficient color contrast */
-.btn-primary:focus {
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
   outline: 2px solid white;
   outline-offset: 2px;
+  border-radius: 0.75rem;
 }
 
 .btn-secondary {
   background: rgba(148, 163, 184, 0.1);
   color: var(--text-main);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-border);
   padding: 0.75rem 1.5rem;
   border-radius: 0.75rem;
   font-weight: 500;
@@ -131,7 +132,7 @@ body {
 .input-field {
   width: 100%;
   background: rgba(15, 23, 42, 0.5);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--glass-border);
   border-radius: 0.75rem;
   padding: 0.75rem 1rem;
   color: var(--text-main);
@@ -209,15 +210,46 @@ input:focus-visible,
   border-radius: 0.25rem;
 }
 
-/* Ensure focus states on specific buttons maintain their own radius */
-.btn-primary:focus-visible,
-.btn-secondary:focus-visible {
-  border-radius: 0.75rem;
+/* Utilities for accessibility and consistency */
+.text-primary {
+  color: var(--primary);
+}
+
+.text-primary:hover {
+  color: var(--primary-hover);
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.link-styled {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  text-underline-offset: 2px;
+}
+
+.link-styled:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.link-styled:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
 }
 
 /* Utility Classes */
 .text-muted { color: var(--text-muted); }
 .text-main { color: var(--text-main); }
-.text-primary { color: var(--primary); }
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }

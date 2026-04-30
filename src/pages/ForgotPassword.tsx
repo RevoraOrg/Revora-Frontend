@@ -20,7 +20,10 @@ export const ForgotPassword: React.FC = () => {
 
   if (submitted) {
     return (
-      <AuthLayout title="Reset link sent">
+      <AuthLayout
+        title="Reset link sent"
+        helperText="If you still cannot sign in, contact your workspace administrator."
+      >
         <div className="text-center space-y-6">
           <div className="flex justify-center">
             <div className="w-16 h-16 rounded-full bg-[rgba(59,130,246,0.1)] flex items-center justify-center text-primary border border-[rgba(59,130,246,0.2)]">
@@ -31,7 +34,7 @@ export const ForgotPassword: React.FC = () => {
             If an account exists for <span className="text-main font-medium">{email}</span>, 
             you'll receive an email with instructions to reset your password shortly.
           </p>
-          <Link to="/login" className="btn-secondary w-full inline-flex">
+          <Link to="/login" className="btn-secondary w-full inline-flex focus-ring" aria-label="Back to sign in page">
             <ArrowLeft size={18} className="mr-2" />
             Back to Sign In
           </Link>
@@ -44,6 +47,7 @@ export const ForgotPassword: React.FC = () => {
     <AuthLayout 
       title="Forgot Password?" 
       subtitle="Enter your email address and we'll send you a link to reset your password."
+      helperText="For security, we never confirm whether an email is registered."
     >
       <form onSubmit={handleSubmit} className={`space-y-6 ${error ? 'animate-shake' : ''}`} noValidate>
         <div className="input-group">
@@ -72,7 +76,12 @@ export const ForgotPassword: React.FC = () => {
 
         <button type="submit" className="btn-primary">Send Reset Link</button>
 
-        <Link to="/login" className="flex items-center justify-center text-sm text-muted hover:text-main transition-colors">
+        <Link
+          to="/login"
+          className="flex items-center justify-center text-sm text-muted hover:text-main transition-colors focus-ring"
+          style={{ padding: '0.25rem', borderRadius: '0.25rem' }}
+          aria-label="Back to sign in page"
+        >
           <ArrowLeft size={16} className="mr-2" />
           Back to Sign In
         </Link>

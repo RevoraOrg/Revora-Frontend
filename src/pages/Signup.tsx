@@ -62,6 +62,7 @@ export const Signup: React.FC = () => {
     <AuthLayout 
       title={step === 'persona' ? "Choose your account type" : "Create your account"}
       subtitle={step === 'persona' ? "Select how you'll be using Revora to tailor your experience." : `Setting up your ${persona} profile.`}
+      helperText={step === 'form' ? "Already have credentials? Return to Sign in to recover or access your account." : undefined}
     >
       {step === 'persona' ? (
         <div className="grid gap-4">
@@ -94,7 +95,7 @@ export const Signup: React.FC = () => {
           </button>
 
           <p className="mt-6 text-center text-sm text-muted">
-            Already have an account? <Link to="/login" style={{ fontWeight: 500 }} className="text-primary hover:underline">Sign in</Link>
+            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
           </p>
         </div>
       ) : (
@@ -116,7 +117,9 @@ export const Signup: React.FC = () => {
               <input 
                 id="name"
                 className={`input-field pl-10 ${errors.name ? 'input-error' : ''}`} 
-                placeholder="John Doe" 
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 required
                 aria-required="true"
                 aria-label="Full Name"
@@ -181,6 +184,10 @@ export const Signup: React.FC = () => {
           >
             Back
           </button>
+
+          <p className="text-center text-sm text-muted">
+            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
+          </p>
         </form>
       )}
     </AuthLayout>

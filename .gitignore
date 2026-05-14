@@ -15,6 +15,7 @@ jspm_packages/
 dist/
 dist-ssr/
 *.tsbuildinfo
+coverage/
 
 # OS Metadata
 .DS_Store

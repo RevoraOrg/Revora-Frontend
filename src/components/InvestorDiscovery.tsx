@@ -35,39 +35,44 @@ export const InvestorDiscovery: React.FC = () => {
       </div>
 
       {/* Discovery Discovery: Discovery Cards Pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((item) => (
-          <div
-            key={item}
-            className="glass-card glass-card-interactive p-6 space-y-4"
-          >
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-              <Rocket size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">TechFlow AI</h3>
-              <p className="text-xs text-muted">
-                Enterprise SaaS • 15% Revenue Share
-              </p>
-            </div>
-            <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted">Target</span>
-                <span>$250,000 USDC</span>
+      <section aria-labelledby="offerings-heading">
+        <h2 id="offerings-heading" className="sr-only">
+          Offerings
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="glass-card glass-card-interactive p-6 space-y-4"
+            >
+              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <Rocket size={24} />
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: "45%" }}
-                ></div>
+              <div>
+                <h3 className="font-semibold text-lg">TechFlow AI</h3>
+                <p className="text-xs text-muted">
+                  Enterprise SaaS • 15% Revenue Share
+                </p>
               </div>
+              <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Target</span>
+                  <span>$250,000 USDC</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5">
+                  <div
+                    className="bg-primary h-1.5 rounded-full"
+                    style={{ width: "45%" }}
+                  ></div>
+                </div>
+              </div>
+              <button className="btn-primary py-2 text-xs">
+                View Prospectus
+              </button>
             </div>
-            <button className="btn-primary py-2 text-xs">
-              View Prospectus
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </section>
 
       {/* Empty State / Call to Action IA */}
       <div className="glass-card p-12 text-center bg-gradient-to-b from-transparent to-[rgba(59,130,246,0.05)]">

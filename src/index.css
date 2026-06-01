@@ -200,6 +200,25 @@ a:focus-visible {
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  /* Disable non-essential motion while preserving state and feedback.
+     Fallbacks for .animate-shake use existing error signaling:
+       - red border
+       - error icon
+       - error text
+  */
+  .animate-fade-in,
+  .animate-shake {
+    animation: none !important;
+  }
+
+  .glass-card-interactive:hover,
+  .btn-primary:hover,
+  .btn-secondary:hover {
+    transform: none !important;
+  }
+}
+
 /* Accessibility: Focus rings for interactive elements */
 a:focus-visible, 
 button:focus-visible, 

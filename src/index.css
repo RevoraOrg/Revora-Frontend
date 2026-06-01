@@ -78,6 +78,11 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
 }
 
 .btn-primary:hover {
@@ -106,6 +111,8 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 44px;
+  font-size: 1rem;
 }
 
 .btn-secondary:hover {
@@ -163,6 +170,22 @@ a:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+.link-styled {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.link-styled:hover {
+  color: var(--primary-hover);
 }
 
 .input-field.input-error {

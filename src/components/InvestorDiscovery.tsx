@@ -11,7 +11,7 @@ export const InvestorDiscovery: React.FC = () => {
             Discover Offerings
           </h1>
           <p className="text-muted text-sm mt-1">
-            Explore high-potential revenue-share opportunities on Stellar.
+            Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 
@@ -47,7 +47,7 @@ export const InvestorDiscovery: React.FC = () => {
             <div>
               <h3 className="font-semibold text-lg">TechFlow AI</h3>
               <p className="text-xs text-muted">
-                Enterprise SaaS • 15% Revenue Share
+                Enterprise SaaS • 15% RevenueShare
               </p>
             </div>
             <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">

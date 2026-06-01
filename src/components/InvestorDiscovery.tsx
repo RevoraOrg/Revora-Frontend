@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
 
 export const InvestorDiscovery: React.FC = () => {
@@ -62,9 +63,12 @@ export const InvestorDiscovery: React.FC = () => {
                 ></div>
               </div>
             </div>
-            <button className="btn-primary py-2 text-xs">
+            <Link
+              to={`/offering/${item}`}
+              className="btn-primary py-2 text-xs"
+            >
               View Prospectus
-            </button>
+            </Link>
           </div>
         ))}
       </div>

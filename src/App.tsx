@@ -3,6 +3,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { OfferingDetail } from "./components/OfferingDetail"; // Import Offering Detail
 
 export function App() {
   return (
@@ -19,6 +20,7 @@ export function App() {
 
         {/* Updated Route - Issue #63 */}
         <Route path="/investor/portal" element={<InvestorDiscovery />} />
+        <Route path="/offering/:id" element={<OfferingDetail />} />
       </Routes>
     </Router>
   );

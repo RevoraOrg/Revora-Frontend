@@ -34,7 +34,7 @@ export const ForgotPassword: React.FC = () => {
             If an account exists for <span className="text-main font-medium">{email}</span>, 
             you'll receive an email with instructions to reset your password shortly.
           </p>
-          <Link to="/login" className="btn-secondary w-full inline-flex focus-ring" aria-label="Back to sign in page">
+          <Link to="/login" className="btn btn--secondary btn--block inline-flex focus-ring" aria-label="Back to sign in page">
             <ArrowLeft size={18} className="mr-2" />
             Back to Sign In
           </Link>
@@ -74,7 +74,7 @@ export const ForgotPassword: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" className="btn-primary">Send Reset Link</button>
+        <button type="submit" className="btn btn--primary btn--md btn--block">Send Reset Link</button>
 
         <Link
           to="/login"

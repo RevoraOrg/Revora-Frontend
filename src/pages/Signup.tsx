@@ -50,7 +50,7 @@ export const Signup: React.FC = () => {
             We've sent a verification link to <span className="text-main font-medium">{email}</span>. 
             Please click the link to verify your account and get started.
           </p>
-          <button onClick={() => setStep('persona')} className="btn-secondary w-full">
+          <button onClick={() => setStep('persona')} className="btn btn--secondary btn--block btn--md">
             Back to persona selection
           </button>
         </div>
@@ -175,12 +175,12 @@ export const Signup: React.FC = () => {
             <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
           </div>
 
-          <button type="submit" className="btn-primary mt-4">Create Account</button>
+          <button type="submit" className="btn btn--primary btn--md mt-4">Create Account</button>
           
           <button 
             type="button" 
             onClick={() => setStep('persona')}
-            className="btn-secondary w-full"
+            className="btn btn--secondary btn--block btn--md"
           >
             Back
           </button>

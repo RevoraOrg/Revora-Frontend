@@ -253,3 +253,16 @@ input:focus-visible,
 .text-main { color: var(--text-main); }
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }
+
+/* Activity Feed Styles */
+.activity-feed { padding: 1rem; }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--glass-border); }
+.activity-item:last-child { border-bottom: none; }
+.activity-item .icon { width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
+.activity-item .content { flex: 1; }
+.activity-item .title { font-weight: 600; color: var(--text-main); }
+.activity-item .description { color: var(--text-muted); margin-top: 0.25rem; }
+.activity-item .timestamp { font-size: 0.875rem; color: var(--text-muted); }
+.activity-date-group { margin-top: 1.5rem; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary); }
+.load-more { margin-top: 1rem; }

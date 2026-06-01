@@ -3,6 +3,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { ActivityFeed } from "./components/ActivityFeed";
 
 export function App() {
   return (
@@ -18,7 +19,7 @@ export function App() {
         />
 
         {/* Updated Route - Issue #63 */}
-        <Route path="/investor/portal" element={<InvestorDiscovery />} />
+          <Route path="/activity" element={<ActivityFeed />} />
       </Routes>
     </Router>
   );

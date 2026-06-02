@@ -78,11 +78,13 @@ body {
   border-radius: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.12s ease;
-  width: auto; /* default to auto; use .btn--block for full width */
-  border: none;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
+  transition: all 0.2s ease;
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
 }
 
 /* Width behavior */
@@ -112,24 +114,15 @@ body {
   color: var(--text-main);
   border: 1px solid var(--glass-border);
   font-weight: 500;
-}
-.btn--secondary:hover { background: rgba(148, 163, 184, 0.16); }
-
-.btn--destructive {
-  background: var(--error);
-  color: white;
-  border: none;
-}
-.btn--destructive:hover { filter: brightness(0.95); transform: translateY(-1px); }
-
-/* Disabled state */
-.btn:disabled,
-.btn[aria-disabled="true"] {
-  opacity: 0.45;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-  pointer-events: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  font-size: 1rem;
 }
 
 /* Focus styles - meet WCAG 2.1 AA */
@@ -209,6 +202,22 @@ a:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 2px;
+}
+
+.link-styled {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  min-height: 44px;
+  min-width: 44px;
+  display: flex;
+  align-items: center;
+}
+
+.link-styled:hover {
+  color: var(--primary-hover);
 }
 
 .input-field.input-error {

@@ -52,18 +52,12 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="input-group">
-          <div className="flex flex-wrap gap-y-2 justify-between items-baseline mb-2">
-            <label
-              className="input-label"
-              style={{ marginBottom: 0 }}
-              htmlFor="password"
-            >
-              Password
-            </label>
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-2">
+            <label className="input-label" style={{ marginBottom: 0 }} htmlFor="password">Password</label>
             <Link
               to="/forgot-password"
               aria-label="Forgot your password? Go to account recovery"
-              className="link-styled text-sm"
+              className="link-styled text-sm py-1 px-1"
             >
               Forgot password?
             </Link>

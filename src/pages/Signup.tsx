@@ -26,6 +26,7 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitState === 'loading') return;
     
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Full name is required';
@@ -35,6 +36,7 @@ export const Signup: React.FC = () => {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setSubmitState('idle');
       return;
     }
 
@@ -63,7 +65,7 @@ export const Signup: React.FC = () => {
             We've sent a verification link to <span className="text-main font-medium">{email}</span>. 
             Please click the link to verify your account and get started.
           </p>
-          <button onClick={() => setStep('persona')} className="btn-secondary w-full">
+          <button onClick={() => setStep('persona')} className="btn btn--secondary btn--block btn--md">
             Back to persona selection
           </button>
         </div>

@@ -5,8 +5,8 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 
 export const Login: React.FC = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,31 +34,28 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <AuthLayout 
-      title="Welcome to Revora" 
+    <AuthLayout
+      title="Welcome to Revora"
       subtitle="Sign in to manage your RevenueShare offerings or track your portfolio."
     >
-      <form onSubmit={handleSubmit} className={`space-y-4 ${error ? 'animate-shake' : ''}`} noValidate>
-        {error && (
-          <div 
-            className="p-3 mb-4 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-error text-sm flex items-start"
-            role="alert"
-            id="login-error"
-          >
-            <AlertCircle size={16} className="mt-0.5 mr-2 flex-shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
+      <form
+        onSubmit={handleSubmit}
+        className={`space-y-4 ${error ? "animate-shake" : ""}`}
+        noValidate
+      >
+        <FormError message={error} id="login-error" />
 
         <div className="input-group">
-          <label className="input-label" htmlFor="email">Email Address</label>
+          <label className="input-label" htmlFor="email">
+            Email Address
+          </label>
           <div className="relative">
             <Mail className="absolute left-3 top-3 text-muted" size={18} />
-            <input 
+            <input
               id="email"
-              type="email" 
-              className={`input-field pl-10 ${error ? 'input-error' : ''}`} 
-              placeholder="name@company.com" 
+              type="email"
+              className={`input-field pl-10 ${error ? "input-error" : ""}`}
+              placeholder="name@company.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -70,23 +67,23 @@ export const Login: React.FC = () => {
         </div>
 
         <div className="input-group">
-          <div className="flex flex-wrap gap-y-2 justify-between items-baseline mb-2">
+          <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-2">
             <label className="input-label" style={{ marginBottom: 0 }} htmlFor="password">Password</label>
             <Link
               to="/forgot-password"
               aria-label="Forgot your password? Go to account recovery"
-              className="link-styled text-sm"
+              className="link-styled text-sm py-1 px-1"
             >
               Forgot password?
             </Link>
           </div>
           <div className="relative">
             <Lock className="absolute left-3 top-3 text-muted" size={18} />
-            <input 
+            <input
               id="password"
-              type={showPassword ? "text" : "password"} 
-              className={`input-field pl-10 pr-10 ${error ? 'input-error' : ''}`} 
-              placeholder="••••••••••••" 
+              type={showPassword ? "text" : "password"}
+              className={`input-field pl-10 pr-10 ${error ? "input-error" : ""}`}
+              placeholder="••••••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
@@ -112,7 +109,9 @@ export const Login: React.FC = () => {
 
         <div className="relative my-6 py-2 flex items-center">
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
-          <span className="flex-shrink mx-4 text-muted text-xs uppercase tracking-wider font-medium">Or continue with</span>
+          <span className="flex-shrink mx-4 text-muted text-xs uppercase tracking-wider font-medium">
+            Or continue with
+          </span>
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
         </div>
 
@@ -122,7 +121,10 @@ export const Login: React.FC = () => {
         </button>
 
         <p className="mt-8 text-center text-sm text-muted">
-          Don't have an account? <Link to="/signup" className="link-styled">Create an account</Link>
+          Don't have an account?{" "}
+          <Link to="/signup" className="link-styled">
+            Create an account
+          </Link>
         </p>
       </form>
     </AuthLayout>

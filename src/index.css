@@ -102,9 +102,44 @@ body {
   width: 100%;
 }
 
+.btn-primary:disabled {
+  cursor: not-allowed;
+  opacity: 0.78;
+  transform: none;
+}
+
 .btn-primary:hover {
   background: var(--primary-hover);
   transform: translateY(-1px);
+}
+
+.btn-primary:disabled:hover {
+  background: var(--primary);
+  transform: none;
+}
+
+.auth-submit-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.875rem;
+}
+
+.auth-submit-button--loading {
+  background: var(--primary-hover);
+}
+
+.auth-submit-button--success {
+  background: var(--success);
+}
+
+.auth-submit-button__icon {
+  flex-shrink: 0;
+}
+
+.auth-submit-button__spinner {
+  animation: auth-submit-spin 0.8s linear infinite;
 }
 
 .btn-primary:focus-visible,
@@ -276,99 +311,17 @@ input:focus-visible,
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }
 
-/* ─── AuthLayout Component Styles (Issue #80) ─────────────────────────────
-   Implements the formalized design-system type scale and responsive card.
-   Tokens are defined in :root above under "Auth Layout Design Tokens".
-   ───────────────────────────────────────────────────────────────────────── */
-
-/**
- * .auth-layout-outer
- * Full-viewport centring wrapper. Adds safe-area-aware horizontal padding
- * so content is never clipped at 320px or on notched devices.
- */
-.auth-layout-outer {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  /* horizontal safe-area inset ensures usability on notched devices */
-  padding:
-    1.5rem
-    max(env(safe-area-inset-right, 0px), 1rem)
-    1.5rem
-    max(env(safe-area-inset-left, 0px), 1rem);
+@keyframes auth-submit-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-/**
- * .auth-card
- * The glassmorphic card container. Uses fluid padding tokens so the card
- * breathes at desktop widths yet stays comfortable at 320px.
- */
-.auth-card {
-  width: 100%;
-  max-width: var(--auth-card-max-w);
-  padding: var(--auth-card-padding-y) var(--auth-card-padding-x);
-}
-
-/**
- * .auth-header
- * Groups the title / subtitle / helperText with a consistent column gap
- * and a bottom margin separating it from the form body.
- */
-.auth-header {
-  display: flex;
-  flex-direction: column;
-  gap: var(--auth-header-gap);
-  margin-bottom: var(--auth-header-mb);
-}
-
-/**
- * .auth-title  [Design Token: --auth-title-*]
- * Page-level heading. Fluid font-size scales from 24px (320px viewport)
- * to 30px (≥600px) via clamp(). Tight tracking improves legibility at
- * large sizes. Single <h1> per page — enforced by AuthLayout API.
- */
-.auth-title {
-  font-size: var(--auth-title-size);
-  font-weight: var(--auth-title-weight);
-  letter-spacing: var(--auth-title-tracking);
-  line-height: var(--auth-title-lh);
-  color: var(--text-main);
-  /* Long unbreakable strings (e.g. very long company names) wrap cleanly */
-  overflow-wrap: break-word;
-  word-break: break-word;
-}
-
-/**
- * .auth-subtitle  [Design Token: --auth-subtitle-*]
- * One-liner description beneath the title. Slightly muted to create
- * visual hierarchy without excessive contrast reduction.
- */
-.auth-subtitle {
-  font-size: var(--auth-subtitle-size);
-  line-height: var(--auth-subtitle-lh);
-  color: var(--text-muted);
-  overflow-wrap: break-word;
-}
-
-/**
- * .auth-helper  [Design Token: --auth-helper-*]
- * Tertiary fine-print slot (security disclaimers, hints). Slightly
- * smaller than subtitle; maintains ≥4.5:1 contrast on the dark bg.
- */
-.auth-helper {
-  font-size: var(--auth-helper-size);
-  line-height: var(--auth-helper-lh);
-  color: var(--text-muted);
-  overflow-wrap: break-word;
-}
-
-/**
- * .auth-body
- * Slot that wraps the form / non-header children. Isolated so page-level
- * spacing (e.g. space-y-4 in form) never bleeds into header margins.
- */
-.auth-body {
-  /* intentionally unstyled – children control their own spacing */
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary,
+  .btn-secondary,
+  .auth-submit-button__spinner {
+    animation: none;
+    transition: none;
+  }
 }

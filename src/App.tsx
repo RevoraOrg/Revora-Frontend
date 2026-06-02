@@ -3,6 +3,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import AppShell from './components/AppShell/AppShell';
 
 export function App() {
   return (

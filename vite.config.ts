@@ -15,8 +15,11 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       include: [
-        'src/App.tsx',
-        'src/components/InvestorDiscovery.tsx'
+        'src/pages/Login.tsx',
+        'src/pages/Signup.tsx',
+        'src/pages/ForgotPassword.tsx',
+        'src/components/AuthLayout.tsx',
+        'src/components/FormError.tsx'
       ]
     }
   }

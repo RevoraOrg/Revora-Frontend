@@ -1,7 +1,59 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
 
+const SkeletonCard: React.FC = () => (
+  <div className="glass-card p-6 space-y-4" aria-hidden="true">
+    <div className="skeleton-pulse skeleton-icon" />
+    <div className="space-y-2">
+      <div className="skeleton-pulse skeleton-pulse-lg" />
+      <div className="skeleton-pulse skeleton-pulse-sm" />
+    </div>
+    <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+      <div className="flex justify-between text-xs mb-2">
+        <div className="skeleton-pulse" style={{ width: "3rem", height: "0.75rem" }} />
+        <div className="skeleton-pulse" style={{ width: "5rem", height: "0.75rem" }} />
+      </div>
+      <div className="skeleton-pulse skeleton-bar" />
+    </div>
+    <div className="skeleton-pulse skeleton-button" />
+  </div>
+);
+
+const DISCOVERY_CARDS = [
+  {
+    icon: Rocket,
+    title: "TechFlow AI",
+    subtitle: "Enterprise SaaS • 15% Revenue Share",
+    target: "$250,000 USDC",
+    progress: 45,
+  },
+  {
+    icon: Rocket,
+    title: "Quantum Ledger",
+    subtitle: "DeFi Infrastructure • 12% Revenue Share",
+    target: "$500,000 USDC",
+    progress: 28,
+  },
+  {
+    icon: Rocket,
+    title: "Nexus Pay",
+    subtitle: "Cross-Border Payments • 18% Revenue Share",
+    target: "$300,000 USDC",
+    progress: 62,
+  },
+];
+
 export const InvestorDiscovery: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
       {/* Information Architecture: Header & Discovery Intent */}
@@ -34,40 +86,91 @@ export const InvestorDiscovery: React.FC = () => {
         </div>
       </div>
 
-      {/* Discovery Discovery: Discovery Cards Pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((item) => (
-          <div
-            key={item}
-            className="glass-card glass-card-interactive p-6 space-y-4"
-          >
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-              <Rocket size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">TechFlow AI</h3>
-              <p className="text-xs text-muted">
-                Enterprise SaaS • 15% Revenue Share
-              </p>
-            </div>
-            <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted">Target</span>
-                <span>$250,000 USDC</span>
-              </div>
-              <div className="w-full bg-slate-800 rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: "45%" }}
-                ></div>
-              </div>
-            </div>
-            <button className="btn-primary py-2 text-xs">
-              View Prospectus
-            </button>
+      {/* Loading State: Skeleton Cards */}
+      {isLoading && (
+        <div
+          role="status"
+          aria-label="Loading available offerings"
+          aria-busy="true"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((item) => (
+              <SkeletonCard key={item} />
+            ))}
           </div>
-        ))}
-      </div>
+          <span className="sr-only">Loading available startup offerings...</span>
+        </div>
+      )}
+
+      {/* Error State */}
+      {!isLoading && hasError && (
+        <div
+          className="glass-card p-12 text-center"
+          role="alert"
+          aria-live="assertive"
+        >
+          <TrendingUp className="mx-auto mb-4 text-error" size={48} />
+          <h2 className="text-xl font-semibold mb-2">Unable to Load Offerings</h2>
+          <p className="text-muted text-sm max-w-md mx-auto mb-6">
+            We couldn't fetch the latest opportunities. Please try again later.
+          </p>
+          <button
+            className="btn-primary w-auto px-6 mx-auto"
+            onClick={() => {
+              setHasError(false);
+              setIsLoading(true);
+              setTimeout(() => setIsLoading(false), 2000);
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* Loaded State: Discovery Cards Pattern */}
+      {!isLoading && !hasError && (
+        <div
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in"
+          aria-label="Available startup offerings"
+        >
+          {DISCOVERY_CARDS.map((card, index) => (
+            <div
+              key={index}
+              className="glass-card glass-card-interactive p-6 space-y-4"
+            >
+              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <Rocket size={24} />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">{card.title}</h3>
+                <p className="text-xs text-muted">{card.subtitle}</p>
+              </div>
+              <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Target</span>
+                  <span>{card.target}</span>
+                </div>
+                <div
+                  className="w-full bg-slate-800 rounded-full h-1.5"
+                  role="progressbar"
+                  aria-valuenow={card.progress}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label={`${card.progress}% funded`}
+                >
+                  <div
+                    className="bg-primary h-1.5 rounded-full"
+                    style={{ width: `${card.progress}%` }}
+                  />
+                </div>
+              </div>
+              <button className="btn-primary py-2 text-xs">
+                View Prospectus
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Empty State / Call to Action IA */}
       <div className="glass-card p-12 text-center bg-gradient-to-b from-transparent to-[rgba(59,130,246,0.05)]">

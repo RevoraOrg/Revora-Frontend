@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { PasswordStrength } from '../components/PasswordStrength';
+import { evaluatePasswordStrength } from '../utils/passwordStrength';
 import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -26,7 +28,8 @@ export const Signup: React.FC = () => {
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Full name is required';
     if (!email.includes('@')) newErrors.email = 'Please enter a valid email address';
-    if (password.length < 12) newErrors.password = 'Password must be at least 12 characters long';
+    const pwStrength = evaluatePasswordStrength(password);
+    if (pwStrength.score < 5) newErrors.password = 'Password must meet all requirements below.';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -161,7 +164,7 @@ export const Signup: React.FC = () => {
                 required
                 aria-required="true"
                 aria-label="Password"
-                aria-describedby="password-hint"
+                aria-describedby="password-rules"
               />
               <button
                 type="button"
@@ -172,7 +175,8 @@ export const Signup: React.FC = () => {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
+            <PasswordStrength password={password} inputId="password" />
+            {errors.password && <p id="password-error" className="mt-1 text-xs text-error">{errors.password}</p>}
           </div>
 
           <button type="submit" className="btn-primary mt-4">Create Account</button>

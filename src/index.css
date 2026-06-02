@@ -385,87 +385,19 @@ input:focus-visible,
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }
 
-/* Password Strength Meter */
-.strength-bar {
-  display: flex;
-  gap: 4px;
-  margin-top: 0.5rem;
-}
-
-.strength-segment {
-  height: 4px;
-  flex: 1;
-  border-radius: 2px;
-  background: rgba(148, 163, 184, 0.2);
-  transition: background-color 0.3s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .strength-segment {
-    transition: none;
+/* Revenue report form specific styles */
+@media (max-width: 1024px) {
+  .glass-card {
+    border-radius: 1.25rem;
   }
 }
 
-.strength-segment.active.weak {
-  background: var(--error);
-}
-
-.strength-segment.active.medium {
-  background: #f59e0b;
-}
-
-.strength-segment.active.strong {
-  background: var(--success);
-}
-
-/* Rule Checklist */
-.rule-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.375rem;
-  margin-top: 0.5rem;
-}
-
-.rule-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  transition: color 0.2s ease;
-}
-
-.rule-item.pending {
-  color: var(--text-muted);
-}
-
-.rule-item.pass {
-  color: var(--success);
-}
-
-.rule-item.fail {
-  color: var(--error);
-}
-
-@keyframes fadeDown {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
+@media (max-width: 640px) {
+  .input-field {
+    padding: 0.8rem 0.95rem;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.85rem 1rem;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .rule-item {
-    animation: fadeDown 0.25s ease-out both;
-  }
-
-  .rule-item:nth-child(1) { animation-delay: 0.02s; }
-  .rule-item:nth-child(2) { animation-delay: 0.04s; }
-  .rule-item:nth-child(3) { animation-delay: 0.06s; }
-  .rule-item:nth-child(4) { animation-delay: 0.08s; }
-  .rule-item:nth-child(5) { animation-delay: 0.10s; }
 }

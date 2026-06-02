@@ -40,15 +40,19 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   const titleId = useId();
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-6 sm:p-6 animate-fade-in">
-      <div className="w-full max-w-[480px] glass-card px-5 py-8 sm:p-8 md:p-10">
-        <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight mb-2">{title}</h1>
-          {subtitle && <p className="text-muted text-sm leading-relaxed">{subtitle}</p>}
-          {helperText && <p className="text-muted text-xs mt-3 leading-relaxed">{helperText}</p>}
+    <main role="main" aria-labelledby={titleId} className="auth-layout-outer animate-fade-in">
+      <div className="auth-card glass-card">
+        <header className="auth-header">
+          <h1 id={titleId} className="auth-title">
+            {title}
+          </h1>
+          {subtitle && <p className="auth-subtitle">{subtitle}</p>}
+          {helperText && <p className="auth-helper">{helperText}</p>}
+        </header>
+        <div className="auth-body">
+          {children}
         </div>
-        {children}
       </div>
-    </div>
+    </main>
   );
 };

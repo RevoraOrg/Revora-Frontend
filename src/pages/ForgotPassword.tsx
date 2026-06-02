@@ -18,7 +18,6 @@ export const ForgotPassword: React.FC = () => {
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
-      setSubmitState('idle');
       return;
     }
 

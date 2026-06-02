@@ -3,6 +3,7 @@ import { AuthLayout } from '../components/AuthLayout';
 import { Mail, Lock, Wallet, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
+import { FormError } from '../components/FormError';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState("");

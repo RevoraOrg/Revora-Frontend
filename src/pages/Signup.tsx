@@ -26,7 +26,7 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitState === 'loading') return;
+    if (isSubmitting) return;
     
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Full name is required';
@@ -36,7 +36,6 @@ export const Signup: React.FC = () => {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setSubmitState('idle');
       return;
     }
 

@@ -1,4 +1,6 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import { App } from './App';
 
 describe('App Components Accessibility', () => {
@@ -19,5 +21,57 @@ describe('App Components Accessibility', () => {
     render(<App />);
     const heading = screen.getByRole('heading', { name: /Stellar RevenueShare – Revora/i });
     expect(heading).toBeInTheDocument();
+  });
+
+  it('provides a skip-to-content link that moves focus to main', async () => {
+    render(<App />);
+    const user = userEvent.setup();
+
+    const skipLink = screen.getByRole('link', { name: /skip to main content/i });
+    const main = screen.getByRole('main');
+
+    await user.tab();
+    expect(skipLink).toHaveFocus();
+
+    await user.keyboard('{Enter}');
+    expect(main).toHaveFocus();
+  });
+
+  it('uses a single main landmark on each route', () => {
+    render(<App />);
+    expect(screen.getAllByRole('main')).toHaveLength(1);
+  });
+
+  it('does not throw if skip target is missing', async () => {
+    render(<App />);
+    const user = userEvent.setup();
+
+    const skipLink = screen.getByRole('link', { name: /skip to main content/i });
+    const originalGetElementById = document.getElementById.bind(document);
+    const getElementByIdSpy = vi.spyOn(document, 'getElementById').mockImplementation((id: string) => {
+      if (id === 'main-content') return null;
+      return originalGetElementById(id);
+    });
+
+    await user.click(skipLink);
+    expect(skipLink).toBeInTheDocument();
+    getElementByIdSpy.mockRestore();
+  });
+
+  it('enforces one h1 on the investor discovery route and keeps heading hierarchy', () => {
+    window.history.pushState({}, '', '/investor/portal');
+    render(<App />);
+
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1, name: /discover offerings/i })).toBeInTheDocument();
+
+    expect(screen.getByRole('heading', { level: 2, name: /offerings/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('heading', { level: 3 })).toHaveLength(3);
+  });
+
+  it('renders the startup dashboard placeholder route', () => {
+    window.history.pushState({}, '', '/startup/dashboard');
+    render(<App />);
+    expect(screen.getByRole('heading', { level: 1, name: /startup dashboard/i })).toBeInTheDocument();
   });
 });

@@ -1,32 +1,64 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import type { MouseEvent } from "react";
+import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-router-dom";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { ActivityFeed } from "./components/ActivityFeed";
+import NotificationBell from "./components/Notifications/NotificationBell";
+import { notificationsMock } from "./components/Notifications/notificationsData";
 
 export function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route
-          path="/startup/dashboard"
-          element={<Placeholder title="Startup Dashboard" />}
-        />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route
+            path="/startup/dashboard"
+            element={<Placeholder title="Startup Dashboard" />}
+          />
 
-        {/* Updated Route - Issue #63 */}
-        <Route path="/investor/portal" element={<InvestorDiscovery />} />
+          {/* Updated Route - Issue #63 */}
+          <Route path="/investor/portal" element={<InvestorDiscovery />} />
+        </Route>
       </Routes>
     </Router>
+  );
+}
+
+function AppLayout() {
+  const handleSkipToContent = (event: MouseEvent<HTMLAnchorElement>) => {
+    const main = document.getElementById("main-content");
+    if (!main) return;
+    event.preventDefault();
+    main.focus();
+    main.scrollIntoView?.({ block: "start" });
+    window.location.hash = "main-content";
+  };
+
+  return (
+    <>
+      <a href="#main-content" className="skip-link" onClick={handleSkipToContent}>
+        Skip to main content
+      </a>
+      <main id="main-content" tabIndex={-1}>
+        <Outlet />
+      </main>
+    </>
   );
 }
 
 function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      {/* Header bar with notification bell */}
+      <div className="w-full flex justify-end mb-4">
+        <NotificationBell notifications={notificationsMock} />
+      </div>
       <div className="w-full max-w-[720px] glass-card p-10 md:p-12">
         <h1 className="text-4xl font-bold tracking-tight mb-4">
           Stellar RevenueShare – Revora
@@ -57,10 +89,10 @@ function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/signup" className="btn-primary sm:w-auto px-10">
+          <Link to="/signup" className="btn btn--primary sm:w-auto px-10">
             Get Started
           </Link>
-          <Link to="/login" className="btn-secondary sm:w-auto px-10">
+          <Link to="/login" className="btn btn--secondary sm:w-auto px-10">
             Sign In
           </Link>
         </div>
@@ -81,7 +113,7 @@ function Placeholder({ title }: { title: string }) {
         <p className="text-muted mb-8">
           This dashboard is currently under construction.
         </p>
-        <Link to="/" className="btn-secondary">
+        <Link to="/" className="btn btn--secondary btn--md">
           Back to Home
         </Link>
       </div>

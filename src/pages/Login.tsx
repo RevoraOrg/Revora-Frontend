@@ -9,6 +9,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -104,7 +105,7 @@ export const Login: React.FC = () => {
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
         </div>
 
-        <button type="button" className="btn-secondary">
+        <button type="button" className="btn btn--secondary btn--md">
           <Wallet size={18} />
           Connect Stellar Wallet
         </button>

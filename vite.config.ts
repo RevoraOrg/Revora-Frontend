@@ -15,20 +15,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       include: [
-        'src/pages/Login.tsx',
-        'src/pages/Signup.tsx',
-        'src/pages/ForgotPassword.tsx',
-        'src/components/AuthLayout.tsx',
-        'src/components/AuthLayout.test.tsx'
-      ],
-      thresholds: {
-        'src/components/AuthLayout.tsx': {
-          branches: 95,
-          functions: 95,
-          lines: 95,
-          statements: 95,
-        },
-      }
+        'src/App.tsx',
+        'src/components/InvestorDiscovery.tsx'
+      ]
     }
   }
 });

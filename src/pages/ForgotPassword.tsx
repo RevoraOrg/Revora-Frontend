@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
 import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';
 
 export const ForgotPassword: React.FC = () => {
@@ -36,21 +37,24 @@ export const ForgotPassword: React.FC = () => {
         title="Reset link sent"
         helperText="If you still cannot sign in, contact your workspace administrator."
       >
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-[rgba(59,130,246,0.1)] flex items-center justify-center text-primary border border-[rgba(59,130,246,0.2)]">
-              <Mail size={32} />
-            </div>
-          </div>
-          <p className="text-muted">
-            If an account exists for <span className="text-main font-medium">{email}</span>, 
-            you'll receive an email with instructions to reset your password shortly.
-          </p>
-          <Link to="/login" className="btn-secondary w-full inline-flex focus-ring" aria-label="Back to sign in page">
-            <ArrowLeft size={18} className="mr-2" />
-            Back to Sign In
-          </Link>
-        </div>
+        <ConfirmationNextSteps
+          title="Reset link sent"
+          email={email}
+          message={
+            <>
+              If an account exists for <span className="text-main font-medium">{email}</span>, you'll receive an
+              email with instructions to reset your password shortly. For security reasons we won't confirm account
+              existence.
+            </>
+          }
+          onResend={async (e) => {
+            console.log('Resend reset link for:', e);
+            return new Promise<void>((res) => setTimeout(res, 600));
+          }}
+          onChangeEmail={() => setSubmitted(false)}
+          primaryLabel="Back to Sign In"
+          primaryTo="/login"
+        />
       </AuthLayout>
     );
   }

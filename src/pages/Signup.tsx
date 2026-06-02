@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 
 type Step = 'persona' | 'form' | 'success';
 
@@ -13,6 +15,7 @@ export const Signup: React.FC = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
@@ -21,6 +24,7 @@ export const Signup: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitState === 'loading') return;
     
     // Mock validation
     const newErrors: Record<string, string> = {};
@@ -30,30 +34,36 @@ export const Signup: React.FC = () => {
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      setSubmitState('idle');
       return;
     }
 
-    console.log('Signup attempt:', { persona, name, email, password });
-    setStep('success');
+    setErrors({});
+    setSubmitState('loading');
+
+    window.setTimeout(() => {
+      console.log('Signup attempt:', { persona, name, email, password });
+      setSubmitState('success');
+      window.setTimeout(() => setStep('success'), 350);
+    }, 500);
   };
 
   if (step === 'success') {
     return (
       <AuthLayout title="Check your inbox">
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-[rgba(16,185,129,0.1)] flex items-center justify-center text-success border border-[rgba(16,185,129,0.2)]">
-              <Mail size={32} />
-            </div>
-          </div>
-          <p className="text-muted">
-            We've sent a verification link to <span className="text-main font-medium">{email}</span>. 
-            Please click the link to verify your account and get started.
-          </p>
-          <button onClick={() => setStep('persona')} className="btn-secondary w-full">
-            Back to persona selection
-          </button>
-        </div>
+        <ConfirmationNextSteps
+          email={email}
+          title="Check your inbox"
+          onResend={async (e) => {
+            // mock resend -- wire to API
+            console.log('Resend verification for:', e);
+            return new Promise<void>((res) => setTimeout(res, 600));
+          }}
+          onChangeEmail={() => setStep('form')}
+          primaryLabel="Back to persona selection"
+          onPrimary={() => setStep('persona')}
+          primaryTo={undefined}
+        />
       </AuthLayout>
     );
   }
@@ -175,7 +185,13 @@ export const Signup: React.FC = () => {
             <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
           </div>
 
-          <button type="submit" className="btn-primary mt-4">Create Account</button>
+          <AuthSubmitButton
+            className="mt-4"
+            state={submitState}
+            idleLabel="Create Account"
+            loadingLabel="Creating account..."
+            successLabel="Account created"
+          />
           
           <button 
             type="button" 

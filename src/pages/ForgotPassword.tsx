@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitState === 'loading') return;
+
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
+      setSubmitState('idle');
       return;
     }
-    console.log('Password reset request:', email);
-    setSubmitted(true);
+
+    setError(null);
+    setSubmitState('loading');
+
+    window.setTimeout(() => {
+      console.log('Password reset request:', email);
+      setSubmitState('success');
+      window.setTimeout(() => setSubmitted(true), 350);
+    }, 500);
   };
 
   if (submitted) {
@@ -34,7 +47,7 @@ export const ForgotPassword: React.FC = () => {
             If an account exists for <span className="text-main font-medium">{email}</span>, 
             you'll receive an email with instructions to reset your password shortly.
           </p>
-          <Link to="/login" className="btn-secondary w-full inline-flex focus-ring" aria-label="Back to sign in page">
+          <Link to="/login" className="btn btn--secondary btn--block inline-flex focus-ring" aria-label="Back to sign in page">
             <ArrowLeft size={18} className="mr-2" />
             Back to Sign In
           </Link>
@@ -74,7 +87,7 @@ export const ForgotPassword: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" className="btn-primary">Send Reset Link</button>
+        <button type="submit" className="btn btn--primary btn--md btn--block">Send Reset Link</button>
 
         <Link
           to="/login"

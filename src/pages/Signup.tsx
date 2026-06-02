@@ -4,7 +4,7 @@ import { PasswordStrength } from '../components/PasswordStrength';
 import { evaluatePasswordStrength } from '../utils/passwordStrength';
 import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
+import { Button } from '../components/Button';
 
 type Step = 'persona' | 'form' | 'success';
 
@@ -16,18 +16,18 @@ export const Signup: React.FC = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
     setStep('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (submitState === 'loading') return;
     
-    // Mock validation
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Full name is required';
     if (!email.includes('@')) newErrors.email = 'Please enter a valid email address';
@@ -40,14 +40,16 @@ export const Signup: React.FC = () => {
       return;
     }
 
-    setErrors({});
-    setSubmitState('loading');
+    setIsSubmitting(true);
 
-    window.setTimeout(() => {
-      console.log('Signup attempt:', { persona, name, email, password });
-      setSubmitState('success');
-      window.setTimeout(() => setStep('success'), 350);
-    }, 500);
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    setStep('success');
   };
 
   if (step === 'success') {
@@ -136,6 +138,7 @@ export const Signup: React.FC = () => {
                 required
                 aria-required="true"
                 aria-label="Full Name"
+                disabled={isSubmitting}
               />
             </div>
             {errors.name && <p id="name-error" className="mt-1 text-xs text-error">{errors.name}</p>}
@@ -155,6 +158,7 @@ export const Signup: React.FC = () => {
                 required
                 aria-required="true"
                 aria-label="Email Address"
+                disabled={isSubmitting}
               />
             </div>
             {errors.email && <p id="email-error" className="mt-1 text-xs text-error">{errors.email}</p>}
@@ -175,12 +179,14 @@ export const Signup: React.FC = () => {
                 aria-required="true"
                 aria-label="Password"
                 aria-describedby="password-rules"
+                disabled={isSubmitting}
               />
               <button
                 type="button"
                 className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isSubmitting}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -189,12 +195,15 @@ export const Signup: React.FC = () => {
             {errors.password && <p id="password-error" className="mt-1 text-xs text-error">{errors.password}</p>}
           </div>
 
-          <button type="submit" className="btn btn--primary btn--md mt-4">Create Account</button>
+          <Button type="submit" loading={isSubmitting} success={isSuccess} className="mt-4">
+            Create Account
+          </Button>
           
           <button 
             type="button" 
             onClick={() => setStep('persona')}
-            className="btn btn--secondary btn--block btn--md"
+            className="btn-secondary w-full"
+            disabled={isSubmitting}
           >
             Back
           </button>

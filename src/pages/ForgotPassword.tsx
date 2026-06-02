@@ -4,16 +4,17 @@ import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitBut
 import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';
+import { Button } from '../components/Button';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitState === 'loading') return;
 
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
@@ -22,13 +23,16 @@ export const ForgotPassword: React.FC = () => {
     }
 
     setError(null);
-    setSubmitState('loading');
+    setIsSubmitting(true);
 
-    window.setTimeout(() => {
-      console.log('Password reset request:', email);
-      setSubmitState('success');
-      window.setTimeout(() => setSubmitted(true), 350);
-    }, 500);
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    setSubmitted(true);
   };
 
   if (submitted) {
@@ -77,6 +81,7 @@ export const ForgotPassword: React.FC = () => {
               required
               aria-required="true"
               aria-label="Email Address"
+              disabled={isSubmitting}
             />
           </div>
           {error && (
@@ -87,7 +92,9 @@ export const ForgotPassword: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" className="btn btn--primary btn--md btn--block">Send Reset Link</button>
+        <Button type="submit" loading={isSubmitting} success={isSuccess}>
+          {isSuccess ? 'Sent!' : 'Send Reset Link'}
+        </Button>
 
         <Link
           to="/login"

@@ -1,6 +1,44 @@
 import React from "react";
-import { Link } from "react-router-dom";
-import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  Filter,
+  Search,
+  ShieldCheck,
+  TrendingUp,
+} from "lucide-react";
+
+const offerings = [
+  {
+    id: 1,
+    name: "TechFlow AI",
+    sector: "Enterprise SaaS",
+    revenueShare: "15%",
+    fundingProgress: 45,
+    target: "$250,000 USDC",
+    raised: "$112,500 raised",
+    accent: "TF",
+  },
+  {
+    id: 2,
+    name: "HarvestGrid Climate Analytics",
+    sector: "Climate Data",
+    revenueShare: "12%",
+    fundingProgress: 72,
+    target: "$180,000 USDC",
+    raised: "$129,600 raised",
+    accent: "HG",
+  },
+  {
+    id: 3,
+    name: "MedLedger Payments",
+    sector: "Healthcare Fintech",
+    revenueShare: "18%",
+    fundingProgress: 100,
+    target: "$320,000 USDC",
+    raised: "$320,000 raised",
+    accent: "ML",
+  },
+];
 
 export const InvestorDiscovery: React.FC = () => {
   return (
@@ -35,41 +73,78 @@ export const InvestorDiscovery: React.FC = () => {
         </div>
       </div>
 
-      {/* Discovery Discovery: Discovery Cards Pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((item) => (
-          <div
-            key={item}
-            className="glass-card glass-card-interactive p-6 space-y-4"
+      {/* Offering cards: header, body, progress, and action zones. */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {offerings.map((offering) => (
+          <article
+            key={offering.id}
+            className="glass-card glass-card-interactive offering-card flex h-full flex-col overflow-hidden p-6"
           >
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-              <Rocket size={24} />
+            <div className="flex items-start gap-4">
+              <div
+                className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-[rgba(148,163,184,0.2)] bg-[rgba(59,130,246,0.12)] text-sm font-bold text-primary"
+                aria-hidden="true"
+              >
+                {offering.accent}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {offering.sector}
+                </p>
+                <h3 className="mt-1 text-lg font-semibold leading-snug">
+                  {offering.name}
+                </h3>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-lg">TechFlow AI</h3>
-              <p className="text-xs text-muted">
-                Enterprise SaaS • 15% RevenueShare
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-[rgba(148,163,184,0.12)] bg-[rgba(15,23,42,0.35)] p-4">
+                <p className="text-xs text-muted">Revenue share</p>
+                <p className="mt-1 text-2xl font-bold text-main">
+                  {offering.revenueShare}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-[rgba(148,163,184,0.12)] bg-[rgba(15,23,42,0.35)] p-4">
+                <p className="text-xs text-muted">Target</p>
+                <p className="mt-2 text-sm font-semibold leading-5">
+                  {offering.target}
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex-1 border-t border-[rgba(148,163,184,0.12)] pt-5">
+              <div className="mb-2 flex items-center justify-between gap-3 text-xs">
+                <span className="text-muted">{offering.raised}</span>
+                <span
+                  className="font-semibold text-main"
+                  aria-label={`${offering.fundingProgress}% funded`}
+                >
+                  {offering.fundingProgress}%
+                </span>
+              </div>
+              <div
+                className="funding-bar"
+                role="progressbar"
+                aria-label={`${offering.name} funding progress`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={offering.fundingProgress}
+              >
+                <div
+                  className="funding-bar-fill"
+                  style={{ width: `${offering.fundingProgress}%` }}
+                />
+              </div>
+              <p className="mt-2 text-xs text-muted">
+                Funding progress toward current allocation
               </p>
             </div>
-            <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted">Target</span>
-                <span>$250,000 USDC</span>
-              </div>
-              <div className="w-full bg-slate-800 rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: "45%" }}
-                ></div>
-              </div>
-            </div>
-            <Link
-              to={`/offering/${item}`}
-              className="btn-primary py-2 text-xs"
-            >
+
+            <button className="btn-primary mt-6 flex items-center justify-center gap-2 py-2.5 text-sm">
               View Prospectus
-            </Link>
-          </div>
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </button>
+          </article>
         ))}
       </div>
 

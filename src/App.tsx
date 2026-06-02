@@ -3,6 +3,9 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { ActivityFeed } from "./components/ActivityFeed";
+import NotificationBell from "./components/Notifications/NotificationBell";
+import { notificationsMock } from "./components/Notifications/notificationsData";
 
 export function App() {
   return (
@@ -18,7 +21,7 @@ export function App() {
         />
 
         {/* Updated Route - Issue #63 */}
-        <Route path="/investor/portal" element={<InvestorDiscovery />} />
+          <Route path="/activity" element={<ActivityFeed />} />
       </Routes>
     </Router>
   );
@@ -27,6 +30,10 @@ export function App() {
 function Home() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in">
+      {/* Header bar with notification bell */}
+      <div className="w-full flex justify-end mb-4">
+        <NotificationBell notifications={notificationsMock} />
+      </div>
       <div className="w-full max-w-[720px] glass-card p-10 md:p-12">
         <h1 className="text-4xl font-bold tracking-tight mb-4">
           Stellar RevenueShare – Revora

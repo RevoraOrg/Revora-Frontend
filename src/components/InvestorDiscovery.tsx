@@ -50,7 +50,7 @@ export const InvestorDiscovery: React.FC = () => {
             Discover Offerings
           </h1>
           <p className="text-muted text-sm mt-1">
-            Explore high-potential revenue-share opportunities on Stellar.
+            Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 

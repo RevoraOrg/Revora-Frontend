@@ -1,21 +1,34 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitState === 'loading') return;
+
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
+      setSubmitState('idle');
       return;
     }
-    console.log('Password reset request:', email);
-    setSubmitted(true);
+
+    setError(null);
+    setSubmitState('loading');
+
+    window.setTimeout(() => {
+      console.log('Password reset request:', email);
+      setSubmitState('success');
+      window.setTimeout(() => setSubmitted(true), 350);
+    }, 500);
   };
 
   if (submitted) {

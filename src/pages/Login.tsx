@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, Lock, Wallet, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -8,12 +9,21 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Login attempt:', { email, password });
-    // Mock login failure for UI demonstration
-    setError('Invalid email or password. Please try again.');
+    if (submitState === 'loading') return;
+
+    setError(null);
+    setSubmitState('loading');
+
+    window.setTimeout(() => {
+      console.log('Login attempt:', { email, password });
+      // Mock login failure for UI demonstration
+      setError('Invalid email or password. Please try again.');
+      setSubmitState('idle');
+    }, 500);
   };
 
   return (

@@ -1,5 +1,44 @@
 import React from "react";
-import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  Filter,
+  Search,
+  ShieldCheck,
+  TrendingUp,
+} from "lucide-react";
+
+const offerings = [
+  {
+    id: 1,
+    name: "TechFlow AI",
+    sector: "Enterprise SaaS",
+    revenueShare: "15%",
+    fundingProgress: 45,
+    target: "$250,000 USDC",
+    raised: "$112,500 raised",
+    accent: "TF",
+  },
+  {
+    id: 2,
+    name: "HarvestGrid Climate Analytics",
+    sector: "Climate Data",
+    revenueShare: "12%",
+    fundingProgress: 72,
+    target: "$180,000 USDC",
+    raised: "$129,600 raised",
+    accent: "HG",
+  },
+  {
+    id: 3,
+    name: "MedLedger Payments",
+    sector: "Healthcare Fintech",
+    revenueShare: "18%",
+    fundingProgress: 100,
+    target: "$320,000 USDC",
+    raised: "$320,000 raised",
+    accent: "ML",
+  },
+];
 
 export const InvestorDiscovery: React.FC = () => {
   return (
@@ -11,7 +50,7 @@ export const InvestorDiscovery: React.FC = () => {
             Discover Offerings
           </h1>
           <p className="text-muted text-sm mt-1">
-            Explore high-potential revenue-share opportunities on Stellar.
+            Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 
@@ -32,32 +71,40 @@ export const InvestorDiscovery: React.FC = () => {
       </div>
 
       {/* Discovery Discovery: Discovery Cards Pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((item) => (
-          <div
-            key={item}
-            className="glass-card glass-card-interactive p-6 space-y-4"
-          >
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-              <Rocket size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">TechFlow AI</h3>
-              <p className="text-xs text-muted">
-                Enterprise SaaS • 15% Revenue Share
-              </p>
-            </div>
-            <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted">Target</span>
-                <span>$250,000 USDC</span>
+      <section aria-labelledby="offerings-heading">
+        <h2 id="offerings-heading" className="sr-only">
+          Offerings
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[1, 2, 3].map((item) => (
+            <div
+              key={item}
+              className="glass-card glass-card-interactive p-6 space-y-4"
+            >
+              <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                <Rocket size={24} />
               </div>
-              <div className="w-full bg-slate-800 rounded-full h-1.5">
-                <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: "45%" }}
-                ></div>
+              <div>
+                <h3 className="font-semibold text-lg">TechFlow AI</h3>
+                <p className="text-xs text-muted">
+                  Enterprise SaaS • 15% Revenue Share
+                </p>
               </div>
+              <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className="text-muted">Target</span>
+                  <span>$250,000 USDC</span>
+                </div>
+                <div className="w-full bg-slate-800 rounded-full h-1.5">
+                  <div
+                    className="bg-primary h-1.5 rounded-full"
+                    style={{ width: "45%" }}
+                  ></div>
+                </div>
+              </div>
+              <button className="btn-primary py-2 text-xs">
+                View Prospectus
+              </button>
             </div>
             <button className="btn btn--primary btn--sm btn--block">
               View Prospectus

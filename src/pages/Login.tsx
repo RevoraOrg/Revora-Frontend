@@ -96,13 +96,7 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
-        <AuthSubmitButton
-          className="mt-2"
-          state={submitState}
-          idleLabel="Sign In"
-          loadingLabel="Signing in..."
-          successLabel="Signed in"
-        />
+        <button type="submit" className="btn btn--primary btn--md mt-2">Sign In</button>
 
         <div className="relative my-6 py-2 flex items-center">
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
@@ -110,7 +104,7 @@ export const Login: React.FC = () => {
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
         </div>
 
-        <button type="button" className="btn-secondary">
+        <button type="button" className="btn btn--secondary btn--md">
           <Wallet size={18} />
           Connect Stellar Wallet
         </button>

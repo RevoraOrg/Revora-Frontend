@@ -51,19 +51,20 @@ export const Signup: React.FC = () => {
   if (step === 'success') {
     return (
       <AuthLayout title="Check your inbox">
-        <ConfirmationNextSteps
-          email={email}
-          title="Check your inbox"
-          onResend={async (e) => {
-            // mock resend -- wire to API
-            console.log('Resend verification for:', e);
-            return new Promise<void>((res) => setTimeout(res, 600));
-          }}
-          onChangeEmail={() => setStep('form')}
-          primaryLabel="Back to persona selection"
-          onPrimary={() => setStep('persona')}
-          primaryTo={undefined}
-        />
+        <div className="text-center space-y-6">
+          <div className="flex justify-center">
+            <div className="w-16 h-16 rounded-full bg-[rgba(16,185,129,0.1)] flex items-center justify-center text-success border border-[rgba(16,185,129,0.2)]">
+              <Mail size={32} />
+            </div>
+          </div>
+          <p className="text-muted">
+            We've sent a verification link to <span className="text-main font-medium">{email}</span>. 
+            Please click the link to verify your account and get started.
+          </p>
+          <button onClick={() => setStep('persona')} className="btn btn--secondary btn--block btn--md">
+            Back to persona selection
+          </button>
+        </div>
       </AuthLayout>
     );
   }
@@ -185,18 +186,12 @@ export const Signup: React.FC = () => {
             <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
           </div>
 
-          <AuthSubmitButton
-            className="mt-4"
-            state={submitState}
-            idleLabel="Create Account"
-            loadingLabel="Creating account..."
-            successLabel="Account created"
-          />
+          <button type="submit" className="btn btn--primary btn--md mt-4">Create Account</button>
           
           <button 
             type="button" 
             onClick={() => setStep('persona')}
-            className="btn-secondary w-full"
+            className="btn btn--secondary btn--block btn--md"
           >
             Back
           </button>

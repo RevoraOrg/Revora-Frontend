@@ -89,10 +89,10 @@ function Home() {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/signup" className="btn-primary sm:w-auto px-10">
+          <Link to="/signup" className="btn btn--primary sm:w-auto px-10">
             Get Started
           </Link>
-          <Link to="/login" className="btn-secondary sm:w-auto px-10">
+          <Link to="/login" className="btn btn--secondary sm:w-auto px-10">
             Sign In
           </Link>
         </div>
@@ -113,7 +113,7 @@ function Placeholder({ title }: { title: string }) {
         <p className="text-muted mb-8">
           This dashboard is currently under construction.
         </p>
-        <Link to="/" className="btn-secondary">
+        <Link to="/" className="btn btn--secondary btn--md">
           Back to Home
         </Link>
       </div>

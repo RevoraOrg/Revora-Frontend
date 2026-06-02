@@ -19,6 +19,7 @@ export default defineConfig({
         'src/pages/Signup.tsx',
         'src/pages/ForgotPassword.tsx',
         'src/components/AuthLayout.tsx',
+        'src/components/Button.tsx',
         'src/components/PasswordStrength.tsx',
         'src/utils/passwordStrength.ts'
       ]

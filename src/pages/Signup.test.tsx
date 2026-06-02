@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Signup } from './Signup';
@@ -77,7 +77,7 @@ describe('Signup', () => {
 
     await user.click(screen.getByText('Create Account'));
 
-    expect(screen.getByText('Check your inbox')).toBeInTheDocument();
+    await screen.findByText('Check your inbox', {}, { timeout: 3000 });
   });
 
   it('shows error alert when form has errors', async () => {
@@ -151,5 +151,39 @@ describe('Signup', () => {
 
     const passwordInput = screen.getByLabelText('Password');
     expect(passwordInput).toHaveAttribute('aria-describedby', 'password-rules');
+  });
+
+  it('shows loading state during submission', async () => {
+    const user = userEvent.setup();
+    renderSignup();
+
+    await user.click(screen.getByText('Startup Founder'));
+
+    await user.type(screen.getByLabelText('Full Name'), 'Test User');
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'Abcdef1!@#$%');
+
+    await user.click(screen.getByText('Create Account'));
+
+    const submitBtn = screen.getByRole('button', { name: 'Create Account' });
+    expect(submitBtn).toHaveAttribute('aria-busy', 'true');
+    expect(submitBtn).toBeDisabled();
+  });
+
+  it('disables inputs during submission', async () => {
+    const user = userEvent.setup();
+    renderSignup();
+
+    await user.click(screen.getByText('Startup Founder'));
+
+    await user.type(screen.getByLabelText('Full Name'), 'Test User');
+    await user.type(screen.getByLabelText('Email Address'), 'test@example.com');
+    await user.type(screen.getByLabelText('Password'), 'Abcdef1!@#$%');
+
+    await user.click(screen.getByText('Create Account'));
+
+    expect(screen.getByLabelText('Full Name')).toBeDisabled();
+    expect(screen.getByLabelText('Email Address')).toBeDisabled();
+    expect(screen.getByLabelText('Password')).toBeDisabled();
   });
 });

@@ -78,6 +78,10 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
 }
 
 .btn-primary:hover {
@@ -102,7 +106,7 @@ body {
   cursor: pointer;
   transition: all 0.2s ease;
   width: 100%;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
@@ -115,6 +119,75 @@ body {
 .btn-secondary:focus {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
+}
+
+/* ---- BUTTON STATES ---- */
+
+.btn-loading {
+  cursor: wait;
+}
+
+.btn-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-disabled:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+.btn-primary.btn-disabled:hover {
+  background: var(--primary);
+  transform: none;
+  cursor: not-allowed;
+}
+
+.btn-secondary.btn-disabled:hover {
+  background: rgba(148, 163, 184, 0.1);
+  transform: none;
+  cursor: not-allowed;
+}
+
+.btn-success {
+  background: var(--success) !important;
+  cursor: default;
+}
+
+.btn-success:hover {
+  transform: none !important;
+}
+
+.btn-spinner {
+  animation: btn-spin 0.6s linear infinite;
+}
+
+.btn-check-icon {
+  flex-shrink: 0;
+}
+
+@keyframes btn-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-spinner {
+    animation: none;
+  }
+}
+
+/* Screen-reader only utility */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 .input-group {

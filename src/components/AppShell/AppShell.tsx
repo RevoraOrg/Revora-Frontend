@@ -1,0 +1,124 @@
+// src/components/AppShell/AppShell.tsx
+import React, { useState, useEffect } from 'react';
+import './AppShell.css';
+
+interface AppShellProps {
+  children: React.ReactNode;
+}
+
+const AppShell: React.FC<AppShellProps> = ({ children }) => {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Check if mobile viewport
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [window.location.pathname]);
+
+  const navItems = [
+    { name: 'Discovery', path: '/discovery' },
+    { name: 'Dashboard', path: '/dashboard' },
+    { name: 'Management', path: '/management' },
+  ];
+
+  return (
+    <div className="app-shell">
+      {/* Header */}
+      <header className="app-header">
+        <div className="header-container">
+          {/* Logo */}
+          <div className="logo">
+            <a href="/">
+              <h1>Revora</h1>
+            </a>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="desktop-nav" aria-label="Primary navigation">
+            <ul>
+              {navItems.map((item) => (
+                <li key={item.path}>
+                  <a href={item.path} className="nav-link">
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+
+          {/* Account & Notifications */}
+          <div className="header-actions">
+            <button className="notifications-btn" aria-label="Notifications">
+              🔔
+            </button>
+            <button className="account-btn" aria-label="Account menu">
+              👤
+            </button>
+            
+            {/* Mobile menu button */}
+            <button
+              className="mobile-menu-btn"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              aria-label="Menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? '✕' : '☰'}
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Mobile Drawer */}
+      {isMobile && (
+        <div
+          className={`mobile-drawer ${isMobileMenuOpen ? 'open' : ''}`}
+          aria-hidden={!isMobileMenuOpen}
+        >
+          <nav className="mobile-nav" aria-label="Mobile navigation">
+            <ul>
+              {navItems.map((item) => (
+                <li key={item.path}>
+                  <a
+                    href={item.path}
+                    className="mobile-nav-link"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    {item.name}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </div>
+      )}
+
+      {/* Overlay for mobile drawer */}
+      {isMobile && isMobileMenuOpen && (
+        <div
+          className="drawer-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Main Content */}
+      <main className="app-main">
+        <div className="content-container">
+          {children}
+        </div>
+      </main>
+    </div>
+  );
+};
+
+export default AppShell;

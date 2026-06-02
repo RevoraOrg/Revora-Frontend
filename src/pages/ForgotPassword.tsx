@@ -1,20 +1,37 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
+import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';
+import { Button } from '../components/Button';
 
 export const ForgotPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!email.includes('@')) {
       setError('Please enter a valid email address.');
+      setSubmitState('idle');
       return;
     }
-    console.log('Password reset request:', email);
+
+    setError(null);
+    setIsSubmitting(true);
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
     setSubmitted(true);
   };
 
@@ -34,7 +51,7 @@ export const ForgotPassword: React.FC = () => {
             If an account exists for <span className="text-main font-medium">{email}</span>, 
             you'll receive an email with instructions to reset your password shortly.
           </p>
-          <Link to="/login" className="btn-secondary w-full inline-flex focus-ring" aria-label="Back to sign in page">
+          <Link to="/login" className="btn btn--secondary btn--block inline-flex focus-ring" aria-label="Back to sign in page">
             <ArrowLeft size={18} className="mr-2" />
             Back to Sign In
           </Link>
@@ -64,6 +81,7 @@ export const ForgotPassword: React.FC = () => {
               required
               aria-required="true"
               aria-label="Email Address"
+              disabled={isSubmitting}
             />
           </div>
           {error && (
@@ -74,7 +92,9 @@ export const ForgotPassword: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" className="btn-primary">Send Reset Link</button>
+        <Button type="submit" loading={isSubmitting} success={isSuccess}>
+          {isSuccess ? 'Sent!' : 'Send Reset Link'}
+        </Button>
 
         <Link
           to="/login"

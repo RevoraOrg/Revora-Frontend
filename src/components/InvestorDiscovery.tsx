@@ -63,7 +63,7 @@ export const InvestorDiscovery: React.FC = () => {
             Discover Offerings
           </h1>
           <p className="text-muted text-sm mt-1">
-            Explore high-potential revenue-share opportunities on Stellar.
+            Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 
@@ -77,10 +77,7 @@ export const InvestorDiscovery: React.FC = () => {
               aria-label="Search startup offerings"
             />
           </div>
-          <button
-            className="btn-secondary w-auto h-10"
-            aria-label="Filter results"
-          >
+          <button className="btn btn--icon btn--sm" aria-label="Filter results">
             <Filter size={18} />
           </button>
         </div>
@@ -181,7 +178,7 @@ export const InvestorDiscovery: React.FC = () => {
           automatically via Soroban smart contracts.
         </p>
         <div className="flex justify-center gap-4">
-          <button className="btn-secondary w-auto px-6 flex items-center gap-2">
+          <button className="btn btn--secondary btn--sm flex items-center gap-2">
             <ShieldCheck size={18} />
             How it works
           </button>

@@ -4,9 +4,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
-import { ActivityFeed } from "./components/ActivityFeed";
-import NotificationBell from "./components/Notifications/NotificationBell";
-import { notificationsMock } from "./components/Notifications/notificationsData";
+import AppShell from './components/AppShell/AppShell';
 
 export function App() {
   return (

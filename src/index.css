@@ -32,6 +32,28 @@
   --text-accent: #38bdf8;
   --error: #ef4444;
   --success: #10b981;
+
+  /* ─── Auth Layout Design Tokens (Issue #80) ──────────────────────────── */
+  /* Typography scale for AuthLayout title / subtitle / helperText slots */
+  --auth-title-size: clamp(1.5rem, 4vw, 1.875rem);   /* 24px → 30px fluid */
+  --auth-title-weight: 700;
+  --auth-title-tracking: -0.025em;
+  --auth-title-lh: 1.2;
+
+  --auth-subtitle-size: 0.9375rem;   /* 15px – one step below body */
+  --auth-subtitle-lh: 1.5;
+
+  --auth-helper-size: 0.8125rem;     /* 13px – fine print / security notes */
+  --auth-helper-lh: 1.5;
+
+  /* Card container sizing */
+  --auth-card-max-w: 480px;
+  --auth-card-padding-x: clamp(1.25rem, 5vw, 2.5rem);  /* 20px → 40px */
+  --auth-card-padding-y: clamp(1.5rem, 4vw, 2.5rem);   /* 24px → 40px */
+
+  /* Header section spacing */
+  --auth-header-gap: 0.5rem;    /* gap between title, subtitle, helperText */
+  --auth-header-mb: 2rem;       /* margin below header, above form */
 }
 
 * {
@@ -253,3 +275,100 @@ input:focus-visible,
 .text-main { color: var(--text-main); }
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }
+
+/* ─── AuthLayout Component Styles (Issue #80) ─────────────────────────────
+   Implements the formalized design-system type scale and responsive card.
+   Tokens are defined in :root above under "Auth Layout Design Tokens".
+   ───────────────────────────────────────────────────────────────────────── */
+
+/**
+ * .auth-layout-outer
+ * Full-viewport centring wrapper. Adds safe-area-aware horizontal padding
+ * so content is never clipped at 320px or on notched devices.
+ */
+.auth-layout-outer {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* horizontal safe-area inset ensures usability on notched devices */
+  padding:
+    1.5rem
+    max(env(safe-area-inset-right, 0px), 1rem)
+    1.5rem
+    max(env(safe-area-inset-left, 0px), 1rem);
+}
+
+/**
+ * .auth-card
+ * The glassmorphic card container. Uses fluid padding tokens so the card
+ * breathes at desktop widths yet stays comfortable at 320px.
+ */
+.auth-card {
+  width: 100%;
+  max-width: var(--auth-card-max-w);
+  padding: var(--auth-card-padding-y) var(--auth-card-padding-x);
+}
+
+/**
+ * .auth-header
+ * Groups the title / subtitle / helperText with a consistent column gap
+ * and a bottom margin separating it from the form body.
+ */
+.auth-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--auth-header-gap);
+  margin-bottom: var(--auth-header-mb);
+}
+
+/**
+ * .auth-title  [Design Token: --auth-title-*]
+ * Page-level heading. Fluid font-size scales from 24px (320px viewport)
+ * to 30px (≥600px) via clamp(). Tight tracking improves legibility at
+ * large sizes. Single <h1> per page — enforced by AuthLayout API.
+ */
+.auth-title {
+  font-size: var(--auth-title-size);
+  font-weight: var(--auth-title-weight);
+  letter-spacing: var(--auth-title-tracking);
+  line-height: var(--auth-title-lh);
+  color: var(--text-main);
+  /* Long unbreakable strings (e.g. very long company names) wrap cleanly */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/**
+ * .auth-subtitle  [Design Token: --auth-subtitle-*]
+ * One-liner description beneath the title. Slightly muted to create
+ * visual hierarchy without excessive contrast reduction.
+ */
+.auth-subtitle {
+  font-size: var(--auth-subtitle-size);
+  line-height: var(--auth-subtitle-lh);
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+
+/**
+ * .auth-helper  [Design Token: --auth-helper-*]
+ * Tertiary fine-print slot (security disclaimers, hints). Slightly
+ * smaller than subtitle; maintains ≥4.5:1 contrast on the dark bg.
+ */
+.auth-helper {
+  font-size: var(--auth-helper-size);
+  line-height: var(--auth-helper-lh);
+  color: var(--text-muted);
+  overflow-wrap: break-word;
+}
+
+/**
+ * .auth-body
+ * Slot that wraps the form / non-header children. Isolated so page-level
+ * spacing (e.g. space-y-4 in form) never bleeds into header margins.
+ */
+.auth-body {
+  /* intentionally unstyled – children control their own spacing */
+}

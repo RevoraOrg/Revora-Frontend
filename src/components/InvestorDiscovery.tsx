@@ -1,5 +1,44 @@
 import React from "react";
-import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
+import {
+  ArrowUpRight,
+  Filter,
+  Search,
+  ShieldCheck,
+  TrendingUp,
+} from "lucide-react";
+
+const offerings = [
+  {
+    id: 1,
+    name: "TechFlow AI",
+    sector: "Enterprise SaaS",
+    revenueShare: "15%",
+    fundingProgress: 45,
+    target: "$250,000 USDC",
+    raised: "$112,500 raised",
+    accent: "TF",
+  },
+  {
+    id: 2,
+    name: "HarvestGrid Climate Analytics",
+    sector: "Climate Data",
+    revenueShare: "12%",
+    fundingProgress: 72,
+    target: "$180,000 USDC",
+    raised: "$129,600 raised",
+    accent: "HG",
+  },
+  {
+    id: 3,
+    name: "MedLedger Payments",
+    sector: "Healthcare Fintech",
+    revenueShare: "18%",
+    fundingProgress: 100,
+    target: "$320,000 USDC",
+    raised: "$320,000 raised",
+    accent: "ML",
+  },
+];
 
 export const InvestorDiscovery: React.FC = () => {
   return (
@@ -11,7 +50,7 @@ export const InvestorDiscovery: React.FC = () => {
             Discover Offerings
           </h1>
           <p className="text-muted text-sm mt-1">
-            Explore high-potential revenue-share opportunities on Stellar.
+            Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 

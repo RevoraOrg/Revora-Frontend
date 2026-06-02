@@ -253,3 +253,20 @@ input:focus-visible,
 .text-main { color: var(--text-main); }
 .text-success { color: var(--success); }
 .text-error { color: var(--error); }
+
+/* Revenue report form specific styles */
+@media (max-width: 1024px) {
+  .glass-card {
+    border-radius: 1.25rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .input-field {
+    padding: 0.8rem 0.95rem;
+  }
+  .btn-primary,
+  .btn-secondary {
+    padding: 0.85rem 1rem;
+  }
+}

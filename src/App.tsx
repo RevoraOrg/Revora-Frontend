@@ -3,6 +3,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { RevenueReportForm } from "./components/RevenueReportForm";
 
 export function App() {
   return (
@@ -15,6 +16,10 @@ export function App() {
         <Route
           path="/startup/dashboard"
           element={<Placeholder title="Startup Dashboard" />}
+        />
+        <Route
+          path="/startup/report-revenue"
+          element={<RevenueReportForm />}
         />
 
         {/* Updated Route - Issue #63 */}
@@ -41,7 +46,9 @@ function Home() {
             <h2 className="text-xl font-semibold mb-3">Startup Dashboard</h2>
             <ul className="text-muted text-sm space-y-2">
               <li>• Configure RevenueShare offerings</li>
-              <li>• Report monthly revenue</li>
+              <li>
+                • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
+              </li>
               <li>• Track on-chain RevenueShare payouts</li>
             </ul>
           </section>

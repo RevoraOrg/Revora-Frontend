@@ -18,8 +18,17 @@ export default defineConfig({
         'src/pages/Login.tsx',
         'src/pages/Signup.tsx',
         'src/pages/ForgotPassword.tsx',
-        'src/components/AuthLayout.tsx'
-      ]
+        'src/components/AuthLayout.tsx',
+        'src/components/AuthLayout.test.tsx'
+      ],
+      thresholds: {
+        'src/components/AuthLayout.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+      }
     }
   }
 });

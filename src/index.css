@@ -32,6 +32,28 @@
   --text-accent: #38bdf8;
   --error: #ef4444;
   --success: #10b981;
+
+  /* ─── Auth Layout Design Tokens (Issue #80) ──────────────────────────── */
+  /* Typography scale for AuthLayout title / subtitle / helperText slots */
+  --auth-title-size: clamp(1.5rem, 4vw, 1.875rem);   /* 24px → 30px fluid */
+  --auth-title-weight: 700;
+  --auth-title-tracking: -0.025em;
+  --auth-title-lh: 1.2;
+
+  --auth-subtitle-size: 0.9375rem;   /* 15px – one step below body */
+  --auth-subtitle-lh: 1.5;
+
+  --auth-helper-size: 0.8125rem;     /* 13px – fine print / security notes */
+  --auth-helper-lh: 1.5;
+
+  /* Card container sizing */
+  --auth-card-max-w: 480px;
+  --auth-card-padding-x: clamp(1.25rem, 5vw, 2.5rem);  /* 20px → 40px */
+  --auth-card-padding-y: clamp(1.5rem, 4vw, 2.5rem);   /* 24px → 40px */
+
+  /* Header section spacing */
+  --auth-header-gap: 0.5rem;    /* gap between title, subtitle, helperText */
+  --auth-header-mb: 2rem;       /* margin below header, above form */
 }
 
 * {

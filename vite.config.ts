@@ -21,8 +21,18 @@ export default defineConfig({
         'src/components/AuthLayout.tsx',
         'src/components/Button.tsx',
         'src/components/PasswordStrength.tsx',
-        'src/utils/passwordStrength.ts'
-      ]
+        'src/utils/passwordStrength.ts',
+        'src/components/InvestorDiscovery.tsx',
+        'src/components/InvestorDiscovery.test.tsx',
+      ],
+      thresholds: {
+        'src/components/InvestorDiscovery.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+      }
     }
   }
 });

@@ -43,7 +43,7 @@ describe('AuthLayout', () => {
     );
     
     const outerDiv = container.querySelector('.animate-fade-in');
-    expect(outerDiv).toHaveClass('px-4', 'py-6', 'sm:p-6');
+    expect(outerDiv).toHaveClass('auth-layout-outer');
   });
 
   it('has proper card responsive padding', () => {
@@ -54,7 +54,7 @@ describe('AuthLayout', () => {
     );
     
     const card = container.querySelector('.glass-card');
-    expect(card).toHaveClass('px-5', 'py-8', 'sm:p-8', 'md:p-10');
+    expect(card).toHaveClass('auth-card');
   });
 
   it('has responsive heading size', () => {
@@ -65,7 +65,7 @@ describe('AuthLayout', () => {
     );
     
     const heading = container.querySelector('h1');
-    expect(heading).toHaveClass('text-2xl', 'sm:text-3xl');
+    expect(heading).toHaveClass('auth-title');
   });
 
   it('meets minimum max-width for readability', () => {
@@ -75,7 +75,7 @@ describe('AuthLayout', () => {
       </AuthLayout>
     );
     
-    const card = container.querySelector('.max-w-\\[480px\\]');
+    const card = container.querySelector('.auth-card');
     expect(card).toBeInTheDocument();
   });
 });

@@ -83,6 +83,7 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <div
           className={`mobile-drawer ${isMobileMenuOpen ? 'open' : ''}`}
           aria-hidden={!isMobileMenuOpen}
+          style={{ display: isMobileMenuOpen ? 'block' : 'none' }}
         >
           <nav className="mobile-nav" aria-label="Mobile navigation">
             <ul>

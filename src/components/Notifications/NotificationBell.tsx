@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import NotificationPanel from './NotificationPanel';
 import { Notification } from './notificationsData';
-import { BellIcon } from '@heroicons/react/24/outline'; // assuming heroicons installed
+import { Bell } from 'lucide-react';
 
 interface NotificationBellProps {
   notifications: Notification[];
@@ -33,7 +33,7 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ notifications }) =>
         onClick={togglePanel}
         onKeyDown={handleKeyDown}
       >
-        <BellIcon className="h-6 w-6 text-gray-600" aria-hidden="true" />
+        <Bell className="h-6 w-6 text-gray-600" aria-hidden="true" />
         {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium rounded-full bg-red-600 text-white ring-2 ring-white">
             {unreadCount}

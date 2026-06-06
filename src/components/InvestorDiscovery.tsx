@@ -1,5 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback, useId } from "react";
+import {
+  Search,
+  Filter,
+  Rocket,
+  TrendingUp,
+  ShieldCheck,
+  SearchX,
+  ServerCrash,
+  RefreshCw,
+  X,
+  SlidersHorizontal,
+  PackageOpen,
+} from "lucide-react";
+
+// ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
 const SkeletonCard: React.FC = () => (
   <div className="glass-card p-6 space-y-4" aria-hidden="true">
@@ -19,28 +33,30 @@ const SkeletonCard: React.FC = () => (
   </div>
 );
 
-const DISCOVERY_CARDS = [
-  {
-    icon: Rocket,
-    title: "TechFlow AI",
-    subtitle: "Enterprise SaaS • 15% Revenue Share",
-    target: "$250,000 USDC",
-    progress: 45,
-  },
-  {
-    icon: Rocket,
-    title: "Quantum Ledger",
-    subtitle: "DeFi Infrastructure • 12% Revenue Share",
-    target: "$500,000 USDC",
-    progress: 28,
-  },
-  {
-    icon: Rocket,
-    title: "Nexus Pay",
-    subtitle: "Cross-Border Payments • 18% Revenue Share",
-    target: "$300,000 USDC",
-    progress: 62,
-  },
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Offering {
+  id: number;
+  name: string;
+  category: string;
+  revenueShare: number;
+  target: number;
+  raised: number;
+}
+
+/** Discriminated union for all UI states of the discovery result area */
+type DiscoveryState =
+  | { kind: 'loaded'; offerings: Offering[] }
+  | { kind: 'filtered-empty'; query: string; hasFilters: boolean }
+  | { kind: 'truly-empty' }
+  | { kind: 'error'; retryCount: number };
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_OFFERINGS: Offering[] = [
+  { id: 1, name: 'TechFlow AI', category: 'Enterprise SaaS', revenueShare: 15, target: 250000, raised: 112500 },
+  { id: 2, name: 'Quantum Ledger', category: 'DeFi Infrastructure', revenueShare: 12, target: 500000, raised: 140000 },
+  { id: 3, name: 'Nexus Pay', category: 'Cross-Border Payments', revenueShare: 18, target: 300000, raised: 186000 },
 ];
 
 export const InvestorDiscovery: React.FC = () => {
@@ -57,38 +73,115 @@ export const InvestorDiscovery: React.FC = () => {
       setIsLoading(false);
     }, 2000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [__simulateState]);
+
+  // The seed offerings: either from __simulateState (if kind='loaded') or the
+  // module-level mock data. Kept stable so useCallback deps don't thrash.
+  const seedOfferings =
+    __simulateState?.kind === 'loaded' ? __simulateState.offerings : MOCK_OFFERINGS;
+
+  const resolveState = useCallback((): DiscoveryState => {
+    // Non-loaded forced states always win (error / empty variants)
+    if (
+      __simulateState &&
+      __simulateState.kind !== 'loaded'
+    ) {
+      return __simulateState;
+    }
+
+    // For 'loaded' __simulateState OR no override: derive from live search/filter
+    const trimmed = query.trim().toLowerCase();
+    const filtered =
+      trimmed || filtersActive
+        ? seedOfferings.filter((o) => o.name.toLowerCase().includes(trimmed))
+        : seedOfferings;
+
+    if (seedOfferings.length === 0) return { kind: 'truly-empty' };
+    if (filtered.length === 0) return { kind: 'filtered-empty', query: trimmed, hasFilters: filtersActive };
+    return { kind: 'loaded', offerings: filtered };
+  }, [query, filtersActive, __simulateState, seedOfferings]);
+
+  const state = resolveState();
+
+  const handleClearFilters = () => {
+    setQuery('');
+    setFiltersActive(false);
+    setRetryCount(0);
+  };
+
+  const handleRetry = () => {
+    setRetryCount((c) => c + 1);
+  };
+
+  const handleToggleFilters = () => {
+    setFiltersActive((f) => !f);
+  };
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
-      {/* Information Architecture: Header & Discovery Intent */}
+      {/* ── Page header ── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Discover Offerings
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Discover Offerings</h1>
           <p className="text-muted text-sm mt-1">
             Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 
+        {/* ── Search + Filter bar ── */}
         <div className="flex w-full md:w-auto gap-2">
           <div className="relative flex-grow">
-            <Search className="absolute left-3 top-2.5 text-muted" size={18} />
+            <Search className="absolute left-3 top-2.5 text-muted" size={18} aria-hidden="true" />
             <input
-              type="text"
-              placeholder="Search startups..."
+              id="offering-search"
+              type="search"
+              placeholder="Search startups…"
               className="input-field pl-10 h-10 text-sm"
               aria-label="Search startup offerings"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
             />
+            {query && (
+              <button
+                className="absolute right-3 top-2.5 text-muted hover:text-main transition-colors"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                data-testid="clear-search-btn"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            )}
           </div>
-          <button className="btn btn--icon btn--sm" aria-label="Filter results">
-            <Filter size={18} />
+          <button
+            className={`btn btn--icon btn--sm ${filtersActive ? 'discovery-filter-btn--active' : ''}`}
+            aria-label={filtersActive ? 'Filters active — click to clear' : 'Filter results'}
+            aria-pressed={filtersActive}
+            onClick={handleToggleFilters}
+            data-testid="filter-toggle-btn"
+          >
+            <SlidersHorizontal size={18} aria-hidden="true" />
+            {filtersActive && <span className="discovery-filter-badge" aria-hidden="true" />}
           </button>
         </div>
       </div>
 
-      {/* Loading State: Skeleton Cards */}
+      {/* ── Active filter indicator ── */}
+      {filtersActive && (
+        <div className="flex items-center gap-2 text-xs text-muted" aria-live="polite">
+          <Filter size={14} aria-hidden="true" />
+          <span>Filters active</span>
+          <button
+            className="link-styled text-xs"
+            onClick={handleClearFilters}
+            aria-label="Clear all active filters"
+          >
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* ── Loading State: Skeleton Cards ── */}
       {isLoading && (
         <div
           role="status"
@@ -179,21 +272,23 @@ export const InvestorDiscovery: React.FC = () => {
         </section>
       )}
 
-      {/* Empty State / Call to Action IA */}
-      <div className="glass-card p-12 text-center bg-gradient-to-b from-transparent to-[rgba(59,130,246,0.05)]">
-        <TrendingUp className="mx-auto mb-4 text-accent" size={48} />
-        <h2 className="text-xl font-semibold mb-2">Build Your Portfolio</h2>
-        <p className="text-muted text-sm max-w-md mx-auto mb-6">
-          Start investing in verified startups. All distributions are handled
-          automatically via Soroban smart contracts.
-        </p>
-        <div className="flex justify-center gap-4">
-          <button className="btn btn--secondary btn--sm flex items-center gap-2">
-            <ShieldCheck size={18} />
-            How it works
-          </button>
+      {/* ── Portfolio CTA (loaded state only, after loading) ── */}
+      {!isLoading && state.kind === 'loaded' && (
+        <div className="glass-card p-12 text-center bg-gradient-to-b from-transparent to-[rgba(59,130,246,0.05)]">
+          <TrendingUp className="mx-auto mb-4 text-accent" size={48} aria-hidden="true" />
+          <h2 className="text-xl font-semibold mb-2">Build Your Portfolio</h2>
+          <p className="text-muted text-sm max-w-md mx-auto mb-6">
+            Start investing in verified startups. All distributions are handled
+            automatically via Soroban smart contracts.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button className="btn btn--secondary btn--sm flex items-center gap-2">
+              <ShieldCheck size={18} aria-hidden="true" />
+              How it works
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

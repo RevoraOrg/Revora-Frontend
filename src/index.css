@@ -764,3 +764,204 @@ input:focus-visible,
   color: var(--text-muted);
   margin-bottom: var(--spacing-2xl);
 }
+
+/* ─── Print-Friendly Stylesheet (Issue #171) ──────────────────────────────
+   Goal: produce clean, ink-economical reports, statements and receipts.
+
+   Opt-in hooks (add to JSX where needed):
+     .print-hidden      hide an element only when printing (nav, buttons…)
+     .print-only        show an element only when printing (data tables…)
+     .print-page-break  force a page break before this element
+     .print-avoid-break keep this block on one page (no internal break)
+     .print-chart       a chart container; hidden in print so its sibling
+                         .print-only data table is read instead
+
+   The screen UI is dark-on-dark glassmorphism, so the print rules below
+   reset to black-on-white with print-legible typography. Contrast targets
+   WCAG 2.1 AA (≥4.5:1); pure #000 on #fff is the safe baseline.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Screen-side: .print-only never shows on screen, only in print. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Page geometry. Browsers honour the first @page they can satisfy; the
+     A4/Letter sizes are offered so either paper stock prints without
+     clipping, with a comfortable margin for headers and footers. */
+  @page {
+    size: A4;
+    margin: 18mm 16mm;
+  }
+
+  /* Some print pipelines prefer an explicit Letter target; harmless where
+     A4 is selected since only one @page rule ultimately applies. */
+  @page letter {
+    size: letter;
+    margin: 0.75in;
+  }
+
+  /* Black-on-white baseline. Strip the dark gradient, glass blur and
+     shadows so nothing wastes ink or muddies the page. */
+  :root {
+    --text-main: #000;
+    --text-muted: #1f2937; /* ≥7:1 on white, safe for AA fine print */
+    --primary: #000;
+    --glass-border: #999;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body {
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-size: 12pt;
+    line-height: 1.45;
+  }
+
+  /* Flatten decorative surfaces so report content reads as plain paper. */
+  .glass-card,
+  .discovery-state-container {
+    background: #fff !important;
+    border: 1px solid #999 !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: #000 !important;
+  }
+
+  /* Headings should not be orphaned at the foot of a page. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  a {
+    color: #000 !important;
+    text-decoration: none;
+  }
+
+  /* Hide interactive / navigation chrome: app shell header + nav, mobile
+     drawer, notification bell + panel, skip link, action buttons, toasts,
+     and anything explicitly opted out via .print-hidden. */
+  .print-hidden,
+  .app-header,
+  .desktop-nav,
+  .mobile-drawer,
+  .mobile-nav,
+  .drawer-overlay,
+  .mobile-menu-btn,
+  .notifications-btn,
+  .account-btn,
+  .skip-link,
+  nav,
+  button,
+  .btn,
+  .btn-primary,
+  .btn-secondary,
+  [role="dialog"],
+  [role="alert"],
+  [aria-live] {
+    display: none !important;
+  }
+
+  /* Reveal print-only content (e.g. accessible chart data tables). */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Charts are non-textual: hide the visual and let the adjacent
+     .print-only data table carry the same information to paper. */
+  .print-chart,
+  canvas,
+  svg.print-chart {
+    display: none !important;
+  }
+
+  /* Expand any truncated / line-clamped content so nothing is cut on paper. */
+  .truncate,
+  [class*="line-clamp"],
+  .text-ellipsis {
+    overflow: visible !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    -webkit-line-clamp: none !important;
+  }
+
+  /* Page-break control utilities the report views opt into. */
+  .print-page-break {
+    break-before: page;
+    page-break-before: always;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Keep receipt / statement rows and summary tiles intact across pages. */
+  tr,
+  thead,
+  .input-group {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Print-rendered tables (statements, receipts, chart fallbacks). */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  th,
+  td {
+    border: 1px solid #999;
+    padding: 4pt 6pt;
+    text-align: start; /* RTL-safe: follows the document direction */
+  }
+
+  /* Repeat table headers on every printed page of a long statement. */
+  thead {
+    display: table-header-group;
+  }
+
+  /* Document-level header/footer running text for printed reports. */
+  .print-header,
+  .print-footer {
+    display: block !important;
+    color: #000 !important;
+    font-size: 9pt;
+  }
+
+  .print-footer {
+    border-top: 1px solid #999;
+    margin-top: 8pt;
+    padding-top: 4pt;
+  }
+
+  /* RTL safety: direction is inherited from the document, and logical
+     start/end alignment above keeps numeric columns on the correct edge. */
+  [dir="rtl"] {
+    text-align: right;
+  }
+}
+
+/* Document header/footer slots are print-only; hidden on screen. */
+.print-header,
+.print-footer {
+  display: none;
+}

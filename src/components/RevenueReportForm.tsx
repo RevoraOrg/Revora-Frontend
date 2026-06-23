@@ -77,7 +77,7 @@ export function RevenueReportForm() {
                 Submit your gross monthly revenue and preview the estimated payout that will drive RevenueShare distributions.
               </p>
             </div>
-            <Link to="/" className="btn-secondary sm:w-auto">
+            <Link to="/" className="btn-secondary sm:w-auto print-hidden">
               Back to Home
             </Link>
           </div>
@@ -227,7 +227,7 @@ export function RevenueReportForm() {
           </div>
 
           {hasSubmitted && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-emerald-100">
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-emerald-100 print-avoid-break">
               <h2 className="text-lg font-semibold mb-2">Report submitted</h2>
               <p className="text-sm text-muted mb-4">
                 Your revenue report has been successfully received. We will notify you when the {TERMINOLOGY.revenueSharePayouts} calculation is finalized.

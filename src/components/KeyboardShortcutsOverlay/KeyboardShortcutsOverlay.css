@@ -1,0 +1,219 @@
+/* ─── Keyboard Shortcuts Overlay ─────────────────────────────────────────────
+   WCAG 2.1 AA modal dialog overlay.
+   Reuses glass-card and design tokens from index.css.
+   Z-index layer: 300 (above AppShell drawer at 200)
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.shortcuts-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: var(--spacing-md);
+  animation: shortcutsFadeIn 0.2s ease-out;
+}
+
+.shortcuts-dialog {
+  width: 100%;
+  max-width: 560px;
+  max-height: min(80vh, 600px);
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.shortcuts-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-bottom: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.shortcuts-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  margin: 0;
+}
+
+.shortcuts-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s, color 0.2s;
+}
+
+.shortcuts-close-btn:hover {
+  background: var(--glass-bg-accent);
+  color: var(--text-main);
+}
+
+.shortcuts-close-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.shortcuts-body {
+  overflow-y: auto;
+  padding: var(--spacing-md) var(--spacing-xl);
+  flex: 1;
+}
+
+.shortcut-group {
+  margin-bottom: var(--spacing-xl);
+}
+
+.shortcut-group:last-child {
+  margin-bottom: 0;
+}
+
+.shortcut-group-title {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 var(--spacing-sm);
+}
+
+.shortcut-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.shortcut-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-xs) 0;
+}
+
+.shortcut-label {
+  font-size: var(--font-size-sm);
+  color: var(--text-main);
+}
+
+.shortcut-combo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3xs);
+  flex-shrink: 0;
+  margin-left: var(--spacing-lg);
+}
+
+.shortcut-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  height: 1.5rem;
+  padding: 0 var(--spacing-2xs);
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-muted);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+}
+
+.shortcuts-footer {
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-top: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+
+.shortcuts-footer-text {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  text-align: center;
+  margin: 0;
+}
+
+.shortcuts-footer-text .shortcut-key {
+  display: inline-flex;
+  min-width: auto;
+  height: auto;
+  padding: 0 var(--spacing-2xs);
+  font-size: var(--font-size-xs);
+}
+
+/* Visually hidden but screen-reader accessible */
+.shortcuts-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Animation */
+@keyframes shortcutsFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .shortcuts-overlay {
+    animation: none;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .shortcuts-overlay {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .shortcuts-dialog {
+    border: 2px solid var(--text-main);
+  }
+
+  .shortcut-key {
+    border: 1px solid var(--text-muted);
+  }
+}
+
+/* Hidden on mobile (screens < 768px) */
+@media (max-width: 768px) {
+  .shortcuts-overlay {
+    display: none;
+  }
+}

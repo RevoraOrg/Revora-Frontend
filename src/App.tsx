@@ -7,6 +7,7 @@ import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
+import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -32,6 +33,8 @@ export function App() {
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
           {/* Issue #163 – Portfolio Summary */}
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
+          {/* Issue #139 – Virtualized Ledger Table */}
+          <Route path="/investor/ledger" element={<LedgerDemoPage />} />
         </Route>
       </Routes>
     </Router>
@@ -93,6 +96,8 @@ function Home() {
             <ul className="home-list">
               <li>• Discover high-potential offerings</li>
               <li>• Invest using USDC on Stellar</li>
+              <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
+              <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

@@ -1,0 +1,408 @@
+/* ─── Design Tokens Admin Page ──────────────────────────────────────────────── */
+
+.dt-page {
+  min-height: 100vh;
+  padding: var(--spacing-2xl) clamp(var(--spacing-md), 5vw, var(--spacing-3xl));
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Header */
+.dt-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--spacing-xl);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.dt-page-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.025em;
+  line-height: var(--line-height-tight);
+  color: var(--text-main);
+  margin-bottom: var(--spacing-xs);
+}
+
+.dt-page-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.dt-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* Surface toggle */
+.dt-surface-toggle {
+  display: flex;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.dt-surface-btn {
+  padding: var(--spacing-xs) var(--spacing-md);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dt-surface-btn--active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.dt-surface-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Export buttons */
+.dt-export-btn {
+  padding: var(--spacing-xs) var(--spacing-lg);
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dt-export-btn:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.dt-export-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.dt-export-btn--secondary {
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+}
+
+.dt-export-btn--secondary:hover {
+  background: rgba(148, 163, 184, 0.15);
+}
+
+/* Search */
+.dt-search-wrap {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.dt-search {
+  max-width: 480px;
+}
+
+/* Sections */
+.dt-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+}
+
+.dt-section {
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-2xl);
+}
+
+.dt-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  margin-bottom: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.dt-section-count {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--text-muted);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  padding: 2px 10px;
+}
+
+/* Copy button */
+.dt-copy-btn {
+  padding: 4px var(--spacing-sm);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dt-copy-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.dt-copy-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Shared token info */
+.dt-token-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.dt-token-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-main);
+  white-space: nowrap;
+}
+
+.dt-token-value {
+  font-size: var(--font-size-xs);
+  color: var(--text-accent);
+  font-family: "SF Mono", "Fira Code", monospace;
+  background: rgba(56, 189, 248, 0.07);
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.dt-token-desc {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* ─── Color rows ──────────────────────────────────────────────────────────── */
+.dt-color-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+
+.dt-color-row:last-child {
+  border-bottom: none;
+}
+
+.dt-swatch {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border-bright);
+  flex-shrink: 0;
+}
+
+.dt-grade {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dt-grade--pass {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.dt-grade--large {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.dt-grade--fail {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.dt-grade--na {
+  color: var(--text-muted);
+}
+
+.dt-ratio {
+  opacity: 0.75;
+  font-weight: var(--font-weight-normal);
+  margin-left: 4px;
+}
+
+/* ─── Spacing rows ────────────────────────────────────────────────────────── */
+.dt-spacing-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+
+.dt-spacing-row:last-child {
+  border-bottom: none;
+}
+
+.dt-spacing-bar-wrap {
+  width: 200px;
+  height: 16px;
+  background: var(--glass-bg-accent);
+  border-radius: var(--radius-xs);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.dt-spacing-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--text-accent));
+  border-radius: var(--radius-xs);
+  transition: width 0.3s ease;
+}
+
+/* ─── Radius rows ─────────────────────────────────────────────────────────── */
+.dt-radius-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+
+.dt-radius-row:last-child {
+  border-bottom: none;
+}
+
+.dt-radius-preview {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--primary), var(--text-accent));
+  flex-shrink: 0;
+}
+
+/* ─── Typography rows ─────────────────────────────────────────────────────── */
+.dt-typo-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+
+.dt-typo-row:last-child {
+  border-bottom: none;
+}
+
+.dt-typo-preview {
+  width: 64px;
+  color: var(--text-main);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+/* ─── Shadow rows ─────────────────────────────────────────────────────────── */
+.dt-shadow-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md) 0;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+
+.dt-shadow-row:last-child {
+  border-bottom: none;
+}
+
+.dt-shadow-preview {
+  width: 56px;
+  height: 56px;
+  background: var(--glass-bg-accent);
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+/* ─── Generic rows ────────────────────────────────────────────────────────── */
+.dt-generic-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) 0;
+  border-bottom: 1px solid var(--glass-border);
+  flex-wrap: wrap;
+}
+
+.dt-generic-row:last-child {
+  border-bottom: none;
+}
+
+/* ─── Empty state ─────────────────────────────────────────────────────────── */
+.dt-empty {
+  text-align: center;
+  padding: var(--spacing-4xl) var(--spacing-2xl);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .dt-header {
+    flex-direction: column;
+  }
+
+  .dt-header-actions {
+    width: 100%;
+  }
+
+  .dt-export-btn,
+  .dt-surface-btn {
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  .dt-spacing-bar-wrap {
+    width: 120px;
+  }
+
+  .dt-token-value {
+    max-width: 140px;
+  }
+
+  .dt-swatch,
+  .dt-radius-preview,
+  .dt-shadow-preview {
+    width: 36px;
+    height: 36px;
+  }
+}

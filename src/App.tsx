@@ -7,6 +7,7 @@ import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
+import { SessionManagement } from "./components/SessionManagement/SessionManagement";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -32,6 +33,8 @@ export function App() {
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
           {/* Issue #163 – Portfolio Summary */}
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
+          {/* Issue #169 – Session Management */}
+          <Route path="/settings/sessions" element={<SessionManagement />} />
         </Route>
       </Routes>
     </Router>

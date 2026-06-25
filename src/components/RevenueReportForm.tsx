@@ -1,5 +1,12 @@
 import { FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { LocalizedText } from "./LocalizedText";
+import {
+  formatCurrency,
+  formatDate,
+  LOCALE_FORMAT_SETTINGS,
+  SupportedLocale,
+} from "../constants/i18n";
 import { TERMINOLOGY } from "../constants/terminology";
 
 const currencyOptions = [
@@ -8,24 +15,24 @@ const currencyOptions = [
   { value: "GBP", label: "GBP - British Pound" },
 ];
 
+const localeOptions: Array<{ value: SupportedLocale; label: string }> = (
+  Object.keys(LOCALE_FORMAT_SETTINGS) as SupportedLocale[]
+).map((locale) => ({
+  value: locale,
+  label: LOCALE_FORMAT_SETTINGS[locale].label,
+}));
+
 const reportPeriods = [
   { value: "2026-05", label: "May 2026" },
   { value: "2026-04", label: "April 2026" },
   { value: "2026-03", label: "March 2026" },
 ];
 
-const formatCurrency = (value: number, currency: string) => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
-};
-
 export function RevenueReportForm() {
   const [reportPeriod, setReportPeriod] = useState(reportPeriods[0].value);
   const [grossRevenue, setGrossRevenue] = useState("");
   const [currency, setCurrency] = useState("USD");
+  const [locale, setLocale] = useState<SupportedLocale>(localeOptions[0].value);
   const [notes, setNotes] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionState, setSubmissionState] = useState<"idle" | "success" | "error">("idle");
@@ -41,7 +48,7 @@ export function RevenueReportForm() {
     return Math.round(revenueValue * 0.08);
   }, [revenueError, revenueValue]);
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmissionState("idle");
     setErrorMessage("");
@@ -67,15 +74,15 @@ export function RevenueReportForm() {
         <div className="glass-card p-8 md:p-10 space-y-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-primary font-semibold uppercase tracking-[0.24em] text-xs">
+              <LocalizedText locale={locale} as="p" className="text-primary font-semibold uppercase tracking-[0.24em] text-xs">
                 Startup report
-              </p>
-              <h1 className="text-3xl md:text-4xl font-bold leading-tight">
+              </LocalizedText>
+              <LocalizedText locale={locale} as="h1" className="text-3xl md:text-4xl font-bold leading-tight">
                 Report monthly revenue for {TERMINOLOGY.revenueSharePayouts}
-              </h1>
-              <p className="text-muted max-w-2xl mt-3 text-sm md:text-base">
+              </LocalizedText>
+              <LocalizedText locale={locale} as="p" className="text-muted max-w-2xl mt-3 text-sm md:text-base">
                 Submit your gross monthly revenue and preview the estimated payout that will drive RevenueShare distributions.
-              </p>
+              </LocalizedText>
             </div>
             <Link to="/" className="btn-secondary sm:w-auto">
               Back to Home
@@ -150,6 +157,24 @@ export function RevenueReportForm() {
                 </div>
 
                 <div className="input-group">
+                  <label htmlFor="locale" className="input-label">
+                    Locale
+                  </label>
+                  <select
+                    id="locale"
+                    className="input-field"
+                    value={locale}
+                    onChange={(event) => setLocale(event.target.value as SupportedLocale)}
+                  >
+                    {localeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="input-group">
                   <label htmlFor="notes" className="input-label">
                     Notes or attachments
                   </label>
@@ -198,19 +223,20 @@ export function RevenueReportForm() {
                 <div className="rounded-2xl bg-slate-950/60 p-4">
                   <p className="text-sm text-muted">Selected period</p>
                   <p className="mt-1 text-lg font-semibold">{reportPeriods.find((item) => item.value === reportPeriod)?.label}</p>
+                  <p className="text-xs text-muted">{formatDate(new Date(reportPeriod + "-01"), locale)}</p>
                 </div>
 
                 <div className="rounded-2xl bg-slate-950/60 p-4">
                   <p className="text-sm text-muted">Gross revenue</p>
                   <p className="mt-1 text-lg font-semibold">
-                    {revenueError ? "—" : formatCurrency(revenueValue, currency)}
+                    {revenueError ? "—" : formatCurrency(revenueValue, currency, locale)}
                   </p>
                 </div>
 
                 <div className="rounded-2xl bg-slate-950/60 p-4">
                   <p className="text-sm text-muted">Estimated payout</p>
                   <p className="mt-1 text-xl font-semibold text-success">
-                    {revenueError ? "Enter revenue to preview" : formatCurrency(payoutEstimate, currency)}
+                    {revenueError ? "Enter revenue to preview" : formatCurrency(payoutEstimate, currency, locale)}
                   </p>
                 </div>
               </div>

@@ -76,6 +76,7 @@
 }
 
 .notifications-btn,
+.help-btn,
 .account-btn {
   background: none;
   border: none;
@@ -87,6 +88,7 @@
 }
 
 .notifications-btn:hover,
+.help-btn:hover,
 .account-btn:hover {
   background: #f3f4f6;
 }
@@ -176,6 +178,10 @@
     display: none;
   }
   
+  .help-btn {
+    display: none;
+  }
+
   .mobile-menu-btn {
     display: block;
   }
@@ -197,6 +203,7 @@
 .nav-link:focus-visible,
 .mobile-nav-link:focus-visible,
 .notifications-btn:focus-visible,
+.help-btn:focus-visible,
 .account-btn:focus-visible,
 .mobile-menu-btn:focus-visible {
   outline: 2px solid #3b82f6;

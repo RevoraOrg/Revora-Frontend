@@ -1,0 +1,447 @@
+/* src/components/StatusTimeline/StatusTimeline.css
+ *
+ * Canonical status-timeline pattern — Issue #153
+ * Supports horizontal / vertical orientation, milestone states
+ * (completed, in-progress, blocked, pending), optional sub-steps,
+ * timestamp tooltips, and responsive reflow.
+ * Tokens are defined in index.css → :root under "Status Timeline Tokens".
+ */
+
+/* ─── Container ─────────────────────────────────────────────── */
+
+.status-timeline {
+  display: flex;
+  gap: var(--st-gap);
+  position: relative;
+  width: 100%;
+}
+
+.status-timeline--horizontal {
+  flex-direction: row;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: var(--spacing-xs);
+}
+
+.status-timeline--vertical {
+  flex-direction: column;
+}
+
+/* ─── Milestone ─────────────────────────────────────────────── */
+
+.st-milestone {
+  display: flex;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.status-timeline--horizontal .st-milestone {
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: var(--st-milestone-min-w);
+}
+
+.status-timeline--vertical .st-milestone {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--st-content-gap);
+}
+
+/* ─── Milestone Marker (icon circle) ────────────────────────── */
+
+.st-marker {
+  width: var(--st-marker-size);
+  height: var(--st-marker-size);
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 2;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  position: relative;
+}
+
+/* State-specific marker visuals */
+.st-marker--completed {
+  background: var(--st-completed-bg);
+  border: 2px solid var(--st-completed-border);
+  color: var(--st-completed-fg);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+}
+
+.st-marker--in-progress {
+  background: var(--st-progress-bg);
+  border: 2px solid var(--st-progress-border);
+  color: var(--st-progress-fg);
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  animation: st-pulse 2s ease-in-out infinite;
+}
+
+.st-marker--blocked {
+  background: var(--st-blocked-bg);
+  border: 2px solid var(--st-blocked-border);
+  color: var(--st-blocked-fg);
+  box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.12);
+}
+
+.st-marker--pending {
+  background: var(--st-pending-bg);
+  border: 2px solid var(--st-pending-border);
+  color: var(--st-pending-fg);
+}
+
+.st-marker--skipped {
+  background: var(--st-pending-bg);
+  border: 2px dashed var(--st-pending-border);
+  color: var(--st-pending-fg);
+  opacity: 0.6;
+}
+
+/* ─── Connector Line ────────────────────────────────────────── */
+
+.st-connector {
+  position: absolute;
+  z-index: 1;
+  transition: background 0.3s ease;
+}
+
+.status-timeline--horizontal .st-connector {
+  top: calc(var(--st-marker-size) / 2);
+  left: calc(50% + var(--st-marker-size) / 2 + 4px);
+  right: calc(-50% + var(--st-marker-size) / 2 + 4px);
+  height: var(--st-connector-width);
+  transform: translateY(-50%);
+}
+
+.status-timeline--vertical .st-connector {
+  left: calc(var(--st-marker-size) / 2);
+  top: calc(var(--st-marker-size) + 4px);
+  bottom: calc(-1 * var(--st-gap) + 4px);
+  width: var(--st-connector-width);
+  transform: translateX(-50%);
+}
+
+.st-connector--completed {
+  background: var(--st-completed-border);
+}
+
+.st-connector--in-progress {
+  background: linear-gradient(
+    to right,
+    var(--st-completed-border),
+    var(--st-progress-border)
+  );
+}
+
+.status-timeline--vertical .st-connector--in-progress {
+  background: linear-gradient(
+    to bottom,
+    var(--st-completed-border),
+    var(--st-progress-border)
+  );
+}
+
+.st-connector--pending {
+  background: var(--st-pending-border);
+}
+
+.st-connector--blocked {
+  background: var(--st-blocked-border);
+}
+
+/* ─── Milestone Content ─────────────────────────────────────── */
+
+.st-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3xs);
+}
+
+.status-timeline--horizontal .st-content {
+  align-items: center;
+  text-align: center;
+  margin-top: var(--spacing-sm);
+}
+
+.st-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  line-height: var(--line-height-snug);
+}
+
+.st-label--pending {
+  color: var(--text-muted);
+}
+
+.st-label--skipped {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.st-description {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+  max-width: 16rem;
+}
+
+/* ─── Timestamp Tooltip ─────────────────────────────────────── */
+
+.st-timestamp-trigger {
+  position: relative;
+  cursor: default;
+}
+
+.st-timestamp-tooltip {
+  position: absolute;
+  z-index: 10;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-bright);
+  backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-main);
+  white-space: nowrap;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.st-timestamp-trigger:hover .st-timestamp-tooltip,
+.st-timestamp-trigger:focus-within .st-timestamp-tooltip {
+  opacity: 1;
+}
+
+/* Tooltip arrow */
+.st-timestamp-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--glass-border-bright);
+}
+
+/* Vertical layout: tooltip repositioned */
+.status-timeline--vertical .st-timestamp-tooltip {
+  bottom: auto;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.status-timeline--vertical .st-timestamp-tooltip::after {
+  top: 50%;
+  left: -10px;
+  transform: translateY(-50%);
+  border: 5px solid transparent;
+  border-right-color: var(--glass-border-bright);
+}
+
+/* ─── Sub-steps Disclosure ──────────────────────────────────── */
+
+.st-substeps {
+  margin-top: var(--spacing-2xs);
+  padding-left: 0;
+  list-style: none;
+}
+
+.st-substep {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  padding: var(--spacing-3xs) 0;
+  line-height: var(--line-height-normal);
+}
+
+.st-substep-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.st-substep-indicator--completed {
+  background: var(--st-completed-border);
+}
+
+.st-substep-indicator--pending {
+  background: var(--st-pending-border);
+}
+
+.st-substep-indicator--blocked {
+  background: var(--st-blocked-border);
+}
+
+.st-substep-label--completed {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+/* Disclosure toggle */
+.st-substeps-toggle {
+  background: none;
+  border: none;
+  color: var(--text-accent);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  padding: var(--spacing-3xs) 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3xs);
+  transition: color 0.2s ease;
+}
+
+.st-substeps-toggle:hover {
+  color: var(--primary);
+}
+
+.st-substeps-toggle-icon {
+  transition: transform 0.2s ease;
+  display: inline-flex;
+}
+
+.st-substeps-toggle-icon--expanded {
+  transform: rotate(180deg);
+}
+
+/* ─── Blocked-with-action badge ─────────────────────────────── */
+
+.st-blocked-action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  margin-top: var(--spacing-2xs);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  background: var(--st-blocked-bg);
+  border: 1px solid var(--st-blocked-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  color: var(--st-blocked-fg);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.st-blocked-action:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* ─── Pulse animation ───────────────────────────────────────── */
+
+@keyframes st-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.06);
+  }
+}
+
+/* ─── Reduced Motion ────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .st-marker--in-progress {
+    animation: none;
+  }
+
+  .st-substeps-toggle-icon,
+  .st-marker,
+  .st-connector,
+  .st-timestamp-tooltip {
+    transition: none;
+  }
+}
+
+/* ─── Responsive: Horizontal → Vertical reflow on mobile ──── */
+
+@media (max-width: 640px) {
+  .status-timeline--horizontal {
+    flex-direction: column;
+    overflow-x: visible;
+    padding-bottom: 0;
+  }
+
+  .status-timeline--horizontal .st-milestone {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--st-content-gap);
+    min-width: 0;
+  }
+
+  .status-timeline--horizontal .st-content {
+    align-items: flex-start;
+    text-align: left;
+    margin-top: 0;
+  }
+
+  .status-timeline--horizontal .st-connector {
+    left: calc(var(--st-marker-size) / 2);
+    top: calc(var(--st-marker-size) + 4px);
+    bottom: calc(-1 * var(--st-gap) + 4px);
+    width: var(--st-connector-width);
+    height: auto;
+    right: auto;
+    transform: translateX(-50%);
+  }
+
+  .status-timeline--horizontal .st-connector--in-progress {
+    background: linear-gradient(
+      to bottom,
+      var(--st-completed-border),
+      var(--st-progress-border)
+    );
+  }
+
+  .status-timeline--horizontal .st-timestamp-tooltip {
+    bottom: auto;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .status-timeline--horizontal .st-timestamp-tooltip::after {
+    top: 50%;
+    left: -10px;
+    transform: translateY(-50%);
+    border: 5px solid transparent;
+    border-right-color: var(--glass-border-bright);
+  }
+}
+
+/* ─── High Contrast Mode ────────────────────────────────────── */
+
+@media (prefers-contrast: high) {
+  .st-marker {
+    border-width: 3px;
+  }
+
+  .st-connector {
+    opacity: 1;
+  }
+
+  .st-label {
+    font-weight: var(--font-weight-bold);
+  }
+}
+
+/* ─── Focus styles ──────────────────────────────────────────── */
+
+.st-substeps-toggle:focus-visible,
+.st-blocked-action:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}

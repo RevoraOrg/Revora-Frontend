@@ -379,6 +379,17 @@ input:focus-visible,
   border-radius: 0.25rem;
 }
 
+/* Localized text handling */
+.localized-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.localized-text[dir="rtl"] {
+  unicode-bidi: embed;
+}
+
 /* Utilities for accessibility and consistency */
 .text-primary {
   color: var(--primary);

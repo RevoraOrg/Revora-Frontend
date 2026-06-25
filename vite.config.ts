@@ -24,9 +24,37 @@ export default defineConfig({
         'src/utils/passwordStrength.ts',
         'src/components/InvestorDiscovery.tsx',
         'src/components/InvestorDiscovery.test.tsx',
+        'src/components/KpiHeader.tsx',
+        'src/components/AllocationWidget.tsx',
+        'src/components/PerformanceTrendWidget.tsx',
+        'src/pages/InvestorPortfolioSummary.tsx',
       ],
       thresholds: {
         'src/components/InvestorDiscovery.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/KpiHeader.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/AllocationWidget.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/PerformanceTrendWidget.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/pages/InvestorPortfolioSummary.tsx': {
           branches: 95,
           functions: 95,
           lines: 95,

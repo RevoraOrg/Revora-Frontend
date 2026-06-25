@@ -1,6 +1,8 @@
 // src/components/AppShell/AppShell.tsx
 import React, { useState, useEffect } from 'react';
 import './AppShell.css';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { KeyboardShortcutsOverlay } from '../KeyboardShortcutsOverlay/KeyboardShortcutsOverlay';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -9,6 +11,12 @@ interface AppShellProps {
 const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const {
+    isOpen: shortcutsOpen,
+    isMac,
+    open: openShortcuts,
+    close: closeShortcuts,
+  } = useKeyboardShortcuts();
 
   // Check if mobile viewport
   useEffect(() => {
@@ -60,6 +68,13 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
           <div className="header-actions">
             <button className="notifications-btn" aria-label="Notifications">
               🔔
+            </button>
+            <button
+              className="help-btn"
+              onClick={openShortcuts}
+              aria-label="Keyboard shortcuts"
+            >
+              ?
             </button>
             <button className="account-btn" aria-label="Account menu">
               👤
@@ -118,6 +133,14 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
           {children}
         </div>
       </main>
+
+      {/* Keyboard Shortcuts Overlay */}
+      <KeyboardShortcutsOverlay
+        isOpen={shortcutsOpen}
+        onClose={closeShortcuts}
+        isMac={isMac}
+        isMobile={isMobile}
+      />
     </div>
   );
 };

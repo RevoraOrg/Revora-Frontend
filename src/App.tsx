@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-rout
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import NotificationBell from "./components/Notifications/NotificationBell";
@@ -28,6 +29,7 @@ export function App() {
 
           {/* Updated Route - Issue #63 */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
+          <Route path="/design-tokens" element={<DesignTokensPage />} />
         </Route>
       </Routes>
     </Router>

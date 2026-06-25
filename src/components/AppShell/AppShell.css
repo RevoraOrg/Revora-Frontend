@@ -107,19 +107,23 @@
 .mobile-drawer {
   position: fixed;
   top: 0;
-  right: -100%;
+  inset-inline-end: -100%;
   width: 80%;
   max-width: 320px;
   height: 100%;
   background: #ffffff;
   box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-  transition: right 0.3s ease;
+  transition: inset-inline-end 0.3s ease;
   z-index: 200;
   overflow-y: auto;
 }
 
 .mobile-drawer.open {
-  right: 0;
+  inset-inline-end: 0;
+}
+
+[dir="rtl"] .mobile-drawer {
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
 }
 
 .mobile-nav {
@@ -152,10 +156,7 @@
 
 .drawer-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: rgba(0, 0, 0, 0.5);
   z-index: 150;
 }

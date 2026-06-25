@@ -109,14 +109,14 @@
 
 .status-timeline--horizontal .st-connector {
   top: calc(var(--st-marker-size) / 2);
-  left: calc(50% + var(--st-marker-size) / 2 + 4px);
-  right: calc(-50% + var(--st-marker-size) / 2 + 4px);
+  inset-inline-start: calc(50% + var(--st-marker-size) / 2 + 4px);
+  inset-inline-end: calc(-50% + var(--st-marker-size) / 2 + 4px);
   height: var(--st-connector-width);
   transform: translateY(-50%);
 }
 
 .status-timeline--vertical .st-connector {
-  left: calc(var(--st-marker-size) / 2);
+  inset-inline-start: calc(var(--st-marker-size) / 2);
   top: calc(var(--st-marker-size) + 4px);
   bottom: calc(-1 * var(--st-gap) + 4px);
   width: var(--st-connector-width);
@@ -130,6 +130,14 @@
 .st-connector--in-progress {
   background: linear-gradient(
     to right,
+    var(--st-completed-border),
+    var(--st-progress-border)
+  );
+}
+
+[dir="rtl"] .status-timeline--horizontal .st-connector--in-progress {
+  background: linear-gradient(
+    to left,
     var(--st-completed-border),
     var(--st-progress-border)
   );
@@ -235,7 +243,7 @@
 /* Vertical layout: tooltip repositioned */
 .status-timeline--vertical .st-timestamp-tooltip {
   bottom: auto;
-  left: calc(100% + 8px);
+  inset-inline-start: calc(100% + 8px);
   top: 50%;
   transform: translateY(-50%);
 }
@@ -246,6 +254,18 @@
   transform: translateY(-50%);
   border: 5px solid transparent;
   border-right-color: var(--glass-border-bright);
+}
+
+[dir="rtl"] .status-timeline--vertical .st-timestamp-tooltip {
+  left: auto;
+  right: calc(100% + 8px);
+}
+
+[dir="rtl"] .status-timeline--vertical .st-timestamp-tooltip::after {
+  left: auto;
+  right: -10px;
+  border-right-color: transparent;
+  border-left-color: var(--glass-border-bright);
 }
 
 /* ─── Sub-steps Disclosure ──────────────────────────────────── */
@@ -383,17 +403,17 @@
 
   .status-timeline--horizontal .st-content {
     align-items: flex-start;
-    text-align: left;
+    text-align: start;
     margin-top: 0;
   }
 
   .status-timeline--horizontal .st-connector {
-    left: calc(var(--st-marker-size) / 2);
+    inset-inline-start: calc(var(--st-marker-size) / 2);
     top: calc(var(--st-marker-size) + 4px);
     bottom: calc(-1 * var(--st-gap) + 4px);
     width: var(--st-connector-width);
     height: auto;
-    right: auto;
+    inset-inline-end: auto;
     transform: translateX(-50%);
   }
 
@@ -407,17 +427,29 @@
 
   .status-timeline--horizontal .st-timestamp-tooltip {
     bottom: auto;
-    left: calc(100% + 8px);
+    inset-inline-start: calc(100% + 8px);
     top: 50%;
     transform: translateY(-50%);
   }
 
   .status-timeline--horizontal .st-timestamp-tooltip::after {
     top: 50%;
-    left: -10px;
+    inset-inline-start: -10px;
     transform: translateY(-50%);
     border: 5px solid transparent;
-    border-right-color: var(--glass-border-bright);
+    border-inline-end-color: var(--glass-border-bright);
+  }
+
+  [dir="rtl"] .status-timeline--horizontal .st-timestamp-tooltip {
+    inset-inline-start: auto;
+    inset-inline-end: calc(100% + 8px);
+  }
+
+  [dir="rtl"] .status-timeline--horizontal .st-timestamp-tooltip::after {
+    inset-inline-start: auto;
+    inset-inline-end: -10px;
+    border-inline-end-color: transparent;
+    border-inline-start-color: var(--glass-border-bright);
   }
 }
 

@@ -256,7 +256,7 @@
 .dt-ratio {
   opacity: 0.75;
   font-weight: var(--font-weight-normal);
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 
 /* ─── Spacing rows ────────────────────────────────────────────────────────── */

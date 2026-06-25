@@ -51,7 +51,7 @@ export const ForgotPassword: React.FC = () => {
             you'll receive an email with instructions to reset your password shortly.
           </p>
           <Link to="/login" className="btn btn--secondary btn--block inline-flex focus-ring" aria-label="Back to sign in page">
-            <ArrowLeft size={18} className="mr-2" />
+            <ArrowLeft size={18} className="mr-2 icon-rtl" />
             Back to Sign In
           </Link>
         </div>
@@ -101,7 +101,7 @@ export const ForgotPassword: React.FC = () => {
           style={{ padding: '0.25rem', borderRadius: '0.25rem' }}
           aria-label="Back to sign in page"
         >
-          <ArrowLeft size={16} className="mr-2" />
+          <ArrowLeft size={16} className="mr-2 icon-rtl" />
           Back to Sign In
         </Link>
       </form>

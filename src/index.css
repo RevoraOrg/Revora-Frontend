@@ -358,6 +358,17 @@ a:focus-visible {
   40%, 60% { transform: translate3d(3px, 0, 0); }
 }
 
+@keyframes shake-rtl {
+  10%, 90% { transform: translate3d(1px, 0, 0); }
+  20%, 80% { transform: translate3d(-2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(3px, 0, 0); }
+  40%, 60% { transform: translate3d(-3px, 0, 0); }
+}
+
+[dir="rtl"] .animate-shake {
+  animation-name: shake-rtl;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -456,6 +467,14 @@ input:focus-visible,
     max(env(safe-area-inset-right, 0px), 1rem)
     1.5rem
     max(env(safe-area-inset-left, 0px), 1rem);
+}
+
+[dir="rtl"] .auth-layout-outer {
+  padding:
+    1.5rem
+    max(env(safe-area-inset-left, 0px), 1rem)
+    1.5rem
+    max(env(safe-area-inset-right, 0px), 1rem);
 }
 
 /**
@@ -643,8 +662,7 @@ input:focus-visible,
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
+  padding-inline: 1.5rem;
 }
 
 /**
@@ -706,8 +724,7 @@ input:focus-visible,
   line-height: var(--line-height-relaxed);
   margin-bottom: var(--spacing-2xl);
   max-width: 32rem;
-  margin-left: auto;
-  margin-right: auto;
+  margin-inline: auto;
 }
 
 .home-grid {
@@ -725,7 +742,7 @@ input:focus-visible,
 
 .home-section {
   padding: var(--spacing-xl);
-  text-align: left;
+  text-align: start;
   border-color: var(--glass-border);
   border-radius: var(--radius-xl);
 }
@@ -763,8 +780,7 @@ input:focus-visible,
   }
   .home-actions .btn {
     width: auto;
-    padding-left: var(--spacing-3xl);
-    padding-right: var(--spacing-3xl);
+    padding-inline: var(--spacing-3xl);
   }
 }
 
@@ -799,3 +815,42 @@ input:focus-visible,
   color: var(--text-muted);
   margin-bottom: var(--spacing-2xl);
 }
+
+/* ─── RTL Overrides ────────────────────────────────────────────── */
+[dir="rtl"] .home-section {
+  text-align: end;
+}
+
+[dir="rtl"] .text-start {
+  text-align: end;
+}
+
+[dir="rtl"] .text-end {
+  text-align: start;
+}
+
+/* Icons that flip horizontally in RTL (arrows, chevrons, back/forward) */
+[dir="rtl"] .icon-rtl {
+  transform: scaleX(-1);
+}
+
+/* RTL-aware absolute positioning utilities */
+[dir="rtl"] .right-0 { right: auto; left: 0; }
+[dir="rtl"] .right-3 { right: auto; left: 0.75rem; }
+[dir="rtl"] .right-4 { right: auto; left: 1rem; }
+[dir="rtl"] .left-3 { left: auto; right: 0.75rem; }
+[dir="rtl"] .-right-1 { right: auto; left: -0.25rem; }
+[dir="rtl"] .-left-1 { left: auto; right: -0.25rem; }
+
+/* RTL-aware margin/padding utilities */
+[dir="rtl"] .mr-1 { margin-right: 0; margin-left: 0.25rem; }
+[dir="rtl"] .mr-2 { margin-right: 0; margin-left: 0.5rem; }
+[dir="rtl"] .ml-2 { margin-left: 0; margin-right: 0.5rem; }
+[dir="rtl"] .pl-10 { padding-left: 0; padding-right: 2.5rem; }
+[dir="rtl"] .pr-2 { padding-right: 0; padding-left: 0.5rem; }
+[dir="rtl"] .pr-10 { padding-right: 0; padding-left: 2.5rem; }
+[dir="rtl"] .space-x-3 > * + * { margin-left: 0; margin-right: 0.75rem; }
+
+/* RTL-aware text alignment */
+[dir="rtl"] .text-left { text-align: right; }
+[dir="rtl"] .text-right { text-align: left; }

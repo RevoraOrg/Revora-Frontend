@@ -75,7 +75,7 @@ export const OfferingDetail: React.FC = () => {
           className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
           aria-label="Back to offerings"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={20} className="icon-rtl" />
         </button>
         <div>
           <p className="text-xs text-muted uppercase tracking-wide">

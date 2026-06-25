@@ -5,6 +5,7 @@ import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
@@ -29,7 +30,8 @@ export function App() {
 
           {/* Updated Route - Issue #63 */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
-          <Route path="/design-tokens" element={<DesignTokensPage />} />
+          {/* Issue #163 – Portfolio Summary */}
+          <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
         </Route>
       </Routes>
     </Router>

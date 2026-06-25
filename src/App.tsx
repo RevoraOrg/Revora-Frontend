@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-rout
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";

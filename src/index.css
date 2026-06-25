@@ -124,6 +124,30 @@
   --ds-state-pad-x:    2rem;                       /* side padding on narrow screens   */
   --ds-state-icon-size: 4.5rem;                    /* icon well diameter               */
   --ds-filter-badge-size: 0.5rem;                  /* active-filter dot size           */
+
+  /* ─── Status Timeline Tokens (Issue #153) ───────────────────────────── */
+  --st-gap: 1.5rem;                               /* gap between milestones           */
+  --st-marker-size: 2.5rem;                        /* milestone marker diameter         */
+  --st-connector-width: 2px;                       /* connector line thickness          */
+  --st-milestone-min-w: 8rem;                      /* min width per milestone (horiz)   */
+  --st-content-gap: 0.75rem;                       /* gap: marker → content (vertical)  */
+
+  /* Milestone state colours */
+  --st-completed-bg: rgba(16, 185, 129, 0.12);     /* ✓ completed background           */
+  --st-completed-border: #10b981;                   /* ✓ completed ring / connector      */
+  --st-completed-fg: #10b981;                       /* ✓ completed icon                  */
+
+  --st-progress-bg: rgba(59, 130, 246, 0.12);      /* ● in-progress background          */
+  --st-progress-border: #3b82f6;                    /* ● in-progress ring / connector    */
+  --st-progress-fg: #3b82f6;                        /* ● in-progress icon                */
+
+  --st-blocked-bg: rgba(239, 68, 68, 0.12);        /* ▲ blocked background              */
+  --st-blocked-border: rgba(239, 68, 68, 0.5);     /* ▲ blocked ring                    */
+  --st-blocked-fg: #ef4444;                         /* ▲ blocked icon                    */
+
+  --st-pending-bg: rgba(148, 163, 184, 0.08);      /* ○ pending background              */
+  --st-pending-border: rgba(148, 163, 184, 0.25);  /* ○ pending ring / connector        */
+  --st-pending-fg: #94a3b8;                         /* ○ pending icon                    */
 }
 
 * {
@@ -353,6 +377,17 @@ input:focus-visible,
   outline: 2px solid var(--primary);
   outline-offset: 2px;
   border-radius: 0.25rem;
+}
+
+/* Localized text handling */
+.localized-text {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.localized-text[dir="rtl"] {
+  unicode-bidi: embed;
 }
 
 /* Utilities for accessibility and consistency */

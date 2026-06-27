@@ -1,5 +1,6 @@
 import React, { useState, useId } from "react";
 import { PieChart, AlignLeft } from "lucide-react";
+import { usePrintMode } from "../hooks/usePrintMode";
 
 export interface AllocationSlice {
   id: string;
@@ -150,7 +151,11 @@ export const AllocationWidget: React.FC<AllocationWidgetProps> = ({
   __initialView = "donut",
 }) => {
   const [view, setView] = useState<"donut" | "bar">(__initialView);
+  const isPrinting = usePrintMode();
   const toggleId = useId();
+
+  // Force bar view when printing for accessible output
+  const effectiveView = isPrinting ? "bar" : view;
 
   if (slices.length === 0) {
     return (
@@ -162,24 +167,29 @@ export const AllocationWidget: React.FC<AllocationWidgetProps> = ({
   }
 
   return (
-    <section className="glass-card p-6 space-y-4" aria-labelledby={`${toggleId}-heading`} data-testid="allocation-widget">
+    <section
+      className="glass-card p-6 space-y-4"
+      aria-labelledby={`${toggleId}-heading`}
+      data-testid="allocation-widget"
+      data-print-view={isPrinting ? "bar" : view}
+    >
       <div className="flex items-center justify-between">
         <h2 id={`${toggleId}-heading`} className="text-base font-semibold">Allocation</h2>
         {/* Toggle between donut and bar */}
         <div role="group" aria-label="Chart view toggle" className="flex items-center gap-1">
           <button
-            className={`btn--icon p-1.5 rounded-md transition-colors ${view === "donut" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
+            className={`btn--icon p-1.5 rounded-md transition-colors ${effectiveView === "donut" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
             onClick={() => setView("donut")}
-            aria-pressed={view === "donut"}
+            aria-pressed={effectiveView === "donut"}
             aria-label="Donut chart view"
             data-testid="donut-toggle"
           >
             <PieChart size={16} aria-hidden="true" />
           </button>
           <button
-            className={`btn--icon p-1.5 rounded-md transition-colors ${view === "bar" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
+            className={`btn--icon p-1.5 rounded-md transition-colors ${effectiveView === "bar" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
             onClick={() => setView("bar")}
-            aria-pressed={view === "bar"}
+            aria-pressed={effectiveView === "bar"}
             aria-label="Bar chart view"
             data-testid="bar-toggle"
           >
@@ -188,7 +198,15 @@ export const AllocationWidget: React.FC<AllocationWidgetProps> = ({
         </div>
       </div>
 
-      {view === "donut" ? <DonutChart slices={slices} /> : <BarView slices={slices} />}
+      {effectiveView === "donut" ? (
+        <div className="donut-view">
+          <DonutChart slices={slices} />
+        </div>
+      ) : (
+        <div className="bar-view">
+          <BarView slices={slices} />
+        </div>
+      )}
     </section>
   );
 };

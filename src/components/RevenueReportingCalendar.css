@@ -1,0 +1,819 @@
+/**
+ * Revenue Reporting Calendar — Issue #153
+ *
+ * Styles for the responsive, accessible month-grid calendar.
+ * Uses existing design-system tokens from index.css :root.
+ *
+ * Responsive breakpoints:
+ * - Desktop: ≥1024px (side-by-side layout)
+ * - Tablet: 768px–1023px (collapsible side panel)
+ * - Mobile: <768px (stacked layout, collapsible panel)
+ *
+ * RTL: uses logical properties where possible; dir inherited from parent.
+ */
+
+/* ─── Design Tokens (Calendar-specific) ──────────────────────────── */
+
+:root {
+  /* Calendar status colours */
+  --rc-status-due: #f59e0b;
+  --rc-status-submitted: #3b82f6;
+  --rc-status-accepted: #10b981;
+  --rc-status-overdue: #ef4444;
+
+  /* Calendar sizing */
+  --rc-cell-size: 2.75rem;
+  --rc-cell-gap: 0.25rem;
+  --rc-header-height: 2.5rem;
+  --rc-nav-height: 3rem;
+
+  /* Calendar spacing */
+  --rc-pad-x: var(--spacing-lg);
+  --rc-pad-y: var(--spacing-xl);
+  --rc-gap: var(--spacing-xl);
+
+  /* Calendar radius */
+  --rc-radius: var(--radius-lg);
+  --rc-radius-sm: var(--radius-md);
+
+  /* Calendar typography */
+  --rc-title-size: var(--font-size-xl);
+  --rc-cell-size-text: var(--font-size-sm);
+  --rc-legend-size: var(--font-size-xs);
+}
+
+/* ─── Container ────────────────────────────────────────────────────── */
+
+.rc-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--rc-pad-y) var(--rc-pad-x);
+  font-family: inherit;
+  color: var(--text-main);
+}
+
+/* ─── Loading State ────────────────────────────────────────────────── */
+
+.rc-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-3xl);
+  min-height: 300px;
+}
+
+.rc-loading-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid var(--glass-border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: rc-spin 0.8s linear infinite;
+}
+
+@keyframes rc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.rc-loading-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+/* ─── Error State ──────────────────────────────────────────────────── */
+
+.rc-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-3xl);
+  min-height: 300px;
+  text-align: center;
+  color: var(--error);
+}
+
+.rc-error-text {
+  font-size: var(--font-size-base);
+  max-width: 24rem;
+}
+
+/* ─── Layout ───────────────────────────────────────────────────────── */
+
+.rc-layout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rc-gap);
+}
+
+/* Desktop: side-by-side */
+@media (min-width: 1024px) {
+  .rc-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  .rc-calendar-section {
+    flex: 1 1 60%;
+    min-width: 0;
+  }
+
+  .rc-details-wrapper {
+    flex: 0 0 380px;
+    position: sticky;
+    top: var(--spacing-xl);
+  }
+}
+
+/* Tablet: collapsible panel */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .rc-layout {
+    flex-direction: row;
+    gap: var(--spacing-md);
+  }
+
+  .rc-calendar-section {
+    flex: 1 1 55%;
+    min-width: 0;
+  }
+
+  .rc-details-wrapper {
+    flex: 0 0 320px;
+  }
+
+  .rc-details-panel--closed {
+    display: none;
+  }
+}
+
+/* Mobile: stacked */
+@media (max-width: 767px) {
+  .rc-layout {
+    flex-direction: column;
+  }
+
+  .rc-details-wrapper {
+    width: 100%;
+  }
+
+  .rc-details-panel--closed {
+    display: none;
+  }
+}
+
+/* ─── Mobile Toggle ────────────────────────────────────────────────── */
+
+.rc-mobile-toggle {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-xs);
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--rc-radius-sm);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: var(--spacing-md);
+}
+
+.rc-mobile-toggle:hover {
+  background: rgba(148, 163, 184, 0.15);
+  border-color: var(--glass-border-bright);
+}
+
+.rc-mobile-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+  .rc-mobile-toggle {
+    display: inline-flex;
+  }
+}
+
+/* ─── Calendar Section ─────────────────────────────────────────────── */
+
+.rc-calendar-section {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-lg);
+  backdrop-filter: var(--glass-blur);
+}
+
+/* ─── Month Navigation ─────────────────────────────────────────────── */
+
+.rc-month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--rc-nav-height);
+  margin-bottom: var(--spacing-md);
+}
+
+.rc-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--rc-radius-sm);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rc-nav-btn:hover {
+  background: rgba(148, 163, 184, 0.1);
+  border-color: var(--glass-border-bright);
+}
+
+.rc-nav-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.rc-month-title {
+  font-size: var(--rc-title-size);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  text-align: center;
+  line-height: var(--line-height-tight);
+}
+
+/* ─── Legend ───────────────────────────────────────────────────────── */
+
+.rc-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-md);
+  margin-bottom: var(--spacing-md);
+  padding: var(--spacing-xs) 0;
+}
+
+.rc-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  font-size: var(--rc-legend-size);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.rc-legend-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+/* ─── Calendar Grid (WAI-ARIA) ─────────────────────────────────────── */
+
+.rc-calendar-grid {
+  display: table;
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: var(--rc-cell-gap);
+  outline: none;
+}
+
+.rc-calendar-grid:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--rc-radius);
+}
+
+/* Header row */
+.rc-grid-header {
+  display: table-row;
+}
+
+.rc-grid-header-cell {
+  display: table-cell;
+  width: calc(100% / 7);
+  text-align: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: var(--spacing-xs) 0;
+  user-select: none;
+}
+
+/* Data rows */
+.rc-grid-row {
+  display: table-row;
+}
+
+/* ─── Day Cell ─────────────────────────────────────────────────────── */
+
+.rc-day-cell {
+  display: table-cell;
+  width: calc(100% / 7);
+  height: var(--rc-cell-size);
+  text-align: center;
+  vertical-align: middle;
+  position: relative;
+  border-radius: var(--rc-radius-sm);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  border: 1px solid transparent;
+  background: transparent;
+  user-select: none;
+  padding: 0;
+}
+
+.rc-day-cell:hover {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: var(--glass-border);
+}
+
+.rc-day-cell:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  z-index: 2;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+}
+
+/* Outside month */
+.rc-day-cell--outside {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.rc-day-cell--outside:hover {
+  opacity: 0.75;
+}
+
+/* Today */
+.rc-day-cell--today {
+  font-weight: var(--font-weight-bold);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}
+
+.rc-day-cell--today.rc-day-cell--outside {
+  border-color: var(--glass-border);
+  box-shadow: none;
+}
+
+/* Selected */
+.rc-day-cell--selected {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+}
+
+.rc-day-cell--selected:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+/* Status-specific backgrounds */
+.rc-day-cell--due {
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.rc-day-cell--submitted {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.rc-day-cell--accepted {
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.rc-day-cell--overdue {
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.rc-day-cell--due:hover {
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.rc-day-cell--submitted:hover {
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.rc-day-cell--accepted:hover {
+  background: rgba(16, 185, 129, 0.14);
+}
+
+.rc-day-cell--overdue:hover {
+  background: rgba(239, 68, 68, 0.14);
+}
+
+/* Day number */
+.rc-day-number {
+  font-size: var(--rc-cell-size-text);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  position: relative;
+  z-index: 1;
+}
+
+/* Status dot */
+.rc-status-dot {
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  z-index: 1;
+}
+
+/* Count badge for multiple reports */
+.rc-day-count {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-accent);
+  background: rgba(56, 189, 248, 0.15);
+  border-radius: var(--radius-full);
+  padding: 0 0.25rem;
+  line-height: 1.3;
+  min-width: 0.875rem;
+  text-align: center;
+}
+
+/* ─── Details Panel ────────────────────────────────────────────────── */
+
+.rc-details-wrapper {
+  width: 100%;
+}
+
+.rc-details-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+  padding: var(--spacing-lg);
+  backdrop-filter: var(--glass-blur);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  position: relative;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.rc-details-panel--closed {
+  display: none;
+}
+
+/* Mobile close button */
+.rc-details-close {
+  display: none;
+  position: absolute;
+  top: var(--spacing-sm);
+  right: var(--spacing-sm);
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--rc-radius-sm);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.rc-details-close:hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-main);
+}
+
+.rc-details-close:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1023px) {
+  .rc-details-close {
+    display: inline-flex;
+  }
+}
+
+/* Panel header */
+.rc-details-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  color: var(--text-accent);
+}
+
+.rc-details-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  line-height: var(--line-height-tight);
+}
+
+/* View mode toggle */
+.rc-details-toggle {
+  display: flex;
+  gap: var(--spacing-2xs);
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: var(--rc-radius-sm);
+  padding: var(--spacing-2xs);
+}
+
+.rc-details-tab {
+  flex: 1;
+  padding: var(--spacing-2xs) var(--spacing-sm);
+  border: none;
+  border-radius: calc(var(--rc-radius-sm) - 2px);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.rc-details-tab:hover {
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.rc-details-tab--active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rc-details-tab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* Panel content */
+.rc-details-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rc-details-day-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  line-height: var(--line-height-snug);
+}
+
+/* Empty state in panel */
+.rc-details-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-xl) 0;
+}
+
+.rc-details-empty-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+/* ─── Submit CTA ───────────────────────────────────────────────────── */
+
+.rc-submit-cta {
+  width: 100%;
+  margin-top: var(--spacing-sm);
+}
+
+.rc-submit-cta--month {
+  margin-bottom: var(--spacing-md);
+}
+
+/* ─── Report Item ──────────────────────────────────────────────────── */
+
+.rc-report-item {
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--rc-radius);
+  padding: var(--spacing-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  transition: border-color 0.2s ease;
+}
+
+.rc-report-item:hover {
+  border-color: var(--glass-border-bright);
+}
+
+.rc-report-item-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.rc-report-status-badge {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+}
+
+.rc-report-status-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.rc-report-date {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  margin-inline-start: auto;
+}
+
+.rc-report-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xs);
+}
+
+.rc-report-revenue {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+}
+
+.rc-report-due,
+.rc-report-accepted {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.rc-report-notes {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+  font-style: italic;
+}
+
+.rc-report-item-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.rc-report-awaiting,
+.rc-report-confirmed {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  border-radius: var(--radius-full);
+}
+
+.rc-report-awaiting {
+  color: var(--primary);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.rc-report-confirmed {
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+/* ─── Month Summary ────────────────────────────────────────────────── */
+
+.rc-month-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: var(--rc-radius);
+  border: 1px solid var(--glass-border);
+}
+
+.rc-month-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-2xs);
+}
+
+.rc-month-stat-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-main);
+  line-height: 1;
+}
+
+.rc-month-stat-label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+/* ─── Month Reports List ───────────────────────────────────────────── */
+
+.rc-month-reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* ─── RTL Support ──────────────────────────────────────────────────── */
+
+[dir='rtl'] .rc-day-count {
+  right: auto;
+  left: 3px;
+}
+
+[dir='rtl'] .rc-report-date {
+  margin-inline-start: 0;
+  margin-inline-end: auto;
+}
+
+[dir='rtl'] .rc-details-close {
+  right: auto;
+  left: var(--spacing-sm);
+}
+
+/* ─── Reduced Motion ───────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-loading-spinner {
+    animation: none;
+  }
+
+  .rc-day-cell,
+  .rc-nav-btn,
+  .rc-details-panel,
+  .rc-report-item {
+    transition: none;
+  }
+}
+
+/* ─── High Contrast Mode ───────────────────────────────────────────── */
+
+@media (forced-colors: active) {
+  .rc-day-cell {
+    border: 1px solid ButtonText;
+  }
+
+  .rc-day-cell--selected {
+    border: 2px solid Highlight;
+  }
+
+  .rc-status-dot {
+    forced-color-adjust: none;
+  }
+
+  .rc-nav-btn {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ─── Print Styles ─────────────────────────────────────────────────── */
+
+@media print {
+  .rc-container {
+    padding: 0;
+  }
+
+  .rc-calendar-section,
+  .rc-details-panel {
+    box-shadow: none;
+    border: 1px solid #ccc;
+    break-inside: avoid;
+  }
+
+  .rc-mobile-toggle,
+  .rc-nav-btn,
+  .rc-submit-cta {
+    display: none;
+  }
+}

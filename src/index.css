@@ -148,6 +148,24 @@
   --st-pending-bg: rgba(148, 163, 184, 0.08);      /* ○ pending background              */
   --st-pending-border: rgba(148, 163, 184, 0.25);  /* ○ pending ring / connector        */
   --st-pending-fg: #94a3b8;                         /* ○ pending icon                    */
+
+  /* ─── Revenue Reporting Calendar Tokens (Issue #153) ─────────────── */
+  --rc-status-due: #f59e0b;                         /* ● due indicator                   */
+  --rc-status-submitted: #3b82f6;                   /* ● submitted indicator             */
+  --rc-status-accepted: #10b981;                    /* ● accepted indicator              */
+  --rc-status-overdue: #ef4444;                     /* ● overdue indicator               */
+  --rc-cell-size: 2.75rem;                          /* calendar day cell size            */
+  --rc-cell-gap: 0.25rem;                           /* gap between cells                 */
+  --rc-header-height: 2.5rem;                       /* day-name header height            */
+  --rc-nav-height: 3rem;                            /* month nav height                  */
+  --rc-pad-x: 1.25rem;                              /* horizontal padding                */
+  --rc-pad-y: 1.5rem;                               /* vertical padding                  */
+  --rc-gap: 1.5rem;                                 /* layout gap                        */
+  --rc-radius: 0.75rem;                             /* cell / panel radius               */
+  --rc-radius-sm: 0.5rem;                           /* small element radius              */
+  --rc-title-size: 1.25rem;                         /* month title size                  */
+  --rc-cell-size-text: 0.875rem;                    /* day number font size              */
+  --rc-legend-size: 0.75rem;                        /* legend font size                  */
 }
 
 * {

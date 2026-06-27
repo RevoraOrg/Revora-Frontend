@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import { TwoFactorSetup } from '../components/TwoFactorSetup';
 import { Mail, Lock, Wallet, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
@@ -12,6 +13,7 @@ export const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [show2FASetup, setShow2FASetup] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +35,17 @@ export const Login: React.FC = () => {
 
     setIsSuccess(false);
   };
+
+  if (show2FASetup) {
+    return (
+      <AuthLayout title="Two-Factor Authentication" subtitle="Secure your account with an extra layer of protection.">
+        <TwoFactorSetup
+          onComplete={() => setShow2FASetup(false)}
+          onCancel={() => setShow2FASetup(false)}
+        />
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout
@@ -107,6 +120,16 @@ export const Login: React.FC = () => {
         <Button type="submit" loading={isSubmitting} success={isSuccess} className="mt-2">
           {isSuccess ? 'Signed In!' : 'Sign In'}
         </Button>
+
+        <p className="text-center text-xs text-muted mt-1">
+          <button
+            type="button"
+            className="link-styled text-xs"
+            onClick={() => setShow2FASetup(true)}
+          >
+            Set up two-factor authentication
+          </button>
+        </p>
 
         <div className="relative my-6 py-2 flex items-center">
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>

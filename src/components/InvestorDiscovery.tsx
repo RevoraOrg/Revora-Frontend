@@ -5,13 +5,10 @@ import {
   Rocket,
   TrendingUp,
   ShieldCheck,
-  SearchX,
-  ServerCrash,
-  RefreshCw,
   X,
   SlidersHorizontal,
-  PackageOpen,
 } from "lucide-react";
+import { EmptyState } from "./designSystem/EmptyState";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
@@ -59,11 +56,20 @@ const MOCK_OFFERINGS: Offering[] = [
   { id: 3, name: 'Nexus Pay', category: 'Cross-Border Payments', revenueShare: 18, target: 300000, raised: 186000 },
 ];
 
+const DISCOVERY_CARDS = [
+  { title: 'TechFlow AI', subtitle: 'Enterprise SaaS', progress: 45, target: '$250,000' },
+  { title: 'Quantum Ledger', subtitle: 'DeFi Infrastructure', progress: 28, target: '$500,000' },
+  { title: 'Nexus Pay', subtitle: 'Cross-Border Payments', progress: 62, target: '$300,000' },
+];
+
 export const InvestorDiscovery: React.FC = () => {
   const [isLoading, setIsLoading] = useState(
     typeof process !== "undefined" && process.env.NODE_ENV === "test" ? false : true
   );
   const [hasError, setHasError] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filtersActive, setFiltersActive] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
@@ -111,6 +117,9 @@ export const InvestorDiscovery: React.FC = () => {
 
   const handleRetry = () => {
     setRetryCount((c) => c + 1);
+    setHasError(false);
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 2000);
   };
 
   const handleToggleFilters = () => {
@@ -197,78 +206,117 @@ export const InvestorDiscovery: React.FC = () => {
         </div>
       )}
 
-      {/* Error State */}
-      {!isLoading && hasError && (
-        <div
-          className="glass-card p-12 text-center"
-          role="alert"
-          aria-live="assertive"
-        >
-          <TrendingUp className="mx-auto mb-4 text-error" size={48} />
-          <h2 className="text-xl font-semibold mb-2">Unable to Load Offerings</h2>
-          <p className="text-muted text-sm max-w-md mx-auto mb-6">
-            We couldn't fetch the latest opportunities. Please try again later.
-          </p>
-          <button
-            className="btn-primary w-auto px-6 mx-auto"
-            onClick={() => {
-              setHasError(false);
-              setIsLoading(true);
-              setTimeout(() => setIsLoading(false), 2000);
-            }}
-          >
-            Retry
-          </button>
-        </div>
-      )}
-
-      {/* Loaded State: Discovery Cards Pattern */}
+      {/* ── Result Area ── */}
       {!isLoading && !hasError && (
-        <section aria-labelledby="offerings-heading">
+        <section aria-labelledby="offerings-heading" aria-live="polite">
           <h2 id="offerings-heading" className="sr-only">
             Offerings
           </h2>
-          <div
-            className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in"
-            aria-label="Available startup offerings"
-          >
-            {DISCOVERY_CARDS.map((card, index) => (
-              <div
-                key={index}
-                className="glass-card glass-card-interactive p-6 space-y-4"
-              >
-                <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-                  <Rocket size={24} />
-                </div>
-                <div>
-                  <h3 className="font-semibold text-lg">{card.title}</h3>
-                  <p className="text-xs text-muted">{card.subtitle}</p>
-                </div>
-                <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-muted">Target</span>
-                    <span>{card.target}</span>
+
+          {state.kind === 'loaded' && (
+            <div
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in"
+              aria-label="Available startup offerings"
+            >
+              {DISCOVERY_CARDS.map((card, index) => (
+                <div
+                  key={index}
+                  className="glass-card glass-card-interactive p-6 space-y-4"
+                >
+                  <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                    <Rocket size={24} />
                   </div>
-                  <div
-                    className="w-full bg-slate-800 rounded-full h-1.5"
-                    role="progressbar"
-                    aria-valuenow={card.progress}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`${card.progress}% funded`}
-                  >
+                  <div>
+                    <h3 className="font-semibold text-lg">{card.title}</h3>
+                    <p className="text-xs text-muted">{card.subtitle}</p>
+                  </div>
+                  <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted">Target</span>
+                      <span>{card.target}</span>
+                    </div>
                     <div
-                      className="bg-primary h-1.5 rounded-full"
-                      style={{ width: `${card.progress}%` }}
-                    />
+                      className="w-full bg-slate-800 rounded-full h-1.5"
+                      role="progressbar"
+                      aria-valuenow={card.progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${card.progress}% funded`}
+                    >
+                      <div
+                        className="bg-primary h-1.5 rounded-full"
+                        style={{ width: `${card.progress}%` }}
+                      />
+                    </div>
                   </div>
+                  <button className="btn-primary py-2 text-xs">
+                    View Prospectus
+                  </button>
                 </div>
-                <button className="btn-primary py-2 text-xs">
-                  View Prospectus
-                </button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {state.kind === 'filtered-empty' && (
+            <EmptyState
+              variant="distribution-dashboard"
+              title="No offerings match your search"
+              description={
+                state.query
+                  ? `We couldn't find any offerings matching "${state.query}".`
+                  : 'No offerings match the active filters.'
+              }
+              primaryAction={{
+                label: 'Clear filters',
+                onClick: handleClearFilters,
+                ariaLabel: 'Clear all search filters and show all offerings',
+              }}
+              context={
+                state.query ? (
+                  <span className="empty-state-context" aria-label={`Search term: ${state.query}`}>
+                    Searched for &ldquo;{state.query}&rdquo;
+                  </span>
+                ) : undefined
+              }
+            />
+          )}
+
+          {state.kind === 'truly-empty' && (
+            <EmptyState
+              variant="distribution-dashboard"
+              title="No offerings yet"
+              description="Check back soon — new RevenueShare offerings are added regularly as startups join the platform."
+              primaryAction={{
+                label: 'How it works',
+                href: '/',
+              }}
+              secondaryAction={{
+                label: 'Back to Home',
+                href: '/',
+              }}
+            />
+          )}
+
+          {state.kind === 'error' && (
+            <EmptyState
+              variant="distribution-dashboard"
+              severity="error"
+              title="Couldn't load offerings"
+              description="Your portfolio and account are unaffected. Please try again in a moment."
+              primaryAction={{
+                label: 'Try again',
+                onClick: handleRetry,
+                ariaLabel: 'Retry loading offerings',
+              }}
+              context={
+                retryCount > 0 ? (
+                  <span className="empty-state-context">
+                    Retried {retryCount} {retryCount === 1 ? 'time' : 'times'} — still having trouble? Contact support.
+                  </span>
+                ) : undefined
+              }
+            />
+          )}
         </section>
       )}
 

@@ -1,5 +1,6 @@
 import React, { useState, useId } from "react";
 import { LineChart, Table } from "lucide-react";
+import { usePrintMode } from "../hooks/usePrintMode";
 
 export interface PerformanceDataPoint {
   month: string; // e.g. "Jan", "Feb"
@@ -133,7 +134,11 @@ export const PerformanceTrendWidget: React.FC<PerformanceTrendWidgetProps> = ({
   __initialView = "chart",
 }) => {
   const [view, setView] = useState<"chart" | "table">(__initialView);
+  const isPrinting = usePrintMode();
   const headingId = useId();
+
+  // Force table view when printing for accessible output
+  const effectiveView = isPrinting ? "table" : view;
 
   if (data.length === 0) {
     return (
@@ -150,7 +155,12 @@ export const PerformanceTrendWidget: React.FC<PerformanceTrendWidgetProps> = ({
   const isPositive = overallChange >= 0;
 
   return (
-    <section className="glass-card p-6 space-y-4" aria-labelledby={headingId} data-testid="performance-widget">
+    <section
+      className="glass-card p-6 space-y-4"
+      aria-labelledby={headingId}
+      data-testid="performance-widget"
+      data-print-view={isPrinting ? "table" : view}
+    >
       <div className="flex items-center justify-between">
         <div>
           <h2 id={headingId} className="text-base font-semibold">12-Month Performance</h2>
@@ -163,18 +173,18 @@ export const PerformanceTrendWidget: React.FC<PerformanceTrendWidgetProps> = ({
         </div>
         <div role="group" aria-label="View toggle" className="flex items-center gap-1">
           <button
-            className={`btn--icon p-1.5 rounded-md transition-colors ${view === "chart" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
+            className={`btn--icon p-1.5 rounded-md transition-colors ${effectiveView === "chart" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
             onClick={() => setView("chart")}
-            aria-pressed={view === "chart"}
+            aria-pressed={effectiveView === "chart"}
             aria-label="Line chart view"
             data-testid="chart-toggle"
           >
             <LineChart size={16} aria-hidden="true" />
           </button>
           <button
-            className={`btn--icon p-1.5 rounded-md transition-colors ${view === "table" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
+            className={`btn--icon p-1.5 rounded-md transition-colors ${effectiveView === "table" ? "text-primary bg-primary/10" : "text-muted hover:text-main"}`}
             onClick={() => setView("table")}
-            aria-pressed={view === "table"}
+            aria-pressed={effectiveView === "table"}
             aria-label="Table view"
             data-testid="table-toggle"
           >
@@ -183,10 +193,14 @@ export const PerformanceTrendWidget: React.FC<PerformanceTrendWidgetProps> = ({
         </div>
       </div>
 
-      {view === "chart" ? (
-        <LineChartView data={data} currency={currency} />
+      {effectiveView === "chart" ? (
+        <div className="chart-view">
+          <LineChartView data={data} currency={currency} />
+        </div>
       ) : (
-        <TableView data={data} currency={currency} />
+        <div className="table-view">
+          <TableView data={data} currency={currency} />
+        </div>
       )}
     </section>
   );

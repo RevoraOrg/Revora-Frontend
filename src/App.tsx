@@ -20,6 +20,8 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Startup routes */}
           <Route
             path="/startup/dashboard"
             element={<Placeholder title="Startup Dashboard" />}
@@ -29,9 +31,8 @@ export function App() {
             element={<RevenueReportForm />}
           />
 
-          {/* Updated Route - Issue #63 */}
+          {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
-          {/* Issue #163 – Portfolio Summary */}
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />

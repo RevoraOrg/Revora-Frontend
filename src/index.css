@@ -818,1572 +818,346 @@ input:focus-visible,
   margin-bottom: var(--spacing-2xl);
 }
 
-/* ─── EmptyState Component Styles (Issue #152) ──────────────────────────────
-   Tokens: --ds-state-* (defined in :root), --text-*, --primary, --glass-*
-   ─────────────────────────────────────────────────────────────────────────── */
+/* ─── TwoFactorSetup Wizard Styles (Issue #168) ──────────────────────────── */
 
-/**
- * .empty-state-container
- * Centred column layout for the branded empty state.
- * Uses role="status" + aria-live="polite" for screen-reader announcements.
- */
-.empty-state-container {
+.tfa-wizard {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: var(--ds-state-gap);
-  padding: var(--ds-state-pad-y) var(--ds-state-pad-x);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: var(--glass-blur);
-  border-radius: var(--radius-2xl);
-  box-shadow: var(--shadow-xl);
-  max-width: 36rem;
-  margin-left: auto;
-  margin-right: auto;
+  gap: var(--spacing-xl);
 }
 
-/**
- * .empty-state-icon-wrap
- * Circular container for the decorative SVG illustration.
- * Size matches --ds-state-icon-size for consistency with existing state views.
- */
-.empty-state-icon-wrap {
-  width: var(--ds-state-icon-size);
-  height: var(--ds-state-icon-size);
+.tfa-wizard__title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  outline: none; /* managed via focus-visible */
+}
+
+/* Step progress indicator */
+.tfa-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.tfa-steps__list {
+  display: flex;
+  gap: var(--spacing-xs);
+  list-style: none;
+  align-items: center;
+}
+
+.tfa-steps__item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex: 1;
+}
+
+.tfa-steps__item:not(:last-child)::after {
+  content: '';
+  flex: 1;
+  height: 2px;
+  background: var(--glass-border);
+  border-radius: 1px;
+}
+
+.tfa-steps__item--completed:not(:last-child)::after {
+  background: var(--success);
+}
+
+.tfa-steps__dot {
+  width: 1.5rem;
+  height: 1.5rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
+  border: 2px solid var(--glass-border);
+  color: var(--text-muted);
+}
+
+.tfa-steps__item--completed .tfa-steps__dot {
+  background: var(--success);
+  border-color: var(--success);
+  color: #fff;
+}
+
+.tfa-steps__item--active .tfa-steps__dot {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.tfa-steps__label {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* Method selection cards */
+.tfa-method-card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.2s, background 0.2s;
+  color: var(--text-main);
+  width: 100%;
+}
+
+.tfa-method-card:hover {
+  border-color: var(--glass-border-bright);
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.tfa-method-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-lg);
+}
+
+.tfa-method-card__icon {
+  padding: var(--spacing-sm);
+  border-radius: var(--radius-md);
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary);
   flex-shrink: 0;
 }
 
-/**
- * .empty-state-content
- * Wraps the heading, body, and optional context node.
- */
-.empty-state-content {
+.tfa-method-card__body {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-xs);
-  max-width: var(--ds-state-max-w);
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
 }
 
-/**
- * .empty-state-title
- * <h2> inside the empty state — one level below the page <h1>.
- * 20px / semi-bold to maintain hierarchy.
- */
-.empty-state-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  line-height: 1.3;
-  color: var(--text-main);
-  overflow-wrap: break-word;
+.tfa-method-card__title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
 }
 
-/**
- * .empty-state-body
- * Supporting copy. 14px, muted — passes ≥4.5:1 contrast on dark bg.
- */
-.empty-state-body {
-  font-size: 0.875rem;
-  line-height: 1.6;
+.tfa-method-card__desc {
+  font-size: var(--font-size-sm);
   color: var(--text-muted);
-  overflow-wrap: break-word;
+  line-height: var(--line-height-normal);
 }
 
-/**
- * .empty-state-context
- * Optional context slot (e.g. echoed search query for filtered states).
- */
-.empty-state-context {
-  font-size: 0.875rem;
-  color: var(--text-accent);
-  overflow-wrap: break-word;
-}
-
-/**
- * .empty-state-actions
- * Button group — stacks vertically on narrow screens, row on wider.
- */
-.empty-state-actions {
+/* QR code section */
+.tfa-qr-wrapper {
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: #fff;
+  border-radius: var(--radius-lg);
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.tfa-qr-img {
+  display: block;
+  border-radius: var(--radius-sm);
+}
+
+/* Manual key toggle */
+.tfa-toggle-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.tfa-toggle-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Manual key display */
+.tfa-manual-key {
+  padding: var(--spacing-md);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+}
+
+.tfa-manual-key__row {
+  display: flex;
+  align-items: center;
   gap: var(--spacing-sm);
-  width: 100%;
-  max-width: 18rem;
 }
 
-@media (min-width: 480px) {
-  .empty-state-actions {
-    flex-direction: row;
-    justify-content: center;
-  }
+.tfa-manual-key__code {
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  font-size: var(--font-size-base);
+  letter-spacing: 0.15em;
+  color: var(--text-accent);
+  word-break: break-all;
+  flex: 1;
+  user-select: all;
 }
 
-/**
- * .empty-state-action
- * Shared sizing for CTA buttons inside EmptyState.
- */
-.empty-state-action {
-  width: 100%;
-  min-width: 9rem;
+/* Icon-only action button */
+.tfa-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  padding-left: 1.5rem;
-  padding-right: 1.5rem;
-  text-decoration: none;
-  border-radius: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.empty-state-action.btn-primary {
-  background: var(--primary);
-  color: #ffffff;
-  border: none;
-}
-
-.empty-state-action.btn-primary:hover {
-  background: var(--primary-hover);
-  transform: translateY(-1px);
-}
-
-.empty-state-action.btn-secondary {
-  background: rgba(148, 163, 184, 0.1);
-  color: var(--text-main);
+  padding: var(--spacing-xs);
+  background: none;
   border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  flex-shrink: 0;
 }
 
-.empty-state-action.btn-secondary:hover {
-  background: rgba(148, 163, 184, 0.2);
+.tfa-icon-btn:hover {
+  color: var(--text-main);
+  border-color: var(--glass-border-bright);
 }
 
-.empty-state-action.btn--sm {
-  font-size: 0.8125rem;
-  padding-top: 0.5rem;
-  padding-bottom: 0.5rem;
-}
-
-/* Focus visible for EmptyState actions */
-.empty-state-action:focus-visible {
+.tfa-icon-btn:focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
-  border-radius: 0.75rem;
 }
 
-/* Error severity modifier */
-.empty-state-container--error {
-  border-color: rgba(239, 68, 68, 0.2);
+/* 6-digit code input */
+.tfa-code-input {
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  font-size: var(--font-size-2xl);
+  letter-spacing: 0.3em;
+  text-align: center;
+  padding: var(--spacing-md);
 }
 
-.empty-state-container--error .empty-state-title {
-  color: var(--error);
+/* Recovery codes */
+.tfa-warning {
+  display: flex;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.25);
+  border-radius: var(--radius-md);
+  color: #f59e0b;
 }
 
-.empty-state-container--error .empty-state-action.btn-primary {
-  background: var(--error);
+.tfa-recovery-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xs);
+  list-style: none;
+  padding: var(--spacing-md);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
 }
 
-.empty-state-container--error .empty-state-action.btn-primary:hover {
-  background: #dc2626;
+.tfa-recovery-list__item {
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+  font-size: var(--font-size-sm);
+  color: var(--text-main);
+  padding: var(--spacing-2xs) 0;
+  user-select: all;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRINT STYLESHEET — Issue #171
-   Professional print layouts for revenue reports, distribution statements,
-   and transaction receipts.
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-/* ─── Print Design Tokens ─────────────────────────────────────────────── */
-
-@media print {
-  :root {
-    --print-bg: #ffffff;
-    --print-text: #000000;
-    --print-text-muted: #333333;
-    --print-border: #cccccc;
-    --print-accent: #000000;
-    --print-success: #000000;
-    --print-error: #000000;
-    --print-primary: #000000;
-    --print-spacing-unit: 0.25rem;
-    --print-font-size-base: 11pt;
-    --print-font-size-sm: 10pt;
-    --print-font-size-lg: 13pt;
-    --print-font-size-xl: 15pt;
-    --print-font-size-2xl: 18pt;
-    --print-font-size-3xl: 22pt;
-    --print-line-height: 1.5;
-    --print-page-margin: 2rem;
-  }
+.tfa-action-btn {
+  flex: 1;
+  gap: var(--spacing-xs);
 }
 
-/* ─── Page Setup (A4 & Letter) ────────────────────────────────────────── */
-
-@media print {
-  @page {
-    size: A4 Letter;
-    margin: var(--print-page-margin) 1.5rem;
-  }
-
-  @page :first {
-    margin-top: 1.5rem;
-  }
-
-  @page :left {
-    margin-right: 2rem;
-  }
-
-  @page :right {
-    margin-left: 2rem;
-  }
+/* Acknowledge checkbox */
+.tfa-acknowledge {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  cursor: pointer;
 }
 
-/* ─── Global Print Reset ──────────────────────────────────────────────── */
+.tfa-acknowledge input[type="checkbox"] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--primary);
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
 
-@media print {
-  html,
-  body {
-    background: var(--print-bg) !important;
-    color: var(--print-text) !important;
-    font-size: var(--print-font-size-base);
-    line-height: var(--print-line-height);
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
+.tfa-acknowledge input[type="checkbox"]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
-  /* Remove dark backgrounds, glass effects, shadows */
-  .glass-card,
-  .glass-card-interactive,
-  .auth-card,
-  .auth-layout-outer,
-  .home-card,
-  .home-section,
-  .placeholder-card,
-  .discovery-state-container,
-  .empty-state-container,
-  .rc-calendar-section,
-  .rc-details-panel,
-  .rc-details-panel--closed,
-  .rc-month-summary,
-  .rc-report-item,
-  .app-shell,
-  .app-header,
-  .app-main,
-  .content-container,
-  .home-container,
-  .placeholder-container {
-    background: var(--print-bg) !important;
-    background-image: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    box-shadow: none !important;
-    border: 1px solid var(--print-border) !important;
-    border-radius: 0 !important;
-    color: var(--print-text) !important;
-  }
+/* Success icon */
+.tfa-success-icon {
+  width: 4rem;
+  height: 4rem;
+  border-radius: 50%;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  color: var(--success);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
 
-  /* Remove gradients */
-  body {
-    background: var(--print-bg) !important;
-    background-image: none !important;
-  }
+/* Cancel link */
+.tfa-cancel {
+  display: block;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  cursor: pointer;
+  padding: var(--spacing-xs) 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  width: 100%;
+}
 
-  /* Remove animations */
-  .animate-fade-in,
-  .animate-shake,
-  .skeleton-pulse,
-  .rc-loading-spinner {
-    animation: none !important;
-    transition: none !important;
+.tfa-cancel:hover {
+  color: var(--text-main);
+}
+
+.tfa-cancel:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Responsive: single-column recovery codes on narrow screens */
+@media (max-width: 360px) {
+  .tfa-recovery-list {
+    grid-template-columns: 1fr;
   }
 }
 
-/* ─── Hide Interactive UI Elements ────────────────────────────────────── */
-
-@media print {
-  /* Navigation */
-  .app-header,
-  .desktop-nav,
-  .mobile-nav,
-  .mobile-drawer,
-  .drawer-overlay,
-  .header-actions,
-  .logo,
-  .nav-link,
-  .mobile-nav-link,
-  .notifications-btn,
-  .help-btn,
-  .account-btn,
-  .mobile-menu-btn,
-  .skip-link,
-  .home-actions,
-  .home-footer,
-  .home-grid,
-  .home-list,
-  .home-description,
-  .home-title,
-  .placeholder-text,
-  .placeholder-title,
-  .btn,
-  .btn-primary,
-  .btn-secondary,
-  .btn--icon,
-  .btn--primary,
-  .btn--secondary,
-  .btn--sm,
-  .btn--md,
-  .empty-state-actions,
-  .empty-state-action,
-  .discovery-state-actions,
-  .discovery-state-action,
-  .rc-mobile-toggle,
-  .rc-nav-btn,
-  .rc-details-close,
-  .rc-submit-cta,
-  .rc-report-item-actions,
-  .rc-details-toggle,
-  .rc-details-tab,
-  .rc-details-tab--active,
-  .view-toggle,
-  .chart-toggle,
-  .table-toggle,
-  .donut-toggle,
-  .bar-toggle,
-  [role="group"],
-  [aria-label*="toggle"],
-  [aria-label*="Toggle"],
-  [aria-label*="View"],
-  [aria-label*="view"],
-  button:not([aria-label*="Print"]):not([aria-label*="Export"]),
-  input,
-  select,
-  textarea,
-  .input-field,
-  .input-group,
-  .input-label,
-  .search-input,
-  .filter-btn,
-  .filter-badge,
-  .discovery-filter-btn,
-  .discovery-filter-badge,
-  .tooltip,
-  [data-tooltip],
-  .modal,
-  .modal-overlay,
-  .dialog,
-  [role="dialog"],
-  [role="tooltip"],
-  .KeyboardShortcutsOverlay,
-  .notification-panel,
-  .notification-bell,
-  .toast,
-  .banner,
-  .activity-feed,
-  .activity-item,
-  .skeleton-pulse,
-  .skeleton-icon,
-  .skeleton-pulse-lg,
-  .skeleton-pulse-sm,
-  .skeleton-bar,
-  .skeleton-button,
-  .rc-loading,
-  .rc-loading-spinner,
-  .rc-loading-text,
-  .rc-error,
-  .rc-error-text {
-    display: none !important;
-    visibility: hidden !important;
-    height: 0 !important;
-    width: 0 !important;
-    overflow: hidden !important;
-    position: absolute !important;
-    clip: rect(0, 0, 0, 0) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  /* Keep semantic structure but hide decorative elements */
-  .empty-state-icon-wrap,
-  .discovery-state-icon-wrap,
-  .rc-status-dot,
-  .rc-day-count,
-  .rc-day-cell--today,
-  .rc-day-cell--selected,
-  .rc-day-cell--due,
-  .rc-day-cell--submitted,
-  .rc-day-cell--accepted,
-  .rc-day-cell--overdue,
-  .rc-day-cell--outside,
-  .rc-legend-dot,
-  .rc-report-status-badge,
-  .allocation-swatch,
-  [aria-hidden="true"] {
-    display: none !important;
-  }
-}
-
-/* ─── Typography Optimization for Print ───────────────────────────────── */
-
-@media print {
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--print-text) !important;
-    font-weight: 700 !important;
-    page-break-after: avoid;
-    break-after: avoid;
-    margin-top: 1.5rem;
-    margin-bottom: 0.75rem;
-  }
-
-  h1 {
-    font-size: var(--print-font-size-3xl) !important;
-    line-height: 1.2 !important;
-  }
-
-  h2 {
-    font-size: var(--print-font-size-2xl) !important;
-    line-height: 1.3 !important;
-  }
-
-  h3 {
-    font-size: var(--print-font-size-xl) !important;
-    line-height: 1.3 !important;
-  }
-
-  h4 {
-    font-size: var(--print-font-size-lg) !important;
-    line-height: 1.4 !important;
-  }
-
-  p, li, td, th, span, div {
-    color: var(--print-text) !important;
-    orphans: 3;
-    widows: 3;
-  }
-
-  a {
-    color: var(--print-text) !important;
-    text-decoration: underline !important;
-    text-underline-offset: 2px;
-  }
-
-  a[href]::after {
-    content: " (" attr(href) ")";
-    font-size: 0.9em;
-    color: var(--print-text-muted);
-    word-break: break-all;
-  }
-
-  a[href^="#"]::after,
-  a[href^="javascript:"]::after {
-    content: "";
-  }
-
-  strong, b {
-    font-weight: 700 !important;
-  }
-
-  em, i {
-    font-style: italic !important;
-  }
-
-  code, pre {
-    font-family: "Courier New", Courier, monospace !important;
-    font-size: 0.9em !important;
-    background: #f5f5f5 !important;
-    border: 1px solid var(--print-border) !important;
-    padding: 0.2em 0.4em !important;
-    border-radius: 0 !important;
-  }
-
-  pre {
-    padding: 1em !important;
-    white-space: pre-wrap !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-  }
-}
-
-/* ─── Layout Optimization ─────────────────────────────────────────────── */
-
-@media print {
-  .max-w-6xl,
-  .max-w-4xl,
-  .max-w-3xl,
-  .max-w-2xl,
-  .max-w-xl,
-  .max-w-lg,
-  .max-w-md,
-  .max-w-sm,
-  .max-w-xs,
-  [class*="max-w-"] {
-    max-width: 100% !important;
-  }
-
-  .mx-auto {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
-  }
-
-  .p-6, .p-4, .p-3, .p-2, .p-1,
-  [class*="p-"] {
-    padding: 0.5rem 0 !important;
-  }
-
-  .space-y-10, .space-y-8, .space-y-6, .space-y-4, .space-y-2,
-  [class*="space-y-"] {
-    gap: 1rem !important;
-  }
-
-  .animate-fade-in {
-    animation: none !important;
-    opacity: 1 !important;
-  }
-
-  /* Expand collapsible content */
-  .rc-details-panel--closed,
-  [data-collapsed="true"],
-  [aria-expanded="false"],
-  .collapsed,
-  .collapse {
-    display: block !important;
-    visibility: visible !important;
-    height: auto !important;
-    overflow: visible !important;
-    clip: auto !important;
-    white-space: normal !important;
-  }
-}
-
-/* ─── Page Break Rules ────────────────────────────────────────────────── */
-
-@media print {
-  /* Avoid breaks inside these elements */
-  table,
-  thead,
-  tbody,
-  tr,
-  th,
-  td,
-  h1, h2, h3, h4, h5, h6,
-  .rc-calendar-section,
-  .rc-details-panel,
-  .rc-month-summary,
-  .rc-report-item,
-  .glass-card,
-  .empty-state-container,
-  .discovery-state-container,
-  .rc-container,
-  .rc-layout,
-  .rc-calendar-grid,
-  .rc-grid-row,
-  .rc-day-cell,
-  .rc-month-reports,
-  .rc-details-content,
-  .rc-details-empty,
-  section,
-  article,
-  .performance-widget,
-  .allocation-widget,
-  .chart-container,
-  .table-container {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* Force page breaks */
-  .page-break-before {
-    break-before: page;
-    page-break-before: always;
-  }
-
-  .page-break-after {
-    break-after: page;
-    page-break-after: always;
-  }
-
-  .page-break-inside-avoid {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* Avoid breaks after headings */
-  h1, h2, h3, h4, h5, h6 {
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-
-  /* Avoid breaks before headings on new pages */
-  h1, h2, h3 {
-    break-before: avoid;
-    page-break-before: avoid;
-  }
-
-  /* Avoid orphaned table rows */
-  tr {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  thead {
-    break-after: avoid;
-    page-break-after: avoid;
-  }
-
-  /* Avoid breaks inside list items */
-  li {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* Avoid breaks inside figures */
-  figure, .chart-container {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-
-/* ─── Print Headers & Footers ─────────────────────────────────────────── */
-
-@media print {
-  @page {
-    @top-center {
-      content: "Revora RevenueShare — Printed Report";
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
-      font-size: 9pt;
-      color: #666666;
-      border-bottom: 1px solid var(--print-border);
-      padding-bottom: 0.5rem;
-    }
-
-    @bottom-center {
-      content: "Page " counter(page) " of " counter(pages);
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
-      font-size: 9pt;
-      color: #666666;
-      border-top: 1px solid var(--print-border);
-      padding-top: 0.5rem;
-    }
-
-    @bottom-right {
-      content: "Printed on " attr(data-print-date);
-      font-family: "Inter", system-ui, -apple-system, sans-serif;
-      font-size: 8pt;
-      color: #999999;
-    }
-  }
-
-  /* Fallback for browsers that don't support @page margin boxes */
-  .print-header {
-    display: block !important;
-    text-align: center;
-    font-size: 9pt;
-    color: #666666;
-    border-bottom: 1px solid var(--print-border);
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .print-footer {
-    display: block !important;
-    text-align: center;
-    font-size: 9pt;
-    color: #666666;
-    border-top: 1px solid var(--print-border);
-    padding-top: 0.5rem;
-    margin-top: 1rem;
-  }
-}
-
-/* ─── Table Print Optimization ────────────────────────────────────────── */
-
-@media print {
-  table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
-    margin: 1rem 0 !important;
-    font-size: var(--print-font-size-sm) !important;
-  }
-
-  thead {
-    display: table-header-group !important;
-  }
-
-  tbody {
-    display: table-row-group !important;
-  }
-
-  tr {
-    display: table-row !important;
-  }
-
-  th, td {
-    display: table-cell !important;
-    padding: 0.5rem 0.75rem !important;
-    text-align: left !important;
-    vertical-align: top !important;
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    color: var(--print-text) !important;
-  }
-
-  th {
-    font-weight: 700 !important;
-    background: #f5f5f5 !important;
-    color: var(--print-text) !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-    font-size: var(--print-font-size-sm) !important;
-  }
-
-  td {
-    font-weight: 400 !important;
-  }
-
-  /* Zebra striping for readability */
-  tbody tr:nth-child(even) {
-    background: #fafafa !important;
-  }
-
-  tbody tr:nth-child(odd) {
-    background: var(--print-bg) !important;
-  }
-
-  /* Totals row emphasis */
-  tr[class*="total"],
-  tr[class*="summary"],
-  tfoot tr,
-  .rc-month-stat-value,
-  .rc-report-revenue {
-    font-weight: 700 !important;
-    border-top: 2px solid var(--print-text) !important;
-    background: #f0f0f0 !important;
-  }
-
-  /* Numeric alignment */
-  td[class*="amount"],
-  td[class*="value"],
-  td[class*="revenue"],
-  td[class*="total"],
-  td[class*="price"],
-  td[class*="currency"],
-  th[class*="amount"],
-  th[class*="value"],
-  th[class*="revenue"],
-  th[class*="total"],
-  th[class*="price"],
-  th[class*="currency"] {
-    text-align: right !important;
-    font-variant-numeric: tabular-nums !important;
-  }
-
-  /* Status badges become text labels */
-  .rc-report-status-badge,
-  .rc-report-awaiting,
-  .rc-report-confirmed,
-  .rc-report-status-label {
-    display: inline !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
-    font-size: 0.85em !important;
-  }
-
-  .rc-report-awaiting {
-    color: #000000 !important;
-    background: none !important;
-  }
-
-  .rc-report-confirmed {
-    color: #000000 !important;
-    background: none !important;
-  }
-}
-
-/* ─── Chart-to-Table Print Fallback ───────────────────────────────────── */
-
-@media print {
-  /* PerformanceTrendWidget: hide chart, show table */
-  .performance-widget .chart-view,
-  .performance-widget [data-testid="chart-toggle"],
-  .performance-widget svg[role="img"][aria-label*="chart"],
-  .performance-widget svg[role="img"][aria-label*="Chart"] {
-    display: none !important;
-  }
-
-  .performance-widget .table-view,
-  .performance-widget [data-testid="table-view"],
-  .performance-widget table {
-    display: table !important;
-  }
-
-  .performance-widget [data-testid="table-toggle"] {
-    display: none !important;
-  }
-
-  /* AllocationWidget: hide donut/bar chart, show bar/list view */
-  .allocation-widget .donut-view,
-  .allocation-widget [data-testid="donut-toggle"],
-  .allocation-widget svg[role="img"][aria-label*="donut"],
-  .allocation-widget svg[role="img"][aria-label*="Donut"],
-  .allocation-widget svg[role="img"][aria-label*="chart"],
-  .allocation-widget svg[role="img"][aria-label*="Chart"] {
-    display: none !important;
-  }
-
-  .allocation-widget .bar-view,
-  .allocation-widget [data-testid="bar-view"],
-  .allocation-widget ul[aria-label*="allocation"],
-  .allocation-widget ul[aria-label*="issuer"] {
-    display: block !important;
-  }
-
-  .allocation-widget [data-testid="bar-toggle"] {
-    display: none !important;
-  }
-
-  /* Generic chart hiding */
-  svg[role="img"][aria-label*="chart"],
-  svg[role="img"][aria-label*="Chart"],
-  svg[role="img"][aria-label*="graph"],
-  svg[role="img"][aria-label*="Graph"],
-  .chart,
-  [class*="chart"]:not([class*="chartjs"]),
-  [class*="Chart"]:not([class*="Chartjs"]) {
-    display: none !important;
-  }
-
-  /* Show accessible table alternatives */
-  [class*="chart"] + table,
-  [class*="chart"] ~ table,
-  .chart-container + table,
-  .chart-container ~ table,
-  [data-chart-fallback] {
-    display: table !important;
-  }
-}
-
-/* ─── Revenue Reporting Calendar Print ────────────────────────────────── */
-
-@media print {
-  .rc-container {
-    padding: 0 !important;
-    max-width: 100% !important;
-  }
-
-  .rc-layout {
-    display: block !important;
-    gap: 1rem !important;
-  }
-
-  .rc-calendar-section {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .rc-details-wrapper {
-    position: static !important;
-    flex: none !important;
-    width: 100% !important;
-  }
-
-  .rc-details-panel {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .rc-calendar-grid {
-    border-collapse: collapse !important;
-    border-spacing: 0 !important;
-  }
-
-  .rc-grid-header-cell {
-    color: var(--print-text) !important;
-    background: #f5f5f5 !important;
-    border: 1px solid var(--print-border) !important;
-    font-size: 9pt !important;
-    padding: 0.5rem !important;
-  }
-
-  .rc-day-cell {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    color: var(--print-text) !important;
-    height: auto !important;
-    min-height: 2rem !important;
-    padding: 0.25rem !important;
-    cursor: default !important;
-  }
-
-  .rc-day-cell:hover {
-    background: var(--print-bg) !important;
-  }
-
-  .rc-day-cell--outside {
-    color: var(--print-text-muted) !important;
-    opacity: 1 !important;
-  }
-
-  .rc-day-cell--today {
-    border: 2px solid var(--print-text) !important;
-    font-weight: 700 !important;
-  }
-
-  .rc-day-cell--selected {
-    background: #f0f0f0 !important;
-    border: 2px solid var(--print-text) !important;
-  }
-
-  .rc-day-number {
-    color: var(--print-text) !important;
-    font-size: 10pt !important;
-  }
-
-  .rc-month-title {
-    color: var(--print-text) !important;
-    font-size: var(--print-font-size-xl) !important;
-  }
-
-  .rc-legend {
-    color: var(--print-text) !important;
-  }
-
-  .rc-legend-item {
-    color: var(--print-text) !important;
-  }
-
-  .rc-legend-dot {
-    border: 1px solid var(--print-text) !important;
-    background: var(--print-text) !important;
-  }
-
-  .rc-details-title {
-    color: var(--print-text) !important;
-  }
-
-  .rc-details-day-title {
-    color: var(--print-text) !important;
-  }
-
-  .rc-details-empty-text {
-    color: var(--print-text-muted) !important;
-  }
-
-  .rc-report-item {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .rc-report-status-label {
-    color: var(--print-text) !important;
-  }
-
-  .rc-report-date {
-    color: var(--print-text-muted) !important;
-  }
-
-  .rc-report-revenue {
-    color: var(--print-text) !important;
-  }
-
-  .rc-report-due,
-  .rc-report-accepted,
-  .rc-report-notes {
-    color: var(--print-text-muted) !important;
-  }
-
-  .rc-month-summary {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .rc-month-stat-value {
-    color: var(--print-text) !important;
-  }
-
-  .rc-month-stat-label {
-    color: var(--print-text-muted) !important;
-  }
-
-  .rc-month-reports {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-}
-
-/* ─── Empty State Print ───────────────────────────────────────────────── */
-
-@media print {
-  .empty-state-container {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .empty-state-title {
-    color: var(--print-text) !important;
-  }
-
-  .empty-state-body {
-    color: var(--print-text-muted) !important;
-  }
-
-  .empty-state-context {
-    color: var(--print-text-muted) !important;
-  }
-
-  .discovery-state-container {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .discovery-state-title {
-    color: var(--print-text) !important;
-  }
-
-  .discovery-state-body {
-    color: var(--print-text-muted) !important;
-  }
-
-  .discovery-state-query {
-    color: var(--print-text) !important;
-    background: #f0f0f0 !important;
-  }
-
-  .discovery-state-retry-hint {
-    color: var(--print-text-muted) !important;
-  }
-}
-
-/* ─── Home / Landing Page Print ───────────────────────────────────────── */
-
-@media print {
-  .home-container {
-    padding: 0 !important;
-  }
-
-  .home-card {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    border-radius: 0 !important;
-    padding: 1rem !important;
-  }
-
-  .home-title {
-    color: var(--print-text) !important;
-  }
-
-  .home-description {
-    color: var(--print-text-muted) !important;
-  }
-
-  .home-section {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    border-radius: 0 !important;
-  }
-
-  .home-section-title {
-    color: var(--print-text) !important;
-  }
-
-  .home-list {
-    color: var(--print-text-muted) !important;
-  }
-
-  .home-list li {
-    color: var(--print-text) !important;
-  }
-
-  .home-actions {
-    display: none !important;
-  }
-
-  .home-footer {
-    display: none !important;
-  }
-}
-
-/* ─── Placeholder Page Print ──────────────────────────────────────────── */
-
-@media print {
-  .placeholder-container {
-    padding: 0 !important;
-  }
-
-  .placeholder-card {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    border-radius: 0 !important;
-  }
-
-  .placeholder-title {
-    color: var(--print-text) !important;
-  }
-
-  .placeholder-text {
-    color: var(--print-text-muted) !important;
-  }
-}
-
-/* ─── Auth Layout Print ───────────────────────────────────────────────── */
-
-@media print {
-  .auth-layout-outer {
-    padding: 0 !important;
-    min-height: auto !important;
-  }
-
-  .auth-card {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    border-radius: 0 !important;
-    padding: 1rem !important;
-  }
-
-  .auth-title {
-    color: var(--print-text) !important;
-  }
-
-  .auth-subtitle {
-    color: var(--print-text-muted) !important;
-  }
-
-  .auth-helper {
-    color: var(--print-text-muted) !important;
-  }
-}
-
-/* ─── RTL Print Support ───────────────────────────────────────────────── */
-
-@media print {
-  [dir="rtl"] {
-    direction: rtl;
-    text-align: right;
-  }
-
-  [dir="rtl"] table {
-    direction: rtl;
-  }
-
-  [dir="rtl"] th,
-  [dir="rtl"] td {
-    text-align: right;
-  }
-
-  [dir="rtl"] .rc-day-count {
-    left: 3px !important;
-    right: auto !important;
-  }
-
-  [dir="rtl"] .rc-report-date {
-    margin-inline-start: 0 !important;
-    margin-inline-end: auto !important;
-  }
-
-  [dir="rtl"] .rc-details-close {
-    left: var(--spacing-sm) !important;
-    right: auto !important;
-  }
-}
-
-/* ─── Long Text & Word Wrapping ───────────────────────────────────────── */
-
-@media print {
-  .localized-text,
-  [class*="text-"],
-  p, li, td, th, span, div {
-    overflow-wrap: break-word !important;
-    word-wrap: break-word !important;
-    word-break: break-word !important;
-    hyphens: auto !important;
-  }
-
-  /* Prevent overflow in tables */
-  td, th {
-    max-width: 30rem;
-    overflow-wrap: break-word !important;
-    word-wrap: break-word !important;
-    word-break: break-word !important;
-  }
-
-  /* Handle long URLs */
-  a[href]::after {
-    word-break: break-all !important;
-    hyphens: none !important;
-  }
-}
-
-/* ─── Dark Mode Print Override ────────────────────────────────────────── */
-
-@media print {
-  /* Force all dark-mode backgrounds to white */
-  [data-theme="dark"],
-  [data-mode="dark"],
-  .dark,
-  .dark-mode,
-  [class*="dark"],
-  [class*="Dark"] {
-    background: var(--print-bg) !important;
-    color: var(--print-text) !important;
-  }
-
-  /* Override any remaining dark backgrounds */
-  * {
-    background-color: var(--print-bg) !important;
-    color: var(--print-text) !important;
-  }
-
-  /* Preserve table header backgrounds for readability */
-  thead th,
-  th {
-    background: #f5f5f5 !important;
-    color: var(--print-text) !important;
-  }
-
-  /* Preserve zebra striping */
-  tbody tr:nth-child(even) {
-    background: #fafafa !important;
-  }
-}
-
-/* ─── Component-Specific Print Overrides ──────────────────────────────── */
-
-@media print {
-  /* NotificationBell */
-  .notification-bell,
-  .notification-panel {
-    display: none !important;
-  }
-
-  /* KeyboardShortcutsOverlay */
-  .KeyboardShortcutsOverlay {
-    display: none !important;
-  }
-
-  /* ActivityFeed */
-  .activity-feed,
-  .activity-item {
-    display: none !important;
-  }
-
-  /* StatusTimeline */
-  .status-timeline,
-  .st-milestone,
-  .st-connector,
-  .st-content {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .st-milestone {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-  }
-
-  .st-completed-bg,
-  .st-progress-bg,
-  .st-blocked-bg,
-  .st-pending-bg {
-    background: var(--print-bg) !important;
-  }
-
-  .st-completed-fg,
-  .st-progress-fg,
-  .st-blocked-fg,
-  .st-pending-fg {
-    color: var(--print-text) !important;
-  }
-
-  .st-completed-border,
-  .st-progress-border,
-  .st-blocked-border,
-  .st-pending-border {
-    border-color: var(--print-text) !important;
-  }
-
-  /* ComplianceHoldBanner */
-  .compliance-hold-banner,
-  .compliance-banner {
-    border: 2px solid var(--print-text) !important;
-    background: #f5f5f5 !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* RevenueReportForm */
-  .revenue-report-form,
-  .form-container,
-  .form-group,
-  .form-field,
-  .form-actions {
-    display: none !important;
-  }
-
-  /* InvestorDiscovery cards */
-  .offering-card,
-  .glass-card-interactive {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-    box-shadow: none !important;
-    backdrop-filter: none !important;
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  /* KpiHeader */
-  .kpi-header,
-  .kpi-value,
-  .kpi-label {
-    color: var(--print-text) !important;
-  }
-
-  .kpi-value {
-    font-size: var(--print-font-size-2xl) !important;
-    font-weight: 700 !important;
-  }
-
-  /* RemediationChecklist */
-  .remediation-checklist,
-  .checklist-item,
-  .checklist-item--checked,
-  .checklist-item--unchecked {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .checklist-item--checked::before {
-    content: "☒" !important;
-    color: var(--print-text) !important;
-  }
-
-  .checklist-item--unchecked::before {
-    content: "☐" !important;
-    color: var(--print-text) !important;
-  }
-
-  /* ConfirmationNextSteps */
-  .confirmation-next-steps,
-  .step-item,
-  .step-item--completed,
-  .step-item--pending {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .step-item--completed::before {
-    content: "✓" !important;
-    color: var(--print-text) !important;
-  }
-
-  .step-item--pending::before {
-    content: "○" !important;
-    color: var(--print-text-muted) !important;
-  }
-
-  /* SuccessFailureIllustration */
-  .success-failure-illustration,
-  .illustration-container {
-    display: none !important;
-  }
-
-  /* FormError */
-  .form-error,
-  .error-message {
-    color: var(--print-text) !important;
-    border: 1px solid var(--print-error) !important;
-    background: #fff5f5 !important;
-  }
-
-  /* PasswordStrength */
-  .password-strength,
-  .strength-meter,
-  .strength-bar {
-    border: 1px solid var(--print-border) !important;
-    background: var(--print-bg) !important;
-  }
-
-  .strength-bar-fill {
-    background: var(--print-text) !important;
-  }
-
-  /* AuthSubmitButton */
-  .auth-submit-button {
-    display: none !important;
-  }
-
-  /* LocalizedText */
-  .localized-text {
-    color: var(--print-text) !important;
-  }
-
-  .localized-text[dir="rtl"] {
-    direction: rtl;
-    text-align: right;
-  }
-}
-
-/* ─── Print Media Query for High Contrast / Accessibility ─────────────── */
-
-@media print {
-  /* Ensure sufficient contrast for monochrome printing */
-  * {
-    color: #000000 !important;
-    background-color: #ffffff !important;
-  }
-
-  /* Preserve table structure with borders */
-  table {
-    border: 2px solid #000000 !important;
-  }
-
-  th, td {
-    border: 1px solid #000000 !important;
-  }
-
-  thead th {
-    border-bottom: 2px solid #000000 !important;
-    font-weight: 700 !important;
-  }
-
-  /* Ensure headings are clearly distinguishable */
-  h1, h2, h3, h4, h5, h6 {
-    color: #000000 !important;
-    font-weight: 700 !important;
-    border-bottom: 1px solid #000000 !important;
-    padding-bottom: 0.25rem !important;
-  }
-
-  h1 {
-    border-bottom-width: 2px !important;
-  }
-
-  /* Ensure links are identifiable */
-  a {
-    color: #000000 !important;
-    text-decoration: underline !important;
-  }
-
-  a[href]::after {
-    color: #333333 !important;
-  }
-
-  /* Ensure focus indicators are visible in print preview */
-  :focus-visible {
-    outline: 2px solid #000000 !important;
-    outline-offset: 2px !important;
-  }
-}
-
-/* ─── Print-Only Utility Classes ──────────────────────────────────────── */
-
-@media print {
-  .print-only {
-    display: block !important;
-  }
-
-  .no-print {
-    display: none !important;
-  }
-
-  .print-break-before {
-    break-before: page;
-    page-break-before: always;
-  }
-
-  .print-break-after {
-    break-after: page;
-    page-break-after: always;
-  }
-
-  .print-break-inside-avoid {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
-
-  .print-text-bold {
-    font-weight: 700 !important;
-  }
-
-  .print-text-muted {
-    color: #333333 !important;
-  }
-
-  .print-border {
-    border: 1px solid #cccccc !important;
-  }
-
-  .print-border-top {
-    border-top: 1px solid #cccccc !important;
-  }
-
-  .print-border-bottom {
-    border-bottom: 1px solid #cccccc !important;
-  }
-
-  .print-bg-light {
-    background: #f5f5f5 !important;
-  }
-
-  .print-text-center {
-    text-align: center !important;
-  }
-
-  .print-text-right {
-    text-align: right !important;
-  }
-
-  .print-font-mono {
-    font-family: "Courier New", Courier, monospace !important;
-  }
-}
-
-/* ─── Screen-Only Override (prevent print styles from affecting screen) ── */
-
-@media screen {
-  .print-only {
-    display: none !important;
-  }
-
-  .print-header,
-  .print-footer {
-    display: none !important;
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tfa-steps__dot,
+  .tfa-method-card,
+  .tfa-icon-btn {
+    transition: none;
   }
 }

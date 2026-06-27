@@ -1,0 +1,456 @@
+/* ─── Session Management Page ────────────────────────────────────────────────
+   WCAG 2.1 AA, responsive, consistent with Revora design tokens.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+.sm-container {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: var(--spacing-xl);
+}
+
+.sm-header {
+  margin-bottom: var(--spacing-2xl);
+}
+
+.sm-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  margin-bottom: var(--spacing-sm);
+}
+
+.sm-back-link:hover {
+  color: var(--text-main);
+}
+
+.sm-back-link:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: var(--radius-xs);
+}
+
+.sm-title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--text-main);
+  margin: 0;
+}
+
+.sm-subtitle {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  margin-top: var(--spacing-xs);
+  line-height: var(--line-height-normal);
+}
+
+/* ─── Bulk Action ─────────────────────────────────────────────────────────── */
+
+.sm-bulk-action {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--spacing-lg);
+}
+
+/* ─── Session List ────────────────────────────────────────────────────────── */
+
+.sm-session-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* ─── Session Card ────────────────────────────────────────────────────────── */
+
+.sm-session-card {
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-xl);
+  transition: border-color 0.2s ease;
+}
+
+.sm-session-card--current {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.sm-session-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+}
+
+.sm-session-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg-accent);
+  color: var(--text-muted);
+  flex-shrink: 0;
+  border: 1px solid var(--glass-border);
+}
+
+.sm-session-card--current .sm-session-icon {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.sm-session-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sm-session-name-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-2xs);
+}
+
+.sm-session-name {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+}
+
+.sm-current-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--success);
+  background: rgba(16, 185, 129, 0.12);
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
+.sm-session-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm) var(--spacing-lg);
+  margin-bottom: var(--spacing-2xs);
+}
+
+.sm-meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3xs);
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.sm-session-ip {
+  font-family: "SF Mono", "Monaco", "Menlo", monospace;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.sm-session-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  margin-left: var(--spacing-sm);
+}
+
+.sm-current-hint {
+  display: flex;
+  align-items: center;
+  color: var(--success);
+}
+
+/* ─── Buttons ─────────────────────────────────────────────────────────────── */
+
+.sm-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-xs);
+  padding: 0.625rem 1.25rem;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.sm-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.sm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sm-btn--destructive {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.sm-btn--destructive:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+}
+
+.sm-btn--ghost-destructive {
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  min-width: 2.5rem;
+}
+
+.sm-btn--ghost-destructive:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+}
+
+.sm-btn--secondary {
+  background: var(--glass-bg-accent);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+}
+
+.sm-btn--secondary:hover:not(:disabled) {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.sm-btn--danger {
+  background: var(--error);
+  color: white;
+  border: 1px solid var(--error);
+}
+
+.sm-btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+/* ─── Empty State ─────────────────────────────────────────────────────────── */
+
+.sm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--spacing-4xl) var(--spacing-xl);
+  color: var(--text-muted);
+  gap: var(--spacing-md);
+}
+
+.sm-empty-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  margin: 0;
+}
+
+.sm-empty-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  max-width: 24rem;
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* ─── Confirm Dialog ──────────────────────────────────────────────────────── */
+
+.sm-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  padding: var(--spacing-md);
+  animation: smFadeIn 0.2s ease-out;
+}
+
+.sm-dialog {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--spacing-2xl);
+  text-align: center;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+}
+
+.sm-dialog-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--error);
+  margin-bottom: var(--spacing-md);
+}
+
+.sm-dialog-title {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  margin: 0 0 var(--spacing-sm);
+}
+
+.sm-dialog-message {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: var(--line-height-relaxed);
+  margin: 0 0 var(--spacing-xl);
+}
+
+.sm-dialog-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  justify-content: center;
+}
+
+.sm-dialog-actions .sm-btn {
+  min-width: 8rem;
+}
+
+/* ─── Misc ────────────────────────────────────────────────────────────────── */
+
+.sm-single-session-note {
+  text-align: center;
+  margin-top: var(--spacing-lg);
+}
+
+/* ─── Screen Reader Only ──────────────────────────────────────────────────── */
+
+.sm-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .sm-container {
+    padding: var(--spacing-md);
+  }
+
+  .sm-title {
+    font-size: var(--font-size-2xl);
+  }
+
+  .sm-session-card {
+    padding: var(--spacing-md);
+  }
+
+  .sm-session-main {
+    flex-wrap: wrap;
+  }
+
+  .sm-session-meta {
+    flex-direction: column;
+    gap: var(--spacing-2xs);
+  }
+
+  .sm-session-action {
+    width: 100%;
+    margin-left: 0;
+    margin-top: var(--spacing-xs);
+    justify-content: flex-end;
+  }
+
+  .sm-hide-mobile {
+    display: none;
+  }
+
+  .sm-bulk-action {
+    justify-content: stretch;
+  }
+
+  .sm-bulk-action .sm-btn {
+    width: 100%;
+  }
+
+  .sm-dialog {
+    padding: var(--spacing-xl);
+  }
+
+  .sm-dialog-actions {
+    flex-direction: column;
+  }
+
+  .sm-dialog-actions .sm-btn {
+    min-width: auto;
+    width: 100%;
+  }
+}
+
+/* ─── Reduced Motion ──────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .sm-dialog-overlay {
+    animation: none;
+  }
+}
+
+/* ─── High Contrast ───────────────────────────────────────────────────────── */
+
+@media (prefers-contrast: high) {
+  .sm-dialog-overlay {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  .sm-dialog {
+    border: 2px solid var(--text-main);
+  }
+
+  .sm-current-badge {
+    border: 1px solid var(--success);
+  }
+
+  .sm-btn--destructive {
+    border: 2px solid var(--error);
+  }
+
+  .sm-btn--danger {
+    border: 2px solid white;
+  }
+}
+
+/* ─── Animation ───────────────────────────────────────────────────────────── */
+
+@keyframes smFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

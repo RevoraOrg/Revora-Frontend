@@ -228,7 +228,7 @@ const TimestampMarker: React.FC<TimestampMarkerProps> = ({
         className="st-timestamp-tooltip"
         role="tooltip"
       >
-        <Clock size={10} aria-hidden="true" style={{ marginRight: 4, display: 'inline' }} />
+        <Clock size={10} aria-hidden="true" style={{ marginInlineEnd: 4, display: 'inline' }} />
         {formatTimestamp(timestamp)}
       </span>
     </div>

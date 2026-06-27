@@ -55,7 +55,7 @@ export const InvestorPortfolioSummary: React.FC<InvestorPortfolioSummaryProps> =
             className="inline-flex items-center gap-1 text-sm text-muted hover:text-main transition-colors mb-2"
             aria-label="Back to Investor Discovery"
           >
-            <ArrowLeft size={14} aria-hidden="true" />
+            <ArrowLeft size={14} aria-hidden="true" className="icon-rtl" />
             Back to Discovery
           </Link>
           <h1 className="text-3xl font-bold tracking-tight">Portfolio Summary</h1>

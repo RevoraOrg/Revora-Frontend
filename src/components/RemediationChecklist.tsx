@@ -149,7 +149,7 @@ export const RemediationChecklist: React.FC<RemediationChecklistProps> = ({
                     {step.actionUrl ? (
                       <ExternalLink size={14} aria-hidden="true" />
                     ) : (
-                      <ChevronRight size={14} aria-hidden="true" />
+                      <ChevronRight size={14} aria-hidden="true" className="icon-rtl" />
                     )}
                   </button>
                 )}

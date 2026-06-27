@@ -1,0 +1,419 @@
+/* ─── Ledger Table ─────────────────────────────────────────────── */
+
+.lt-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  width: 100%;
+}
+
+/* ─── Toolbar ──────────────────────────────────────────────────── */
+
+.lt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+  flex-wrap: wrap;
+}
+
+.lt-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+}
+
+.lt-page-info {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+.lt-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.lt-control-group {
+  position: relative;
+}
+
+.lt-control-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  padding: var(--spacing-2xs) var(--spacing-sm);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.lt-control-btn:hover {
+  border-color: var(--glass-border-bright);
+  color: var(--text-main);
+}
+
+.lt-control-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.lt-control-label {
+  text-transform: capitalize;
+}
+
+/* ─── Dropdowns ────────────────────────────────────────────────── */
+
+.lt-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  z-index: 20;
+  min-width: 160px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-bright);
+  backdrop-filter: var(--glass-blur);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--spacing-2xs);
+}
+
+.lt-column-menu {
+  inset-inline-end: 0;
+}
+
+.lt-column-menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-main);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: background 0.15s ease;
+  white-space: nowrap;
+}
+
+.lt-column-menu-item:hover {
+  background: var(--glass-bg-accent);
+}
+
+.lt-column-menu-item--disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lt-column-menu-checkbox {
+  accent-color: var(--primary);
+}
+
+/* ─── Pagination ───────────────────────────────────────────────── */
+
+.lt-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs) 0;
+}
+
+.lt-page-btn {
+  padding: var(--spacing-2xs) var(--spacing-sm);
+  background: var(--glass-bg-accent);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.lt-page-btn:hover:not(:disabled) {
+  border-color: var(--glass-border-bright);
+  color: var(--text-main);
+}
+
+.lt-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.lt-page-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.lt-page-indicator {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  min-width: 3rem;
+  text-align: center;
+}
+
+/* ─── Table Wrapper ────────────────────────────────────────────── */
+
+.lt-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  max-height: 600px;
+  outline: none;
+}
+
+.lt-table-wrap:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* ─── Header ───────────────────────────────────────────────────── */
+
+.lt-header {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--glass-bg);
+  border-bottom: 2px solid var(--glass-border-bright);
+  backdrop-filter: var(--glass-blur);
+}
+
+.lt-cell--header {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Body ─────────────────────────────────────────────────────── */
+
+.lt-body {
+  position: relative;
+}
+
+/* ─── Row ──────────────────────────────────────────────────────── */
+
+.lt-row {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.lt-row:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+.lt-row--selected {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.lt-row:last-child {
+  border-bottom: none;
+}
+
+/* ─── Cell ─────────────────────────────────────────────────────── */
+
+.lt-cell {
+  flex: 1;
+  padding: 0 var(--spacing-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--font-size-sm);
+  color: var(--text-main);
+  min-width: 0;
+}
+
+.lt-cell--detail {
+  flex: 0 0 auto;
+  width: 40px;
+  min-width: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+/* ─── Density Variants ─────────────────────────────────────────── */
+
+.lt-density--compact .lt-cell {
+  font-size: var(--font-size-xs);
+}
+
+.lt-density--spacious .lt-cell {
+  font-size: var(--font-size-base);
+}
+
+/* ─── Detail Toggle ────────────────────────────────────────────── */
+
+.lt-detail-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: all 0.15s ease;
+}
+
+.lt-detail-toggle:hover {
+  background: var(--glass-bg-accent);
+  color: var(--text-main);
+}
+
+.lt-detail-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.lt-detail-icon {
+  transition: transform 0.2s ease;
+}
+
+.lt-detail-icon--open {
+  transform: rotate(90deg);
+}
+
+/* ─── Detail Panel ─────────────────────────────────────────────── */
+
+.lt-detail-panel {
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(15, 23, 42, 0.5);
+  z-index: 5;
+}
+
+.lt-detail-content {
+  padding: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  color: var(--text-main);
+}
+
+/* ─── Type Badges ──────────────────────────────────────────────── */
+
+.lt-type-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: capitalize;
+}
+
+.lt-type-badge--investment {
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--primary);
+}
+
+.lt-type-badge--payout {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.lt-type-badge--distribution {
+  background: rgba(139, 92, 246, 0.12);
+  color: #a78bfa;
+}
+
+.lt-type-badge--fee {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted);
+}
+
+/* ─── Status Indicators ─────────────────────────────────────────── */
+
+.lt-status {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  text-transform: capitalize;
+}
+
+.lt-status--confirmed {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+}
+
+.lt-status--pending {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fbbf24;
+}
+
+.lt-status--failed {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--error);
+}
+
+/* ─── Empty State ──────────────────────────────────────────────── */
+
+.lt-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+}
+
+/* ─── Responsive ────────────────────────────────────────────────── */
+
+@media (max-width: 640px) {
+  .lt-toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lt-toolbar-right {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .lt-table-wrap {
+    max-height: 400px;
+  }
+}
+
+/* ─── Reduced Motion ───────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  .lt-detail-icon {
+    transition: none;
+  }
+
+  .lt-row {
+    transition: none;
+  }
+}
+
+/* ─── Focus ────────────────────────────────────────────────────── */
+
+.lt-control-btn:focus-visible,
+.lt-page-btn:focus-visible,
+.lt-detail-toggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.lt-table-wrap:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}

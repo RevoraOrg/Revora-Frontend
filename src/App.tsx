@@ -7,11 +7,7 @@ import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
-import { DistributionDashboard } from "./pages/DistributionDashboard";
-import { PayoutSchedule } from "./pages/PayoutSchedule";
-import { Ledger } from "./pages/Ledger";
-import { AuditTrail } from "./pages/AuditTrail";
-import { RevenueReports } from "./pages/RevenueReports";
+import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -38,11 +34,8 @@ export function App() {
           {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
-          <Route path="/investor/dashboard" element={<DistributionDashboard />} />
-          <Route path="/investor/payout-schedule" element={<PayoutSchedule />} />
-          <Route path="/investor/ledger" element={<Ledger />} />
-          <Route path="/investor/audit-trail" element={<AuditTrail />} />
-          <Route path="/investor/revenue-reports" element={<RevenueReports />} />
+          {/* Issue #139 – Virtualized Ledger Table */}
+          <Route path="/investor/ledger" element={<LedgerDemoPage />} />
         </Route>
       </Routes>
     </Router>
@@ -104,6 +97,8 @@ function Home() {
             <ul className="home-list">
               <li>• Discover high-potential offerings</li>
               <li>• Invest using USDC on Stellar</li>
+              <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
+              <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

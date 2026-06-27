@@ -7,6 +7,11 @@ import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
+import { DistributionDashboard } from "./pages/DistributionDashboard";
+import { PayoutSchedule } from "./pages/PayoutSchedule";
+import { Ledger } from "./pages/Ledger";
+import { AuditTrail } from "./pages/AuditTrail";
+import { RevenueReports } from "./pages/RevenueReports";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -19,6 +24,8 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+
+          {/* Startup routes */}
           <Route
             path="/startup/dashboard"
             element={<Placeholder title="Startup Dashboard" />}
@@ -28,10 +35,14 @@ export function App() {
             element={<RevenueReportForm />}
           />
 
-          {/* Updated Route - Issue #63 */}
+          {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
-          {/* Issue #163 – Portfolio Summary */}
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
+          <Route path="/investor/dashboard" element={<DistributionDashboard />} />
+          <Route path="/investor/payout-schedule" element={<PayoutSchedule />} />
+          <Route path="/investor/ledger" element={<Ledger />} />
+          <Route path="/investor/audit-trail" element={<AuditTrail />} />
+          <Route path="/investor/revenue-reports" element={<RevenueReports />} />
         </Route>
       </Routes>
     </Router>

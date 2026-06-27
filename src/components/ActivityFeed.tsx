@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import ActivityItem from './ActivityItem';
 import ActivityDateGroup from './ActivityDateGroup';
+import { EmptyState } from './designSystem/EmptyState';
 
 // Mock data type
 export interface Activity {
@@ -69,7 +70,18 @@ const ActivityFeed: React.FC = () => {
   }
 
   if (activities.length === 0) {
-    return <div className="activity-feed-empty" aria-live="polite">No recent activity.</div>;
+    return (
+      <EmptyState
+        variant="audit-trail"
+        title="No audit trail entries"
+        description="Activity logs will appear here as transactions and events occur on the platform."
+        primaryAction={{
+          label: 'Refresh',
+          onClick: () => window.location.reload(),
+        }}
+        size={80}
+      />
+    );
   }
 
   return (

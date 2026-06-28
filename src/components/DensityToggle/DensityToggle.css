@@ -1,0 +1,61 @@
+/* ─── DensityToggle ───────────────────────────────────────────── */
+
+.density-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--glass-bg-accent, rgba(30, 41, 59, 0.5));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 2px;
+}
+
+.density-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background: transparent;
+  border: none;
+  border-radius: calc(var(--radius-md, 0.5rem) - 2px);
+  color: var(--text-muted, #cbd5e1);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-medium, 500);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+  /* meets 44px touch target on mobile via density-touch-target class */
+}
+
+.density-toggle__btn:hover {
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  color: var(--text-main, #e5e7eb);
+}
+
+.density-toggle__btn--active {
+  background: var(--primary, #3b82f6);
+  color: #fff;
+}
+
+.density-toggle__btn--active:hover {
+  background: var(--primary-hover, #2563eb);
+  color: #fff;
+}
+
+.density-toggle__btn:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.density-toggle__icon {
+  font-size: 0.875rem;
+  line-height: 1;
+}
+
+.density-toggle__label {
+  font-size: var(--font-size-xs, 0.75rem);
+}
+
+/* Visually-hidden text for screen readers when compact=true is handled by
+   aria-label on the button; no extra SR-only class needed. */

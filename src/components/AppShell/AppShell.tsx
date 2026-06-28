@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import './AppShell.css';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsOverlay } from '../KeyboardShortcutsOverlay/KeyboardShortcutsOverlay';
+import { DensityToggle } from '../DensityToggle';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -76,6 +77,8 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
             >
               ?
             </button>
+            {/* Density toggle — compact (icon-only) in header */}
+            <DensityToggle compact />
             <button className="account-btn" aria-label="Account menu">
               👤
             </button>

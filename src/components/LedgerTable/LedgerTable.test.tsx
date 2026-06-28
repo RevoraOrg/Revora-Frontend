@@ -103,8 +103,10 @@ describe('LedgerTable', () => {
     const columnsBtn = screen.getByLabelText('Column visibility');
     await user.click(columnsBtn);
 
-    const idCheckbox = screen.getByLabelText(/Toggle column visibility.*ID/);
-    await user.click(idCheckbox);
+    // The column menu items are <label role="menuitemcheckbox"> containing <input>
+    const menuItems = screen.getAllByRole('menuitemcheckbox');
+    const idItem = menuItems.find((el) => el.textContent?.includes('ID'))!;
+    await user.click(idItem);
 
     expect(screen.queryByRole('columnheader', { name: 'ID' })).not.toBeInTheDocument();
   });
@@ -122,7 +124,8 @@ describe('LedgerTable', () => {
     const columnsBtn = screen.getByLabelText('Column visibility');
     await user.click(columnsBtn);
 
-    const checkbox = screen.getByRole('menuitemcheckbox');
+    // The disabled state lives on the <input> inside the menuitemcheckbox label
+    const checkbox = screen.getByRole('checkbox');
     expect(checkbox).toBeDisabled();
   });
 
@@ -133,15 +136,16 @@ describe('LedgerTable', () => {
         data={data}
         columns={columns}
         rowKey={(r) => r.id}
+        defaultDensity="cozy"
       />,
     );
 
     const densityBtn = screen.getByLabelText(/Density/);
-    expect(densityBtn).toHaveTextContent('normal');
+    expect(densityBtn).toHaveTextContent('cozy');
 
     await user.click(densityBtn);
-    // After one click it should cycle to next density
-    expect(densityBtn).not.toHaveTextContent('normal');
+    // cozy → compact
+    expect(densityBtn).toHaveTextContent('compact');
   });
 
   it('handles keyboard navigation', () => {

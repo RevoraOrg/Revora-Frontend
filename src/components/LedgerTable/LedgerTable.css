@@ -246,13 +246,34 @@
 }
 
 /* ─── Density Variants ─────────────────────────────────────────── */
+/* These classes work alongside global data-density on <html> so the
+ * table can also be overridden locally via defaultDensity prop.      */
 
-.lt-density--compact .lt-cell {
-  font-size: var(--font-size-xs);
+/* Comfortable — most spacious (default :root values apply) */
+.lt-density--comfortable .lt-cell {
+  font-size: var(--density-font-size, var(--font-size-base));
+  padding-top: var(--density-pad-y, 0.875rem);
+  padding-bottom: var(--density-pad-y, 0.875rem);
 }
 
-.lt-density--spacious .lt-cell {
-  font-size: var(--font-size-base);
+/* Cozy — normal/default (matches :root token values) */
+.lt-density--cozy .lt-cell {
+  font-size: var(--density-font-size, var(--font-size-sm));
+}
+
+/* Compact — densest */
+.lt-density--compact .lt-cell {
+  font-size: var(--density-font-size, var(--font-size-xs));
+}
+
+/* Ensure compact interactive elements meet 44px touch target on mobile */
+@media (max-width: 768px) {
+  .lt-density--compact .lt-detail-toggle,
+  .lt-density--compact .lt-control-btn,
+  .lt-density--compact .lt-page-btn {
+    min-height: 2.75rem; /* 44px */
+    min-width: 2.75rem;
+  }
 }
 
 /* ─── Detail Toggle ────────────────────────────────────────────── */

@@ -28,8 +28,21 @@ export default defineConfig({
         'src/components/AllocationWidget.tsx',
         'src/components/PerformanceTrendWidget.tsx',
         'src/pages/InvestorPortfolioSummary.tsx',
+        // Issue #174 – Density modes
+        'src/components/DensityProvider/DensityProvider.tsx',
+        'src/components/DensityToggle/DensityToggle.tsx',
+        'src/hooks/useDensity.ts',
       ],
       thresholds: {
+        'src/components/DensityProvider/DensityProvider.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/DensityToggle/DensityToggle.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/hooks/useDensity.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
         'src/components/InvestorDiscovery.tsx': {
           branches: 95,
           functions: 95,

@@ -8,7 +8,10 @@ import {
 } from 'lucide-react';
 import './LedgerTable.css';
 
-export type Density = 'compact' | 'normal' | 'spacious';
+// Global density modes (matches DensityProvider)
+export type DensityMode = 'comfortable' | 'cozy' | 'compact';
+// Legacy alias kept for backward compat
+export type Density = DensityMode;
 
 export interface Column<T> {
   key: string;
@@ -24,15 +27,25 @@ export interface LedgerTableProps<T> {
   rowKey: (row: T) => string | number;
   rowDetail?: (row: T) => React.ReactNode;
   pageSize?: number;
-  defaultDensity?: Density;
+  /** Override the density for this table instance.
+   *  When omitted the global density from DensityProvider is used. */
+  defaultDensity?: DensityMode;
   stickyHeader?: boolean;
   ariaLabel?: string;
 }
 
-const ROW_HEIGHTS: Record<Density, number> = {
-  compact: 36,
-  normal: 48,
-  spacious: 64,
+/** CSS class applied to the table wrapper per density mode */
+const DENSITY_CLASS: Record<DensityMode, string> = {
+  comfortable: 'lt-density--comfortable',
+  cozy:        'lt-density--cozy',
+  compact:     'lt-density--compact',
+};
+
+/** Row heights mirror --density-row-height tokens */
+const ROW_HEIGHTS: Record<DensityMode, number> = {
+  comfortable: 56,
+  cozy:        48,
+  compact:     36,
 };
 
 const OVERSCAN = 5;
@@ -43,14 +56,15 @@ function LedgerTable<T>({
   rowKey,
   rowDetail,
   pageSize = 50,
-  defaultDensity = 'normal',
+  defaultDensity = 'cozy',
   stickyHeader = true,
   ariaLabel = 'Ledger table',
 }: LedgerTableProps<T>) {
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() =>
     new Set(columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)),
   );
-  const [density, setDensity] = useState<Density>(defaultDensity);
+  // Local density allows table-level override; falls back to defaultDensity
+  const [density, setDensity] = useState<DensityMode>(defaultDensity);
   const [currentPage, setCurrentPage] = useState(0);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showDensityMenu, setShowDensityMenu] = useState(false);
@@ -135,7 +149,7 @@ function LedgerTable<T>({
 
   const cycleDensity = useCallback(() => {
     setDensity((prev) => {
-      const order: Density[] = ['compact', 'normal', 'spacious'];
+      const order: DensityMode[] = ['comfortable', 'cozy', 'compact'];
       const idx = order.indexOf(prev);
       return order[(idx + 1) % order.length];
     });
@@ -310,7 +324,7 @@ function LedgerTable<T>({
       {/* Table Container */}
       <div
         ref={scrollRef}
-        className={`lt-table-wrap lt-density--${density}`}
+        className={`lt-table-wrap ${DENSITY_CLASS[density]}`}
         tabIndex={0}
         role="grid"
         aria-label={ariaLabel}

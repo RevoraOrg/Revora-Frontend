@@ -88,8 +88,37 @@
   --text-main: #e5e7eb;
   --text-muted: #cbd5e1; /* Improved contrast for WCAG AA on dark backgrounds */
   --text-accent: #38bdf8;
-  --error: #ef4444;
-  --success: #10b981;
+
+  /* ─── Critical Signal Palette (CVD-safe, WCAG AA on dark) ─────────────── */
+  /* Chosen to remain distinguishable under Protanopia/Deuteranopia/Tritanopia. */
+  --success: #009e73; /* bluish-green (Okabe–Ito) */
+  --warning: #e69f00; /* orange (Okabe–Ito) */
+  --error:   #cc79a7; /* reddish-purple (Okabe–Ito) */
+  --info:    #3b82f6; /* blue */
+  --pending: #94a3b8; /* slate */
+
+  /* Signal surfaces (tints / borders) */
+  --signal-success-bg: rgba(0, 158, 115, 0.14);
+  --signal-success-border: rgba(0, 158, 115, 0.48);
+
+  --signal-warning-bg: rgba(230, 159, 0, 0.16);
+  --signal-warning-border: rgba(230, 159, 0, 0.55);
+
+  --signal-error-bg: rgba(204, 121, 167, 0.14);
+  --signal-error-border: rgba(204, 121, 167, 0.55);
+
+  --signal-info-bg: rgba(59, 130, 246, 0.14);
+  --signal-info-border: rgba(59, 130, 246, 0.48);
+
+  --signal-pending-bg: rgba(148, 163, 184, 0.12);
+  --signal-pending-border: rgba(148, 163, 184, 0.34);
+
+  /* Signal icon masks (non-colour indicators). Use with mask-image/-webkit-mask-image */
+  --signal-success-icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M20 6L9 17l-5-5' fill='none' stroke='%23000' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --signal-warning-icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3 1 21h22L12 3z' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M12 9v5' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M12 17h.01' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --signal-error-icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7.2 2h9.6L22 7.2v9.6L16.8 22H7.2L2 16.8V7.2L7.2 2z' fill='none' stroke='%23000' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M9 9l6 6' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M15 9l-6 6' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --signal-info-icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z' fill='none' stroke='%23000' stroke-width='2.2'/%3E%3Cpath d='M12 10v7' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3Cpath d='M12 7h.01' fill='none' stroke='%23000' stroke-width='3.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  --signal-pending-icon-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z' fill='none' stroke='%23000' stroke-width='2.2'/%3E%3Cpath d='M12 6v6l4 2' fill='none' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 
   /* ─── Auth Layout Design Tokens (Issue #80) ──────────────────────────── */
   /* Typography scale for AuthLayout title / subtitle / helperText slots */
@@ -116,7 +145,7 @@
   /* ─── Discovery Empty/Error State Tokens (Issue #107) ──────────────────── */
   --ds-empty-icon-bg:  rgba(59, 130, 246, 0.08);   /* primary-tinted icon well (empty) */
   --ds-empty-icon-fg:  var(--primary);              /* icon stroke colour (empty)       */
-  --ds-error-icon-bg:  rgba(239, 68, 68, 0.08);    /* error-tinted icon well           */
+  --ds-error-icon-bg:  rgba(204, 121, 167, 0.10);  /* error-tinted icon well           */
   --ds-error-icon-fg:  var(--error);               /* icon stroke colour (error)       */
   --ds-state-gap:      1.25rem;                    /* vertical gap between state slots */
   --ds-state-max-w:    28rem;                      /* constrains text column           */
@@ -133,21 +162,21 @@
   --st-content-gap: 0.75rem;                       /* gap: marker → content (vertical)  */
 
   /* Milestone state colours */
-  --st-completed-bg: rgba(16, 185, 129, 0.12);     /* ✓ completed background           */
-  --st-completed-border: #10b981;                   /* ✓ completed ring / connector      */
-  --st-completed-fg: #10b981;                       /* ✓ completed icon                  */
+  --st-completed-bg: var(--signal-success-bg);      /* ✓ completed background           */
+  --st-completed-border: var(--success);            /* ✓ completed ring / connector      */
+  --st-completed-fg: var(--success);                /* ✓ completed icon                  */
 
-  --st-progress-bg: rgba(59, 130, 246, 0.12);      /* ● in-progress background          */
-  --st-progress-border: #3b82f6;                    /* ● in-progress ring / connector    */
-  --st-progress-fg: #3b82f6;                        /* ● in-progress icon                */
+  --st-progress-bg: var(--signal-info-bg);          /* ● in-progress background          */
+  --st-progress-border: var(--info);                /* ● in-progress ring / connector    */
+  --st-progress-fg: var(--info);                    /* ● in-progress icon                */
 
-  --st-blocked-bg: rgba(239, 68, 68, 0.12);        /* ▲ blocked background              */
-  --st-blocked-border: rgba(239, 68, 68, 0.5);     /* ▲ blocked ring                    */
-  --st-blocked-fg: #ef4444;                         /* ▲ blocked icon                    */
+  --st-blocked-bg: var(--signal-error-bg);          /* ▲ blocked background              */
+  --st-blocked-border: var(--signal-error-border);  /* ▲ blocked ring                    */
+  --st-blocked-fg: var(--error);                    /* ▲ blocked icon                    */
 
-  --st-pending-bg: rgba(148, 163, 184, 0.08);      /* ○ pending background              */
-  --st-pending-border: rgba(148, 163, 184, 0.25);  /* ○ pending ring / connector        */
-  --st-pending-fg: #94a3b8;                         /* ○ pending icon                    */
+  --st-pending-bg: var(--signal-pending-bg);        /* ○ pending background              */
+  --st-pending-border: var(--signal-pending-border);/* ○ pending ring / connector        */
+  --st-pending-fg: var(--pending);                  /* ○ pending icon                    */
 
   /* ─── Density Mode Tokens (Issue #174) ───────────────────────────────
    * Three modes: comfortable (spacious), cozy (normal), compact.
@@ -171,10 +200,10 @@
   --density-gap: 0.75rem;             /* 12px between items */
 
   /* ─── Revenue Reporting Calendar Tokens (Issue #153) ─────────────── */
-  --rc-status-due: #f59e0b;                         /* ● due indicator                   */
-  --rc-status-submitted: #3b82f6;                   /* ● submitted indicator             */
-  --rc-status-accepted: #10b981;                    /* ● accepted indicator              */
-  --rc-status-overdue: #ef4444;                     /* ● overdue indicator               */
+  --rc-status-due: var(--warning);                  /* ● due indicator                   */
+  --rc-status-submitted: var(--info);               /* ● submitted indicator             */
+  --rc-status-accepted: var(--success);             /* ● accepted indicator              */
+  --rc-status-overdue: var(--error);                /* ● overdue indicator               */
   --rc-cell-size: 2.75rem;                          /* calendar day cell size            */
   --rc-cell-gap: 0.25rem;                           /* gap between cells                 */
   --rc-header-height: 2.5rem;                       /* day-name header height            */
@@ -513,7 +542,82 @@ input:focus-visible,
 .text-muted { color: var(--text-muted); }
 .text-main { color: var(--text-main); }
 .text-success { color: var(--success); }
+.text-warning { color: var(--warning); }
 .text-error { color: var(--error); }
+.text-info { color: var(--info); }
+.text-pending { color: var(--pending); }
+
+/* Status indicator utilities (icon + colour; not colour-only) */
+.status-indicator {
+  --status-fg: var(--text-main);
+  --status-bg: transparent;
+  --status-border: var(--glass-border);
+  --status-icon-mask: none;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--status-border);
+  background: var(--status-bg);
+  color: var(--status-fg);
+  font-size: var(--font-size-sm);
+  line-height: 1.1;
+  font-weight: var(--font-weight-medium);
+  white-space: nowrap;
+}
+
+.status-indicator::before {
+  content: "";
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-image: var(--status-icon-mask);
+  mask-image: var(--status-icon-mask);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.status-indicator--success {
+  --status-fg: var(--success);
+  --status-bg: var(--signal-success-bg);
+  --status-border: var(--signal-success-border);
+  --status-icon-mask: var(--signal-success-icon-mask);
+}
+
+.status-indicator--warning {
+  --status-fg: var(--warning);
+  --status-bg: var(--signal-warning-bg);
+  --status-border: var(--signal-warning-border);
+  --status-icon-mask: var(--signal-warning-icon-mask);
+}
+
+.status-indicator--error {
+  --status-fg: var(--error);
+  --status-bg: var(--signal-error-bg);
+  --status-border: var(--signal-error-border);
+  --status-icon-mask: var(--signal-error-icon-mask);
+}
+
+.status-indicator--info {
+  --status-fg: var(--info);
+  --status-bg: var(--signal-info-bg);
+  --status-border: var(--signal-info-border);
+  --status-icon-mask: var(--signal-info-icon-mask);
+}
+
+.status-indicator--pending {
+  --status-fg: var(--pending);
+  --status-bg: var(--signal-pending-bg);
+  --status-border: var(--signal-pending-border);
+  --status-icon-mask: var(--signal-pending-icon-mask);
+}
 
 /* ─── AuthLayout Component Styles (Issue #80) ─────────────────────────────
    Implements the formalized design-system type scale and responsive card.

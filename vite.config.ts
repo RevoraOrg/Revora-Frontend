@@ -32,6 +32,9 @@ export default defineConfig({
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
         'src/hooks/useDensity.ts',
+        // Issue #272 – Payout timeline RTL mirror
+        'src/components/PayoutTimeline/PayoutTimeline.tsx',
+        'src/pages/PayoutSchedule.tsx',
       ],
       thresholds: {
         'src/components/DensityProvider/DensityProvider.tsx': {
@@ -41,6 +44,12 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/hooks/useDensity.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/PayoutTimeline/PayoutTimeline.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/pages/PayoutSchedule.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/InvestorDiscovery.tsx': {

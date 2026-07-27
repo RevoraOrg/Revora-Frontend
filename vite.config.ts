@@ -32,8 +32,30 @@ export default defineConfig({
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
         'src/hooks/useDensity.ts',
+        // Onchain rejection error illustration
+        'src/components/designSystem/OnchainRejectionIllustration.tsx',
+        'src/components/StatusTimeline/OnchainRejectionCard.tsx',
+        'src/components/StatusTimeline/onchainRejectionCopy.ts',
       ],
       thresholds: {
+        'src/components/designSystem/OnchainRejectionIllustration.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/StatusTimeline/OnchainRejectionCard.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/StatusTimeline/onchainRejectionCopy.ts': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
         'src/components/DensityProvider/DensityProvider.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },

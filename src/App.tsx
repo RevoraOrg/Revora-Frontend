@@ -8,6 +8,7 @@ import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import he
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
+import { DistributionDashboard } from "./pages/DistributionDashboard";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -30,6 +31,7 @@ export function App() {
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
           />
+          <Route path="/startup/distributions" element={<DistributionDashboard />} />
 
           {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
+import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 
 export const DistributionDashboard: React.FC = () => {
   return (
@@ -11,6 +12,13 @@ export const DistributionDashboard: React.FC = () => {
           Track RevenueShare distributions across your portfolio.
         </p>
       </div>
+
+      <KycResubmissionTimeline
+        status="under-review"
+        submittedAt="2026-07-24T10:30:00Z"
+        reviewStartedAt="2026-07-27T08:00:00Z"
+        holidays={['2026-07-27']}
+      />
 
       <EmptyState
         variant="distribution-dashboard"

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
+import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
 import { ThumbnailGrid, ThumbnailFile } from '../components/ThumbnailGrid/ThumbnailGrid';
 import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
@@ -8,7 +9,6 @@ import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 export const DistributionDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Initialize filter state from URL search params
   const [filterState, setFilterState] = useState<DistributionFilterState>(() => {
     return {
       searchQuery: searchParams.get('search') || '',
@@ -65,7 +65,6 @@ export const DistributionDashboard: React.FC = () => {
 
   const rowRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
-  // Sync state changes to URL search params
   const updateFiltersAndUrl = useCallback(
     (newState: DistributionFilterState) => {
       setFilterState(newState);
@@ -73,9 +72,9 @@ export const DistributionDashboard: React.FC = () => {
       const params: Record<string, string> = {};
       if (newState.searchQuery) params.search = newState.searchQuery;
       if (newState.dateRange !== 'all') params.date = newState.dateRange;
-      if (newState.issuer !== 'all') params.issuer = newState.issuer;
-      if (newState.region !== 'all') params.region = newState.region;
-      if (newState.status !== 'all') params.status = newState.status;
+      if (newState.issuer !== 'all' && newState.issuer !== 'All Issuers') params.issuer = newState.issuer;
+      if (newState.region !== 'all' && newState.region !== 'All Regions') params.region = newState.region;
+      if (newState.status !== 'all' && newState.status !== 'All Statuses') params.status = newState.status;
       if (newState.segmentBy !== 'none') params.segment = newState.segmentBy;
       if (newState.compareMode) params.compare = 'true';
       if (selectedPayoutId) params.payoutId = selectedPayoutId;
@@ -159,10 +158,8 @@ export const DistributionDashboard: React.FC = () => {
     document.body.removeChild(link);
   };
 
-  // Filter dataset based on all active filters
   const filteredPayouts = useMemo(() => {
     return payoutsList.filter((p) => {
-      // Search
       const search = filterState.searchQuery.toLowerCase();
       if (
         search &&
@@ -173,7 +170,6 @@ export const DistributionDashboard: React.FC = () => {
         return false;
       }
 
-      // Issuer
       if (
         filterState.issuer !== 'all' &&
         filterState.issuer !== 'All Issuers' &&
@@ -182,7 +178,6 @@ export const DistributionDashboard: React.FC = () => {
         return false;
       }
 
-      // Region
       if (
         filterState.region !== 'all' &&
         filterState.region !== 'All Regions' &&
@@ -191,7 +186,6 @@ export const DistributionDashboard: React.FC = () => {
         return false;
       }
 
-      // Status
       if (
         filterState.status !== 'all' &&
         filterState.status !== 'All Statuses' &&
@@ -204,7 +198,6 @@ export const DistributionDashboard: React.FC = () => {
     });
   }, [payoutsList, filterState]);
 
-  // Segmented Groups calculation (for compare mode or segmented view)
   const segmentedData = useMemo(() => {
     const effectiveSegment =
       filterState.segmentBy !== 'none'
@@ -215,13 +208,16 @@ export const DistributionDashboard: React.FC = () => {
 
     if (effectiveSegment === 'none') return null;
 
-    const groups: { [key: string]: { count: number; totalDistributed: number; payouts: ExtendedPayoutDetail[] } } = {};
+    const groups: {
+      [key: string]: { count: number; totalDistributed: number; payouts: ExtendedPayoutDetail[] };
+    } = {};
 
     filteredPayouts.forEach((p) => {
       let key = 'Other';
-      if (effectiveSegment === 'region') key = p.region;
+      if (effectiveSegment === 'region') key = p.region || 'Other';
       if (effectiveSegment === 'offering') key = p.offeringName;
       if (effectiveSegment === 'status') key = p.status.toUpperCase();
+      if (effectiveSegment === 'tier') key = p.tier || 'Standard';
 
       if (!groups[key]) {
         groups[key] = { count: 0, totalDistributed: 0, payouts: [] };
@@ -238,7 +234,6 @@ export const DistributionDashboard: React.FC = () => {
     return payoutsList.find((p) => p.id === selectedPayoutId) || null;
   }, [payoutsList, selectedPayoutId]);
 
-  // Aggregate summary metrics
   const totalDistributed = useMemo(() => {
     return filteredPayouts.reduce((sum, p) => sum + p.netAmount, 0);
   }, [filteredPayouts]);
@@ -249,6 +244,14 @@ export const DistributionDashboard: React.FC = () => {
 
   const failedCount = useMemo(() => {
     return filteredPayouts.filter((p) => p.status === 'failed').length;
+  }, [filteredPayouts]);
+
+  const activePayouts = useMemo(() => {
+    return filteredPayouts.filter((p) => p.status === 'processing' || p.status === 'scheduled').length;
+  }, [filteredPayouts]);
+
+  const pendingRetries = useMemo(() => {
+    return filteredPayouts.reduce((sum, p) => sum + p.retries.filter((r) => r.status === 'failed').length, 0);
   }, [filteredPayouts]);
 
   return (
@@ -267,32 +270,46 @@ export const DistributionDashboard: React.FC = () => {
         </a>
       </div>
 
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold mb-4">Recent Uploads Queue</h2>
-        <div className="space-y-4">
-          <DocumentUploadStatus
-            fileName="Q3_Revenue_Report.pdf"
-            status="clean"
-          />
-          <DocumentUploadStatus
-            fileName="Financial_Audit_2023.pdf"
-            status="scanning"
-          />
-          <DocumentUploadStatus
-            fileName="K-1_Distribution_Schedule.xlsx"
-            status="validating"
-          />
-          <DocumentUploadStatus
-            fileName="Unrecognized_Document.docx"
-            status="quarantined"
-            auditNote="Flagged for manual review due to missing digital signature."
-            remediationUrl="/support/documents/quarantine"
-          />
-          <DocumentUploadStatus
-            fileName="malicious_payload.exe"
-            status="rejected"
-            auditNote="Malware signature detected. Upload blocked."
-          />
+      {/* Filter Toolbar */}
+      <DistributionFilterToolbar
+        filters={filterState}
+        onFilterChange={updateFiltersAndUrl}
+        onResetFilters={handleResetFilters}
+      />
+
+      {/* KPI Summary Cards */}
+      <div
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        role="list"
+        aria-label="Distribution key metrics"
+      >
+        <div role="listitem" data-testid="kpi-total-distributed">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Total Distributed</span>
+            <span className="text-2xl font-bold tracking-tight">
+              ${totalDistributed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+        <div role="listitem" data-testid="kpi-active-payouts">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Active Payouts</span>
+            <span className="text-2xl font-bold tracking-tight">{activePayouts}</span>
+          </div>
+        </div>
+        <div role="listitem" data-testid="kpi-gas-spent">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Gas Spent</span>
+            <span className="text-2xl font-bold tracking-tight">
+              ${totalGasSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+        <div role="listitem" data-testid="kpi-pending-retries">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Pending Retries</span>
+            <span className="text-2xl font-bold tracking-tight">{pendingRetries}</span>
+          </div>
         </div>
       </div>
 
@@ -313,20 +330,15 @@ export const DistributionDashboard: React.FC = () => {
         status="passed"
       />
 
-      <EmptyState
-        variant="distribution-dashboard"
-        title="No distributions yet"
-        description="When revenue is reported and payouts are processed, your distribution history will appear here."
-        primaryAction={{
-          label: 'Report Revenue',
-          href: '/startup/report-revenue',
-        }}
-        secondaryAction={{
-          label: 'Back to Discovery',
-          href: '/investor/portal',
-        }}
+      {/* Drill-down Panel */}
+      <PayoutDrillDownPanel
+        isOpen={selectedPayoutId !== null}
+        payoutId={selectedPayoutId}
+        payoutData={selectedPayoutData}
+        onClose={handleClosePanel}
+        onRetryBatch={handleRetryBatch}
+        onExportCsv={handleExportCsv}
       />
     </div>
   );
 };
-

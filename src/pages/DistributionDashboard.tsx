@@ -466,6 +466,14 @@ export const DistributionDashboard: React.FC = () => {
         onExportCsv={handleExportCsv}
         triggerRef={{ current: selectedPayoutId ? rowRefs.current[selectedPayoutId] || null : null }}
       />
+
+      <ExitConfirmationModal
+        isOpen={blocker.state === 'blocked'}
+        onStay={handleStay}
+        onDiscard={handleDiscard}
+        onSaveAndExit={handleSaveAndExit}
+      />
     </div>
   );
 };
+

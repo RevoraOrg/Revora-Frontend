@@ -40,26 +40,19 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   const titleId = useId();
 
   return (
-    <div className="auth-layout-outer animate-fade-in">
-      <main
-        className="auth-card glass-card"
-        role="main"
-        aria-labelledby={titleId}
-      >
+    <main role="main" aria-labelledby={titleId} className="auth-layout-outer animate-fade-in">
+      <div className="auth-card glass-card">
         <header className="auth-header">
           <h1 id={titleId} className="auth-title">
             {title}
           </h1>
-          {subtitle && (
-            <p className="auth-subtitle">{subtitle}</p>
-          )}
-          {helperText && (
-            <p className="auth-helper">{helperText}</p>
-          )}
+          {subtitle && <p className="auth-subtitle">{subtitle}</p>}
+          {helperText && <p className="auth-helper">{helperText}</p>}
         </header>
-
-        <div className="auth-body">{children}</div>
-      </main>
-    </div>
+        <div className="auth-body">
+          {children}
+        </div>
+      </div>
+    </main>
   );
 };

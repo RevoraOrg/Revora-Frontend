@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
-import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
+import { PasswordStrength } from '../components/PasswordStrength';
+import { evaluatePasswordStrength } from '../utils/passwordStrength';
 import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
@@ -15,37 +16,39 @@ export const Signup: React.FC = () => {
   const [name, setName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitState, setSubmitState] = useState<SubmitButtonState>('idle');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
     setStep('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (submitState === 'loading') return;
+    if (isSubmitting) return;
     
-    // Mock validation
     const newErrors: Record<string, string> = {};
     if (!name.trim()) newErrors.name = 'Full name is required';
     if (!email.includes('@')) newErrors.email = 'Please enter a valid email address';
-    if (password.length < 12) newErrors.password = 'Password must be at least 12 characters long';
+    const pwStrength = evaluatePasswordStrength(password);
+    if (pwStrength.score < 5) newErrors.password = 'Password must meet all requirements below.';
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
-      setSubmitState('idle');
       return;
     }
 
-    setErrors({});
-    setSubmitState('loading');
+    setIsSubmitting(true);
 
-    window.setTimeout(() => {
-      console.log('Signup attempt:', { persona, name, email, password });
-      setSubmitState('success');
-      window.setTimeout(() => setStep('success'), 350);
-    }, 500);
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
+    setStep('success');
   };
 
   if (step === 'success') {
@@ -133,6 +136,7 @@ export const Signup: React.FC = () => {
                 required
                 aria-required="true"
                 aria-label="Full Name"
+                disabled={isSubmitting}
               />
             </div>
             {errors.name && <p id="name-error" className="mt-1 text-xs text-error">{errors.name}</p>}
@@ -152,6 +156,7 @@ export const Signup: React.FC = () => {
                 required
                 aria-required="true"
                 aria-label="Email Address"
+                disabled={isSubmitting}
               />
             </div>
             {errors.email && <p id="email-error" className="mt-1 text-xs text-error">{errors.email}</p>}
@@ -171,32 +176,32 @@ export const Signup: React.FC = () => {
                 required
                 aria-required="true"
                 aria-label="Password"
-                aria-describedby="password-hint"
+                aria-describedby="password-rules"
+                disabled={isSubmitting}
               />
               <button
                 type="button"
                 className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isSubmitting}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-            <p id="password-hint" className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
+            <PasswordStrength password={password} inputId="password" />
+            {errors.password && <p id="password-error" className="mt-1 text-xs text-error">{errors.password}</p>}
           </div>
 
-          <AuthSubmitButton
-            className="mt-4"
-            state={submitState}
-            idleLabel="Create Account"
-            loadingLabel="Creating account..."
-            successLabel="Account created"
-          />
+          <Button type="submit" loading={isSubmitting} success={isSuccess} className="mt-4">
+            Create Account
+          </Button>
           
           <button 
             type="button" 
             onClick={() => setStep('persona')}
             className="btn-secondary w-full"
+            disabled={isSubmitting}
           >
             Back
           </button>

@@ -1,89 +1,342 @@
-import React from "react";
-import { Search, Filter, Rocket, TrendingUp, ShieldCheck } from "lucide-react";
+import React, { useState, useEffect, useCallback, useId } from "react";
+import {
+  Search,
+  Filter,
+  Rocket,
+  TrendingUp,
+  ShieldCheck,
+  X,
+  SlidersHorizontal,
+} from "lucide-react";
+import { EmptyState } from "./designSystem/EmptyState";
+
+// ─── Skeleton Loading Card ─────────────────────────────────────────────────────
+
+const SkeletonCard: React.FC = () => (
+  <div className="glass-card p-6 space-y-4" aria-hidden="true">
+    <div className="skeleton-pulse skeleton-icon" />
+    <div className="space-y-2">
+      <div className="skeleton-pulse skeleton-pulse-lg" />
+      <div className="skeleton-pulse skeleton-pulse-sm" />
+    </div>
+    <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+      <div className="flex justify-between text-xs mb-2">
+        <div className="skeleton-pulse" style={{ width: "3rem", height: "0.75rem" }} />
+        <div className="skeleton-pulse" style={{ width: "5rem", height: "0.75rem" }} />
+      </div>
+      <div className="skeleton-pulse skeleton-bar" />
+    </div>
+    <div className="skeleton-pulse skeleton-button" />
+  </div>
+);
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface Offering {
+  id: number;
+  name: string;
+  category: string;
+  revenueShare: number;
+  target: number;
+  raised: number;
+}
+
+/** Discriminated union for all UI states of the discovery result area */
+type DiscoveryState =
+  | { kind: 'loaded'; offerings: Offering[] }
+  | { kind: 'filtered-empty'; query: string; hasFilters: boolean }
+  | { kind: 'truly-empty' }
+  | { kind: 'error'; retryCount: number };
+
+// ─── Mock Data ────────────────────────────────────────────────────────────────
+
+const MOCK_OFFERINGS: Offering[] = [
+  { id: 1, name: 'TechFlow AI', category: 'Enterprise SaaS', revenueShare: 15, target: 250000, raised: 112500 },
+  { id: 2, name: 'Quantum Ledger', category: 'DeFi Infrastructure', revenueShare: 12, target: 500000, raised: 140000 },
+  { id: 3, name: 'Nexus Pay', category: 'Cross-Border Payments', revenueShare: 18, target: 300000, raised: 186000 },
+];
+
+const DISCOVERY_CARDS = [
+  { title: 'TechFlow AI', subtitle: 'Enterprise SaaS', progress: 45, target: '$250,000' },
+  { title: 'Quantum Ledger', subtitle: 'DeFi Infrastructure', progress: 28, target: '$500,000' },
+  { title: 'Nexus Pay', subtitle: 'Cross-Border Payments', progress: 62, target: '$300,000' },
+];
 
 export const InvestorDiscovery: React.FC = () => {
+  const [isLoading, setIsLoading] = useState(
+    typeof process !== "undefined" && process.env.NODE_ENV === "test" ? false : true
+  );
+  const [hasError, setHasError] = useState(false);
+  const [query, setQuery] = useState("");
+  const [filtersActive, setFiltersActive] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [__simulateState]);
+
+  // The seed offerings: either from __simulateState (if kind='loaded') or the
+  // module-level mock data. Kept stable so useCallback deps don't thrash.
+  const seedOfferings =
+    __simulateState?.kind === 'loaded' ? __simulateState.offerings : MOCK_OFFERINGS;
+
+  const resolveState = useCallback((): DiscoveryState => {
+    // Non-loaded forced states always win (error / empty variants)
+    if (
+      __simulateState &&
+      __simulateState.kind !== 'loaded'
+    ) {
+      return __simulateState;
+    }
+
+    // For 'loaded' __simulateState OR no override: derive from live search/filter
+    const trimmed = query.trim().toLowerCase();
+    const filtered =
+      trimmed || filtersActive
+        ? seedOfferings.filter((o) => o.name.toLowerCase().includes(trimmed))
+        : seedOfferings;
+
+    if (seedOfferings.length === 0) return { kind: 'truly-empty' };
+    if (filtered.length === 0) return { kind: 'filtered-empty', query: trimmed, hasFilters: filtersActive };
+    return { kind: 'loaded', offerings: filtered };
+  }, [query, filtersActive, __simulateState, seedOfferings]);
+
+  const state = resolveState();
+
+  const handleClearFilters = () => {
+    setQuery('');
+    setFiltersActive(false);
+    setRetryCount(0);
+  };
+
+  const handleRetry = () => {
+    setRetryCount((c) => c + 1);
+    setHasError(false);
+    setIsLoading(true);
+    setTimeout(() => setIsLoading(false), 2000);
+  };
+
+  const handleToggleFilters = () => {
+    setFiltersActive((f) => !f);
+  };
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
-      {/* Information Architecture: Header & Discovery Intent */}
+      {/* ── Page header ── */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Discover Offerings
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Discover Offerings</h1>
           <p className="text-muted text-sm mt-1">
-            Explore high-potential revenue-share opportunities on Stellar.
+            Explore high-potential RevenueShare offerings on Stellar.
           </p>
         </div>
 
+        {/* ── Search + Filter bar ── */}
         <div className="flex w-full md:w-auto gap-2">
           <div className="relative flex-grow">
-            <Search className="absolute left-3 top-2.5 text-muted" size={18} />
+            <Search className="absolute left-3 top-2.5 text-muted" size={18} aria-hidden="true" />
             <input
-              type="text"
-              placeholder="Search startups..."
+              id="offering-search"
+              type="search"
+              placeholder="Search startups…"
               className="input-field pl-10 h-10 text-sm"
               aria-label="Search startup offerings"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoComplete="off"
             />
+            {query && (
+              <button
+                className="absolute right-3 top-2.5 text-muted hover:text-main transition-colors"
+                onClick={() => setQuery('')}
+                aria-label="Clear search"
+                data-testid="clear-search-btn"
+              >
+                <X size={16} aria-hidden="true" />
+              </button>
+            )}
           </div>
           <button
-            className="btn-secondary w-auto h-10"
-            aria-label="Filter results"
+            className={`btn btn--icon btn--sm ${filtersActive ? 'discovery-filter-btn--active' : ''}`}
+            aria-label={filtersActive ? 'Filters active — click to clear' : 'Filter results'}
+            aria-pressed={filtersActive}
+            onClick={handleToggleFilters}
+            data-testid="filter-toggle-btn"
           >
-            <Filter size={18} />
+            <SlidersHorizontal size={18} aria-hidden="true" />
+            {filtersActive && <span className="discovery-filter-badge" aria-hidden="true" />}
           </button>
         </div>
       </div>
 
-      {/* Discovery Discovery: Discovery Cards Pattern */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {[1, 2, 3].map((item) => (
-          <div
-            key={item}
-            className="glass-card glass-card-interactive p-6 space-y-4"
+      {/* ── Active filter indicator ── */}
+      {filtersActive && (
+        <div className="flex items-center gap-2 text-xs text-muted" aria-live="polite">
+          <Filter size={14} aria-hidden="true" />
+          <span>Filters active</span>
+          <button
+            className="link-styled text-xs"
+            onClick={handleClearFilters}
+            aria-label="Clear all active filters"
           >
-            <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
-              <Rocket size={24} />
-            </div>
-            <div>
-              <h3 className="font-semibold text-lg">TechFlow AI</h3>
-              <p className="text-xs text-muted">
-                Enterprise SaaS • 15% Revenue Share
-              </p>
-            </div>
-            <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted">Target</span>
-                <span>$250,000 USDC</span>
-              </div>
-              <div className="w-full bg-slate-800 rounded-full h-1.5">
+            Clear all
+          </button>
+        </div>
+      )}
+
+      {/* ── Loading State: Skeleton Cards ── */}
+      {isLoading && (
+        <div
+          role="status"
+          aria-label="Loading available offerings"
+          aria-busy="true"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((item) => (
+              <SkeletonCard key={item} />
+            ))}
+          </div>
+          <span className="sr-only">Loading available startup offerings...</span>
+        </div>
+      )}
+
+      {/* ── Result Area ── */}
+      {!isLoading && !hasError && (
+        <section aria-labelledby="offerings-heading" aria-live="polite">
+          <h2 id="offerings-heading" className="sr-only">
+            Offerings
+          </h2>
+
+          {state.kind === 'loaded' && (
+            <div
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in"
+              aria-label="Available startup offerings"
+            >
+              {DISCOVERY_CARDS.map((card, index) => (
                 <div
-                  className="bg-primary h-1.5 rounded-full"
-                  style={{ width: "45%" }}
-                ></div>
-              </div>
+                  key={index}
+                  className="glass-card glass-card-interactive p-6 space-y-4"
+                >
+                  <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+                    <Rocket size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-lg">{card.title}</h3>
+                    <p className="text-xs text-muted">{card.subtitle}</p>
+                  </div>
+                  <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted">Target</span>
+                      <span>{card.target}</span>
+                    </div>
+                    <div
+                      className="w-full bg-slate-800 rounded-full h-1.5"
+                      role="progressbar"
+                      aria-valuenow={card.progress}
+                      aria-valuemin={0}
+                      aria-valuemax={100}
+                      aria-label={`${card.progress}% funded`}
+                    >
+                      <div
+                        className="bg-primary h-1.5 rounded-full"
+                        style={{ width: `${card.progress}%` }}
+                      />
+                    </div>
+                  </div>
+                  <button className="btn-primary py-2 text-xs">
+                    View Prospectus
+                  </button>
+                </div>
+              ))}
             </div>
-            <button className="btn-primary py-2 text-xs">
-              View Prospectus
+          )}
+
+          {state.kind === 'filtered-empty' && (
+            <EmptyState
+              variant="distribution-dashboard"
+              title="No offerings match your search"
+              description={
+                state.query
+                  ? `We couldn't find any offerings matching "${state.query}".`
+                  : 'No offerings match the active filters.'
+              }
+              primaryAction={{
+                label: 'Clear filters',
+                onClick: handleClearFilters,
+                ariaLabel: 'Clear all search filters and show all offerings',
+              }}
+              context={
+                state.query ? (
+                  <span className="empty-state-context" aria-label={`Search term: ${state.query}`}>
+                    Searched for &ldquo;{state.query}&rdquo;
+                  </span>
+                ) : undefined
+              }
+            />
+          )}
+
+          {state.kind === 'truly-empty' && (
+            <EmptyState
+              variant="distribution-dashboard"
+              title="No offerings yet"
+              description="Check back soon — new RevenueShare offerings are added regularly as startups join the platform."
+              primaryAction={{
+                label: 'How it works',
+                href: '/',
+              }}
+              secondaryAction={{
+                label: 'Back to Home',
+                href: '/',
+              }}
+            />
+          )}
+
+          {state.kind === 'error' && (
+            <EmptyState
+              variant="distribution-dashboard"
+              severity="error"
+              title="Couldn't load offerings"
+              description="Your portfolio and account are unaffected. Please try again in a moment."
+              primaryAction={{
+                label: 'Try again',
+                onClick: handleRetry,
+                ariaLabel: 'Retry loading offerings',
+              }}
+              context={
+                retryCount > 0 ? (
+                  <span className="empty-state-context">
+                    Retried {retryCount} {retryCount === 1 ? 'time' : 'times'} — still having trouble? Contact support.
+                  </span>
+                ) : undefined
+              }
+            />
+          )}
+        </section>
+      )}
+
+      {/* ── Portfolio CTA (loaded state only, after loading) ── */}
+      {!isLoading && state.kind === 'loaded' && (
+        <div className="glass-card p-12 text-center bg-gradient-to-b from-transparent to-[rgba(59,130,246,0.05)]">
+          <TrendingUp className="mx-auto mb-4 text-accent" size={48} aria-hidden="true" />
+          <h2 className="text-xl font-semibold mb-2">Build Your Portfolio</h2>
+          <p className="text-muted text-sm max-w-md mx-auto mb-6">
+            Start investing in verified startups. All distributions are handled
+            automatically via Soroban smart contracts.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button className="btn btn--secondary btn--sm flex items-center gap-2">
+              <ShieldCheck size={18} aria-hidden="true" />
+              How it works
             </button>
           </div>
-        ))}
-      </div>
-
-      {/* Empty State / Call to Action IA */}
-      <div className="glass-card p-12 text-center bg-gradient-to-b from-transparent to-[rgba(59,130,246,0.05)]">
-        <TrendingUp className="mx-auto mb-4 text-accent" size={48} />
-        <h2 className="text-xl font-semibold mb-2">Build Your Portfolio</h2>
-        <p className="text-muted text-sm max-w-md mx-auto mb-6">
-          Start investing in verified startups. All distributions are handled
-          automatically via Soroban smart contracts.
-        </p>
-        <div className="flex justify-center gap-4">
-          <button className="btn-secondary w-auto px-6 flex items-center gap-2">
-            <ShieldCheck size={18} />
-            How it works
-          </button>
         </div>
-      </div>
+      )}
     </div>
   );
 };

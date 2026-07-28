@@ -1,9 +1,10 @@
 // src/components/AppShell/AppShell.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './AppShell.css';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsOverlay } from '../KeyboardShortcutsOverlay/KeyboardShortcutsOverlay';
 import { DensityToggle } from '../DensityToggle';
+import { NetworkSwitcher } from '../NetworkSwitcher';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -33,6 +34,21 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [window.location.pathname]);
+
+  const [activeNetwork, setActiveNetwork] = useState('');
+
+  const networks = [
+    { id: 'ethereum', name: 'Ethereum' },
+    { id: 'polygon', name: 'Polygon' },
+    { id: 'solana', name: 'Solana' },
+    { id: 'arbitrum', name: 'Arbitrum' },
+    { id: 'optimism', name: 'Optimism' },
+    { id: 'base', name: 'Base' },
+  ];
+
+  const handleNetworkChange = useCallback((networkId: string) => {
+    setActiveNetwork(networkId);
+  }, []);
 
   const navItems = [
     { name: 'Discovery', path: '/discovery' },
@@ -67,6 +83,11 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
           {/* Account & Notifications */}
           <div className="header-actions">
+            <NetworkSwitcher
+              networks={networks}
+              currentNetworkId={activeNetwork}
+              onNetworkChange={handleNetworkChange}
+            />
             <button className="notifications-btn" aria-label="Notifications">
               🔔
             </button>

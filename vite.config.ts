@@ -32,6 +32,10 @@ export default defineConfig({
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
         'src/hooks/useDensity.ts',
+        // Issue #229 – KYC rejection reasons panel
+        'src/components/KycRejectionPanel/kycRejectionTaxonomy.ts',
+        'src/components/KycRejectionPanel/KycRejectionPanel.tsx',
+        'src/pages/DistributionDashboard.tsx',
       ],
       thresholds: {
         'src/components/DensityProvider/DensityProvider.tsx': {
@@ -72,6 +76,16 @@ export default defineConfig({
           functions: 95,
           lines: 95,
           statements: 95,
+        },
+        // Issue #229 – KYC rejection reasons panel
+        'src/components/KycRejectionPanel/kycRejectionTaxonomy.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/KycRejectionPanel/KycRejectionPanel.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/pages/DistributionDashboard.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }
     }

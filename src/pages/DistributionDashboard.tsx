@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { Upload } from 'lucide-react';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { AuditNoteEditor } from '../components/AuditNoteEditor';
 
@@ -38,8 +39,8 @@ export const DistributionDashboard: React.FC = () => {
 
       <EmptyState
         variant="distribution-dashboard"
-        title="No distributions yet"
-        description="When revenue is reported and payouts are processed, your distribution history will appear here."
+        title="No other distributions yet"
+        description="When more revenue is reported and payouts are processed, your distribution history will appear here."
         primaryAction={{
           label: 'Report Revenue',
           href: '/startup/report-revenue',
@@ -49,6 +50,14 @@ export const DistributionDashboard: React.FC = () => {
           href: '/investor/portal',
         }}
       />
+
+      <ExitConfirmationModal
+        isOpen={blocker.state === 'blocked'}
+        onStay={handleStay}
+        onDiscard={handleDiscard}
+        onSaveAndExit={handleSaveAndExit}
+      />
     </div>
   );
 };
+

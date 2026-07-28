@@ -1,10 +1,11 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import {
   PayoutTimeline,
   toIsoDate,
   type PayoutEvent,
 } from '../components/PayoutTimeline';
+import { RescheduleModal } from '../components/PayoutTimeline/RescheduleModal';
 
 /**
  * Demo schedule used until live payout APIs are wired.
@@ -87,6 +88,8 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
     return buildDemoPayoutEvents(todayIso);
   }, [empty, events, todayIso]);
 
+  const [reschedulePayout, setReschedulePayout] = useState<PayoutEvent | null>(null);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
       <div>
@@ -116,6 +119,18 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
           today={todayIso}
           ariaLabel="RevenueShare payout schedule"
           autoScrollToToday
+        />
+      )}
+      
+      {reschedulePayout && (
+        <RescheduleModal
+          payout={reschedulePayout}
+          allPayouts={resolved}
+          onClose={() => setReschedulePayout(null)}
+          onConfirm={(newDate, note) => {
+            console.log('Reschedule confirmed:', newDate, note);
+            setReschedulePayout(null);
+          }}
         />
       )}
     </div>

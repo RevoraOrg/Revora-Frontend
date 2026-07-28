@@ -256,7 +256,24 @@
   --chart-cat-6: var(--chart-cat-6-dark);
   --chart-cat-7: var(--chart-cat-7-dark);
   --chart-cat-8: var(--chart-cat-8-dark);
+
+  /* ─── Virtualized Focus Outline Tokens (Issue #244) ──────────────────── */
+  --lt-focus-ring-color-dark: #60a5fa;              /* Blue 400 - 8.5:1 contrast on dark surface */
+  --lt-focus-ring-color-light: #1d4ed8;             /* Blue 700 - 4.8:1 contrast on light surface */
+  --lt-focus-ring-outline-dark: #ffffff;            /* Inner dual-ring contrast outline for dark theme */
+  --lt-focus-ring-outline-light: #0f172a;          /* Inner dual-ring contrast outline for light theme */
+  
+  --lt-focus-ring-color: var(--lt-focus-ring-color-dark);
+  --lt-focus-ring-outline: var(--lt-focus-ring-outline-dark);
+  --lt-focus-ring-z-index: 15;
+  --lt-header-z-index: 20;
 }
+
+[data-theme="light"] {
+  --lt-focus-ring-color: var(--lt-focus-ring-color-light);
+  --lt-focus-ring-outline: var(--lt-focus-ring-outline-light);
+}
+
 
 /* ─── Density mode overrides ─────────────────────────────────────
  * Applied to <html data-density="..."> so every component can

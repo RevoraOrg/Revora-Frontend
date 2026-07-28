@@ -66,6 +66,10 @@ export const TOKEN_GROUPS: TokenGroup[] = [
       { name: "Chart Cat 6", variable: "--chart-cat-6", value: "#22d3ee", description: "Active categorical hue 6 (Cyan)" },
       { name: "Chart Cat 7", variable: "--chart-cat-7", value: "#fb923c", description: "Active categorical hue 7 (Orange)" },
       { name: "Chart Cat 8", variable: "--chart-cat-8", value: "#f472b6", description: "Active categorical hue 8 (Pink)" },
+      { name: "Focus Ring Dark", variable: "--lt-focus-ring-color-dark", value: "#60a5fa", description: "Blue 400 - 8.5:1 WCAG AA contrast focus ring on dark surface" },
+      { name: "Focus Ring Light", variable: "--lt-focus-ring-color-light", value: "#1d4ed8", description: "Blue 700 - 4.8:1 WCAG AA contrast focus ring on light surface" },
+      { name: "Focus Ring Outline Dark", variable: "--lt-focus-ring-outline-dark", value: "#ffffff", description: "Dual-ring inner contrast line for dark theme" },
+      { name: "Focus Ring Outline Light", variable: "--lt-focus-ring-outline-light", value: "#0f172a", description: "Dual-ring inner contrast line for light theme" },
     ],
   },
   {

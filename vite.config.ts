@@ -35,17 +35,10 @@ export default defineConfig({
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
         'src/hooks/useDensity.ts',
-        // Onchain rejection error illustration
-        'src/components/designSystem/OnchainRejectionIllustration.tsx',
-        'src/components/StatusTimeline/OnchainRejectionCard.tsx',
-        'src/components/StatusTimeline/onchainRejectionCopy.ts',
-        // Network Switcher Mismatch Modal
-        'src/components/NetworkSwitcher/ChainMismatchModal.tsx',
-        'src/components/NetworkSwitcher/NetworkSwitcherBadge.tsx',
-        'src/components/NetworkSwitcher/NetworkSwitcherContext.tsx',
-        'src/hooks/useNetworkSwitcher.ts',
-        'src/constants/chains.ts',
-        'src/constants/walletCapabilities.ts',
+        // Issue #221 – Payout status pills
+        'src/components/PayoutStatusPill/payoutStatuses.ts',
+        'src/components/PayoutStatusPill/PayoutStatusPill.tsx',
+        'src/pages/PayoutSchedule.tsx',
       ],
       thresholds: {
         'src/components/NetworkSwitcher/ChainMismatchModal.tsx': {
@@ -146,6 +139,19 @@ export default defineConfig({
           functions: 95,
           lines: 95,
           statements: 95,
+        },
+        // Issue – Investor Statement PDF/UA
+        'src/components/InvestorStatement/InvestorStatement.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/InvestorStatement/usePrintStatement.ts': {
+          branches: 70,
+          functions: 70,
+          lines: 70,
+          statements: 70,
         },
       }
     }

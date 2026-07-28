@@ -39,6 +39,8 @@ export function App() {
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+          {/* Issue #235 – Audit Trail saved filters & pinned searches */}
+          <Route path="/investor/audit-trail" element={<AuditTrail />} />
         </Route>
       </Routes>
     </Router>
@@ -105,6 +107,7 @@ function Home() {
               <li>• Invest using USDC on Stellar</li>
               <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
               <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li>• <Link to="/investor/audit-trail" className="link-styled">Review the audit trail</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

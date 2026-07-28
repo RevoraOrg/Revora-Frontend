@@ -3,8 +3,10 @@ import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
+import { GovernanceProposalDetail } from '../components/designSystem/GovernanceProposalDetail';
 import { ThumbnailGrid, ThumbnailFile } from '../components/ThumbnailGrid/ThumbnailGrid';
 import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
 
 export const DistributionDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -277,6 +279,11 @@ export const DistributionDashboard: React.FC = () => {
         onResetFilters={handleResetFilters}
       />
 
+      {/* Token Supply Configuration */}
+      <div className="mt-8">
+        <TokenSupplyBlock />
+      </div>
+
       {/* KPI Summary Cards */}
       <div
         className="grid grid-cols-2 md:grid-cols-4 gap-4"
@@ -323,6 +330,29 @@ export const DistributionDashboard: React.FC = () => {
           onReorder={handleReorderFiles}
         />
       </div>
+
+      {/* Governance Proposal Detail */}
+      <section aria-label="Governance proposal detail">
+        <GovernanceProposalDetail
+          proposal={{
+            id: 'prop-1',
+            title: 'Increase Developer Grant Fund',
+            description:
+              'A proposal to allocate an additional 500,000 tokens to the developer grant program to support ecosystem growth.',
+            proposer: '0x1234...abcd',
+            status: 'active',
+            endTime: Date.now() + 86400000 * 3,
+            quorumRequired: 4_000_000,
+            quorumReached: 2_500_000,
+            results: { for: 2000000, against: 450000, abstain: 50000 },
+            participation: { turnout: 68.4, uniqueVoters: 142, delegates: 12 },
+            userVote: null,
+          }}
+          onVote={(choice) => {
+            console.log(`Vote cast: ${choice}`);
+          }}
+        />
+      </section>
 
       <GovernanceResults
         results={{ for: 2500000, against: 450000, abstain: 50000 }}

@@ -15,6 +15,9 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       include: [
+        'src/hooks/useUploadQueue.ts',
+        'src/components/UploadQueue/UploadQueue.tsx',
+        'src/pages/DistributionDashboard.tsx',
         'src/pages/Login.tsx',
         'src/pages/Signup.tsx',
         'src/pages/ForgotPassword.tsx',
@@ -38,6 +41,60 @@ export default defineConfig({
         'src/pages/PayoutSchedule.tsx',
       ],
       thresholds: {
+        'src/components/NetworkSwitcher/ChainMismatchModal.tsx': {
+          branches: 80,
+          functions: 95,
+          lines: 90,
+          statements: 90,
+        },
+        'src/components/NetworkSwitcher/NetworkSwitcherBadge.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/NetworkSwitcher/NetworkSwitcherContext.tsx': {
+          branches: 80,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/hooks/useNetworkSwitcher.ts': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/constants/chains.ts': {
+          branches: 90,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/constants/walletCapabilities.ts': {
+          branches: 90,
+          functions: 95,
+          lines: 95,
+          statements: 90,
+        },
+        'src/components/designSystem/OnchainRejectionIllustration.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/StatusTimeline/OnchainRejectionCard.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/StatusTimeline/onchainRejectionCopy.ts': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
         'src/components/DensityProvider/DensityProvider.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
@@ -45,6 +102,12 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/hooks/useDensity.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/PayoutTimeline/PayoutTimeline.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/pages/PayoutSchedule.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/InvestorDiscovery.tsx': {

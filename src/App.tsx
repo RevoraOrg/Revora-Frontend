@@ -11,6 +11,7 @@ import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import { PayoutSchedule } from "./pages/PayoutSchedule";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
+import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 
 export function App() {
   return (
@@ -31,6 +32,8 @@ export function App() {
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
           />
+          {/* Issue #229 – KYC rejection reasons panel */}
+          <Route path="/startup/distributions" element={<DistributionDashboard />} />
 
           {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
@@ -90,6 +93,9 @@ function Home() {
               <li>• Configure RevenueShare offerings</li>
               <li>
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
+              </li>
+              <li>
+                • <Link to="/startup/distributions" className="link-styled">View distribution dashboard</Link>
               </li>
               <li>• Track on-chain RevenueShare payouts</li>
             </ul>

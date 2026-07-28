@@ -8,10 +8,11 @@ import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import he
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
-import { PayoutSchedule } from "./pages/PayoutSchedule";
+import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
+import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 
 export function App() {
   return (
@@ -32,9 +33,10 @@ export function App() {
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
           />
+          {/* Issue #199 – Inline document uploader (Offering Registration wizard) */}
           <Route
-            path="/startup/wizard/summary"
-            element={<OfferingWizardSummary />}
+            path="/startup/offering-registration"
+            element={<OfferingRegistrationDemo />}
           />
 
           {/* Investor routes */}
@@ -45,6 +47,7 @@ export function App() {
 
           {/* Admin routes */}
           <Route path="/admin/alerts" element={<AdminAlertsInbox />} />
+          <Route path="/admin/scheduled-exports" element={<ScheduledExportsPage />} />
         </Route>
       </Routes>
     </Router>
@@ -98,7 +101,7 @@ function Home() {
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
               </li>
               <li>
-                • <Link to="/startup/distributions" className="link-styled">View distribution dashboard</Link>
+                • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
               <li>• Track on-chain RevenueShare payouts</li>
             </ul>

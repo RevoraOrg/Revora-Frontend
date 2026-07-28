@@ -1,14 +1,17 @@
 // src/components/AppShell/AppShell.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './AppShell.css';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsOverlay } from '../KeyboardShortcutsOverlay/KeyboardShortcutsOverlay';
 import { DensityToggle } from '../DensityToggle';
+import { NetworkSwitcher } from '../NetworkSwitcher';
 import {
   NetworkSwitcherBadge,
   ChainMismatchModal,
   NetworkSwitcherProvider,
 } from '../NetworkSwitcher';
+import { ErrorRecoveryPanel } from '../ErrorRecoveryPanel';
+import { useErrorSnapshots } from '../../hooks/useErrorSnapshots';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -17,6 +20,8 @@ interface AppShellProps {
 const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isErrorPanelOpen, setIsErrorPanelOpen] = useState(false);
+  const { unreadCount } = useErrorSnapshots();
   const {
     isOpen: shortcutsOpen,
     isMac,
@@ -38,6 +43,21 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [window.location.pathname]);
+
+  const [activeNetwork, setActiveNetwork] = useState('');
+
+  const networks = [
+    { id: 'ethereum', name: 'Ethereum' },
+    { id: 'polygon', name: 'Polygon' },
+    { id: 'solana', name: 'Solana' },
+    { id: 'arbitrum', name: 'Arbitrum' },
+    { id: 'optimism', name: 'Optimism' },
+    { id: 'base', name: 'Base' },
+  ];
+
+  const handleNetworkChange = useCallback((networkId: string) => {
+    setActiveNetwork(networkId);
+  }, []);
 
   const navItems = [
     { name: 'Discovery', path: '/discovery' },
@@ -72,8 +92,26 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
 
           {/* Account & Notifications */}
           <div className="header-actions">
+            <NetworkSwitcher
+              networks={networks}
+              currentNetworkId={activeNetwork}
+              onNetworkChange={handleNetworkChange}
+            />
             {/* Network Switcher Status Badge */}
             <NetworkSwitcherBadge />
+
+            <button 
+              className="error-recovery-btn" 
+              aria-label="Recovery snapshots"
+              onClick={() => setIsErrorPanelOpen(true)}
+            >
+              ⚠️
+              {unreadCount > 0 && (
+                <span className="error-affordance-badge" data-testid="error-unread-badge">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
 
             <button className="notifications-btn" aria-label="Notifications">
               🔔
@@ -151,6 +189,12 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
         onClose={closeShortcuts}
         isMac={isMac}
         isMobile={isMobile}
+      />
+
+      {/* Error Recovery Panel */}
+      <ErrorRecoveryPanel 
+        isOpen={isErrorPanelOpen} 
+        onClose={() => setIsErrorPanelOpen(false)} 
       />
 
       {/* Network Switcher Chain Mismatch Modal */}

@@ -6,7 +6,7 @@ Closes #267
 ## Summary of Changes
 This PR designs and publishes an accessible (WCAG 2.1 AA compliant) 8-series categorical chart color palette specifically optimized for dark surface backgrounds (`#020617`, `#0f172a`), complete with mirrored light-mode tokens for seamless theme swapping, interactive color-blindness vision simulation, comprehensive Do/Don't usage guidelines, and integration across existing chart widgets (`AllocationWidget` and `InvestorStatement`).
 
----
+The panel is accessible from a global toolbar affordance in the `AppShell` with an unread count badge. It groups snapshots by category and allows users to either retry or discard individual actions. A global "clear all" option is also provided for convenience.
 
 ## Detailed Implementation Notes
 

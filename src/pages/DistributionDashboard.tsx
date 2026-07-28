@@ -98,6 +98,12 @@ export const DistributionDashboard: React.FC = () => {
         </p>
       </div>
 
+      <GovernanceResults
+        results={{ for: 2500000, against: 450000, abstain: 50000 }}
+        participation={{ turnout: 68.4, uniqueVoters: 142, delegates: 12 }}
+        status="passed"
+      />
+
       <EmptyState
         variant="distribution-dashboard"
         title="No distributions yet"

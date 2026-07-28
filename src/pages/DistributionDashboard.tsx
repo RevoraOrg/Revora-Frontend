@@ -2,6 +2,8 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
+import { ThumbnailGrid, ThumbnailFile } from '../components/ThumbnailGrid/ThumbnailGrid';
+import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 
 export const DistributionDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -23,6 +25,43 @@ export const DistributionDashboard: React.FC = () => {
     searchParams.get('payoutId')
   );
   const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+
+  const [uploadedFiles, setUploadedFiles] = useState<ThumbnailFile[]>([
+    { id: 'doc-1', name: 'Q3_Revenue_Report.pdf', size: 245760, type: 'application/pdf', previewUrl: '/previews/q3-report.png' },
+    { id: 'doc-2', name: 'Financial_Audit_2023.pdf', size: 524288, type: 'application/pdf' },
+    { id: 'doc-3', name: 'Distribution_Chart.png', size: 102400, type: 'image/png', previewUrl: '/previews/dist-chart.png' },
+    { id: 'doc-4', name: 'K-1_Distribution_Schedule.xlsx', size: 1048576, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
+  ]);
+
+  const handleViewFile = useCallback((file: ThumbnailFile) => {
+    window.open(file.previewUrl || '#', '_blank', 'noopener,noreferrer');
+  }, []);
+
+  const handleReplaceFile = useCallback((file: ThumbnailFile) => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.png,.jpg,.xlsx,.docx';
+    input.onchange = (e) => {
+      const selected = (e.target as HTMLInputElement).files?.[0];
+      if (!selected) return;
+      setUploadedFiles((prev) =>
+        prev.map((f) =>
+          f.id === file.id
+            ? { ...f, name: selected.name, size: selected.size, type: selected.type, previewUrl: selected.type.startsWith('image/') ? URL.createObjectURL(selected) : undefined }
+            : f
+        )
+      );
+    };
+    input.click();
+  }, []);
+
+  const handleRemoveFile = useCallback((fileId: string) => {
+    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+  }, []);
+
+  const handleReorderFiles = useCallback((fileIds: string[]) => {
+    setUploadedFiles((prev) => fileIds.map((id) => prev.find((f) => f.id === id)!).filter(Boolean));
+  }, []);
 
   const rowRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
@@ -255,6 +294,17 @@ export const DistributionDashboard: React.FC = () => {
             auditNote="Malware signature detected. Upload blocked."
           />
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-xl font-semibold mb-4">Uploaded Documents</h2>
+        <ThumbnailGrid
+          files={uploadedFiles}
+          onView={handleViewFile}
+          onReplace={handleReplaceFile}
+          onRemove={handleRemoveFile}
+          onReorder={handleReorderFiles}
+        />
       </div>
 
       <GovernanceResults

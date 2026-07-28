@@ -5,14 +5,23 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { KeyboardShortcutsOverlay } from '../KeyboardShortcutsOverlay/KeyboardShortcutsOverlay';
 import { DensityToggle } from '../DensityToggle';
 import { NetworkSwitcher } from '../NetworkSwitcher';
+import {
+  NetworkSwitcherBadge,
+  ChainMismatchModal,
+  NetworkSwitcherProvider,
+} from '../NetworkSwitcher';
+import { ErrorRecoveryPanel } from '../ErrorRecoveryPanel';
+import { useErrorSnapshots } from '../../hooks/useErrorSnapshots';
 
 interface AppShellProps {
   children: React.ReactNode;
 }
 
-const AppShell: React.FC<AppShellProps> = ({ children }) => {
+const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isErrorPanelOpen, setIsErrorPanelOpen] = useState(false);
+  const { unreadCount } = useErrorSnapshots();
   const {
     isOpen: shortcutsOpen,
     isMac,
@@ -88,6 +97,22 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
               currentNetworkId={activeNetwork}
               onNetworkChange={handleNetworkChange}
             />
+            {/* Network Switcher Status Badge */}
+            <NetworkSwitcherBadge />
+
+            <button 
+              className="error-recovery-btn" 
+              aria-label="Recovery snapshots"
+              onClick={() => setIsErrorPanelOpen(true)}
+            >
+              ⚠️
+              {unreadCount > 0 && (
+                <span className="error-affordance-badge" data-testid="error-unread-badge">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
             <button className="notifications-btn" aria-label="Notifications">
               🔔
             </button>
@@ -165,7 +190,24 @@ const AppShell: React.FC<AppShellProps> = ({ children }) => {
         isMac={isMac}
         isMobile={isMobile}
       />
+
+      {/* Error Recovery Panel */}
+      <ErrorRecoveryPanel 
+        isOpen={isErrorPanelOpen} 
+        onClose={() => setIsErrorPanelOpen(false)} 
+      />
+
+      {/* Network Switcher Chain Mismatch Modal */}
+      <ChainMismatchModal />
     </div>
+  );
+};
+
+export const AppShell: React.FC<AppShellProps> = (props) => {
+  return (
+    <NetworkSwitcherProvider>
+      <AppShellContent {...props} />
+    </NetworkSwitcherProvider>
   );
 };
 

@@ -8,8 +8,10 @@ import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import he
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
+import { PayoutSchedule } from "./pages/PayoutSchedule";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
+import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 
 export function App() {
   return (
@@ -30,12 +32,17 @@ export function App() {
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
           />
+          {/* Issue #229 – KYC rejection reasons panel */}
+          <Route path="/startup/distributions" element={<DistributionDashboard />} />
 
           {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+
+          {/* Admin routes */}
+          <Route path="/admin/alerts" element={<AdminAlertsInbox />} />
         </Route>
       </Routes>
     </Router>
@@ -88,6 +95,9 @@ function Home() {
               <li>
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
               </li>
+              <li>
+                • <Link to="/startup/distributions" className="link-styled">View distribution dashboard</Link>
+              </li>
               <li>• Track on-chain RevenueShare payouts</li>
             </ul>
           </section>
@@ -99,6 +109,7 @@ function Home() {
               <li>• Invest using USDC on Stellar</li>
               <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
               <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

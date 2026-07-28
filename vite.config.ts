@@ -10,7 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
+    setupFiles: ['./src/test/setup.ts', './src/test/setupAfterFramework.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
@@ -18,6 +18,9 @@ export default defineConfig({
         'src/hooks/useUploadQueue.ts',
         'src/components/UploadQueue/UploadQueue.tsx',
         'src/pages/DistributionDashboard.tsx',
+        'src/utils/financialTermsValidation.ts',
+        'src/hooks/useFinancialTermsForm.ts',
+        'src/components/FinancialTermsForm/FinancialTermsForm.tsx',
         'src/pages/Login.tsx',
         'src/pages/Signup.tsx',
         'src/pages/ForgotPassword.tsx',
@@ -40,6 +43,15 @@ export default defineConfig({
         'src/pages/PayoutSchedule.tsx',
       ],
       thresholds: {
+        'src/utils/financialTermsValidation.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/hooks/useFinancialTermsForm.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/FinancialTermsForm/FinancialTermsForm.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
         'src/hooks/useUploadQueue.ts': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },

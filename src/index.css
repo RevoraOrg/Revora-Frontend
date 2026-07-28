@@ -149,6 +149,18 @@
   --st-pending-border: rgba(148, 163, 184, 0.25);  /* ○ pending ring / connector        */
   --st-pending-fg: #94a3b8;                         /* ○ pending icon                    */
 
+  /* On-chain status badge (Issue #256) */
+  --ocb-badge-gap: 0.25rem;
+  --ocb-badge-pad-y: 0.125rem;
+  --ocb-badge-pad-x: 0.5rem;
+  --ocb-badge-bg: rgba(16, 185, 129, 0.12);
+  --ocb-badge-bg-hover: rgba(16, 185, 129, 0.2);
+  --ocb-badge-border: rgba(16, 185, 129, 0.45);
+  --ocb-badge-border-hover: #10b981;
+  --ocb-badge-fg: #10b981;
+  --ocb-badge-focus-ring: rgba(16, 185, 129, 0.25);
+  --ocb-panel-width: 18rem;
+
   /* ─── Density Mode Tokens (Issue #174) ───────────────────────────────
    * Three modes: comfortable (spacious), cozy (normal), compact.
    * Applied by setting data-density="comfortable|cozy|compact" on <html>.

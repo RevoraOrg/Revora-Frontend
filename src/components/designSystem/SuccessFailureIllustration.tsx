@@ -1,13 +1,12 @@
-import React from 'react';
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import { OnchainRejectionIllustration } from './OnchainRejectionIllustration';
 
 export type SuccessFailureIllustrationVariant =
   | 'transactionSuccess'
   | 'transactionFailure'
   | 'kycApproved'
   | 'kycRejected'
-  | 'offeringPublished';
+  | 'offeringPublished'
+  | 'onchainRejection';
 
 export type SuccessFailureIllustrationProps = {
   /**
@@ -40,6 +39,16 @@ export const SuccessFailureIllustration: React.FC<SuccessFailureIllustrationProp
   size = DEFAULT_SIZE,
   ariaHidden = true,
 }) => {
+  if (variant === 'onchainRejection') {
+    return (
+      <OnchainRejectionIllustration
+        size={size}
+        ariaHidden={ariaHidden}
+        ariaLabel="On-chain transaction rejection"
+      />
+    );
+  }
+
   const color = (() => {
     switch (variant) {
       case 'transactionSuccess':

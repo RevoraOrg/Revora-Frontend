@@ -331,6 +331,18 @@ export const DistributionDashboard: React.FC = () => {
         />
       </div>
 
+      {/* Governance Section */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Governance</h2>
+        <a
+          href="/startup/governance/proposals/create"
+          className="payout-btn-primary"
+          style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+        >
+          + Create Proposal
+        </a>
+      </div>
+
       {/* Governance Proposal Detail */}
       <section aria-label="Governance proposal detail">
         <GovernanceProposalDetail

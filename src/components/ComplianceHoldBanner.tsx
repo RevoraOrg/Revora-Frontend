@@ -12,11 +12,20 @@ export interface ComplianceHold {
   title: string;
   message: string;
   canDismiss?: boolean;
+  /** When true, shows an "Appeal" button that opens the appeal form */
+  appealable?: boolean;
 }
 
 interface ComplianceHoldBannerProps {
   holds: ComplianceHold[];
   onDismiss?: (holdId: string) => void;
+  /** Called when an appeal is submitted for a hold */
+  onAppeal?: (data: {
+    holdId: string;
+    reason: string;
+    explanation: string;
+    attachments: File[];
+  }) => Promise<void>;
   className?: string;
   id?: string;
 }
@@ -43,9 +52,12 @@ interface ComplianceHoldBannerProps {
 export const ComplianceHoldBanner: React.FC<ComplianceHoldBannerProps> = ({
   holds,
   onDismiss,
+  onAppeal,
   className = "",
   id = "compliance-hold-banner",
 }) => {
+  const [appealingHold, setAppealingHold] = useState<ComplianceHold | null>(null);
+
   if (!holds || holds.length === 0) return null;
 
   const getSeverityConfig = (severity: ComplianceSeverity) => {

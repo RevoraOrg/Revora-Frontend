@@ -10,6 +10,7 @@ import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
+import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 
 export function App() {
   return (
@@ -29,6 +30,10 @@ export function App() {
           <Route
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
+          />
+          <Route
+            path="/startup/wizard/summary"
+            element={<OfferingWizardSummary />}
           />
 
           {/* Investor routes */}

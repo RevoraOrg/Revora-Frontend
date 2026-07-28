@@ -8,6 +8,7 @@ import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import he
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
+import { PayoutSchedule } from "./pages/PayoutSchedule";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -36,6 +37,8 @@ export function App() {
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+          {/* Issue #221 – Payout status pills */}
+          <Route path="/investor/payouts" element={<PayoutSchedule />} />
         </Route>
       </Routes>
     </Router>
@@ -99,6 +102,7 @@ function Home() {
               <li>• Invest using USDC on Stellar</li>
               <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
               <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

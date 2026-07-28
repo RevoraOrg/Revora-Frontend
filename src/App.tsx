@@ -8,6 +8,7 @@ import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import he
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
+import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 
@@ -29,6 +30,11 @@ export function App() {
           <Route
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
+          />
+          {/* Issue #199 – Inline document uploader (Offering Registration wizard) */}
+          <Route
+            path="/startup/offering-registration"
+            element={<OfferingRegistrationDemo />}
           />
 
           {/* Investor routes */}
@@ -87,6 +93,9 @@ function Home() {
               <li>• Configure RevenueShare offerings</li>
               <li>
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
+              </li>
+              <li>
+                • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
               <li>• Track on-chain RevenueShare payouts</li>
             </ul>

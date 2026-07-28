@@ -32,8 +32,13 @@ export default defineConfig({
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
         'src/hooks/useDensity.ts',
+        // Issue #199 – Inline document uploader
+        'src/components/DocumentUploader/DocumentUploader.tsx',
       ],
       thresholds: {
+        'src/components/DocumentUploader/DocumentUploader.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
         'src/components/DensityProvider/DensityProvider.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },

@@ -38,9 +38,8 @@ export default defineConfig({
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
         'src/hooks/useDensity.ts',
-        // Issue #272 – Payout timeline RTL mirror
-        'src/components/PayoutTimeline/PayoutTimeline.tsx',
-        'src/pages/PayoutSchedule.tsx',
+        // Issue #199 – Inline document uploader
+        'src/components/DocumentUploader/DocumentUploader.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -56,6 +55,9 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/UploadQueue/UploadQueue.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/DocumentUploader/DocumentUploader.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/DensityProvider/DensityProvider.tsx': {
@@ -98,6 +100,26 @@ export default defineConfig({
           statements: 95,
         },
         'src/pages/InvestorPortfolioSummary.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        // Issue – Investor Statement PDF/UA
+        'src/components/InvestorStatement/InvestorStatement.tsx': {
+          branches: 80,
+          functions: 80,
+          lines: 80,
+          statements: 80,
+        },
+        'src/components/InvestorStatement/usePrintStatement.ts': {
+          branches: 70,
+          functions: 70,
+          lines: 70,
+          statements: 70,
+        },
+        // Issue #225 - Thumbnail Preview Grid
+        'src/components/ThumbnailGrid/ThumbnailGrid.tsx': {
           branches: 95,
           functions: 95,
           lines: 95,

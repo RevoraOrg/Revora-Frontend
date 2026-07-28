@@ -29,6 +29,7 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  AlertOctagon,
   Send,
   X,
   Menu,
@@ -47,6 +48,11 @@ import {
   ReportStatus,
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
+  OverdueSeverity,
+  OVERDUE_SEVERITY_LABELS,
+  OVERDUE_SEVERITY_COLORS,
+  getOverdueDays,
+  getOverdueSeverity,
 } from './RevenueReportingCalendar.types';
 import './RevenueReportingCalendar.css';
 
@@ -194,6 +200,29 @@ function StatusDot({ status }: { status: ReportStatus }) {
   );
 }
 
+/* ─── Overdue Badge ────────────────────────────────────────────────── */
+
+function OverdueBadge({ dueDate }: { dueDate: string }) {
+  const days = getOverdueDays(dueDate);
+  const severity = getOverdueSeverity(days);
+  const color = OVERDUE_SEVERITY_COLORS[severity];
+
+  return (
+    <span
+      className={`rc-overdue-badge rc-overdue-badge--${severity}`}
+      style={{ backgroundColor: color }}
+      aria-hidden="true"
+    >
+      {severity === 'critical' ? (
+        <AlertOctagon size={10} aria-hidden="true" />
+      ) : (
+        <AlertTriangle size={10} aria-hidden="true" />
+      )}
+      <span className="rc-overdue-badge-days">{days}</span>
+    </span>
+  );
+}
+
 /* ─── Calendar Day Cell ────────────────────────────────────────────── */
 
 interface CalendarDayCellProps {
@@ -224,7 +253,23 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
     day: 'numeric',
   });
 
-  const ariaLabel = `${dateFormatted}, ${statusLabel}${cell.reports.length > 1 ? `, ${cell.reports.length} reports` : ''}${cell.isSelected ? ', selected' : ''}`;
+  const overdueReport = cell.primaryStatus === 'overdue'
+    ? cell.reports.find((r) => r.status === 'overdue')
+    : undefined;
+  const overdueDays = overdueReport ? getOverdueDays(overdueReport.dueDate) : 0;
+  const overdueSeverity = overdueReport ? getOverdueSeverity(overdueDays) : null;
+  const severityLabel = overdueSeverity ? OVERDUE_SEVERITY_LABELS[overdueSeverity] : '';
+
+  const ariaLabel = [
+    `${dateFormatted}.`,
+    cell.primaryStatus === 'overdue'
+      ? `Report overdue. ${severityLabel}. ${overdueDays} day${overdueDays !== 1 ? 's' : ''} overdue.`
+      : `${statusLabel}.`,
+    cell.reports.length > 1 ? `${cell.reports.length} reports.` : '',
+    cell.isSelected ? 'Selected.' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   const cellClass = [
     'rc-day-cell',
@@ -254,6 +299,9 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
     >
       <span className="rc-day-number">{cell.day}</span>
       <StatusDot status={cell.primaryStatus} />
+      {cell.primaryStatus === 'overdue' && overdueReport && (
+        <OverdueBadge dueDate={overdueReport.dueDate} />
+      )}
       {cell.reports.length > 1 && (
         <span className="rc-day-count" aria-hidden="true">
           {cell.reports.length}
@@ -354,13 +402,14 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
         e.preventDefault();
         newIndex = Math.max(currentIndex - cols, 0);
         break;
-      case 'Home':
+      case 'Home': {
         e.preventDefault();
         // Move to first day of current week row
         const rowStart = Math.floor(currentIndex / cols) * cols;
         newIndex = rowStart;
         break;
-      case 'End':
+      }
+      case 'End': {
         e.preventDefault();
         // Move to last day of current week row
         const rowEnd = Math.min(
@@ -369,6 +418,7 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
         );
         newIndex = rowEnd;
         break;
+      }
       case 'PageUp': {
         e.preventDefault();
         // Move to same day in previous month
@@ -882,8 +932,16 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
               Accepted
             </span>
             <span className="rc-legend-item">
-              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-status-overdue)' }} aria-hidden="true" />
-              Overdue
+              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-overdue-mild)' }} aria-hidden="true" />
+              Overdue (1–3 days)
+            </span>
+            <span className="rc-legend-item">
+              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-overdue-moderate)' }} aria-hidden="true" />
+              Overdue (4–29 days)
+            </span>
+            <span className="rc-legend-item">
+              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-overdue-critical)' }} aria-hidden="true" />
+              Overdue (30+ days)
             </span>
           </div>
 

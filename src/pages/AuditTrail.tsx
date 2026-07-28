@@ -10,7 +10,7 @@ export const AuditTrail: React.FC = () => {
         <p className="text-muted text-sm mt-1">
           Complete activity log for compliance and transparency.
         </p>
-      </div>
+      </div> 
 
       <EmptyState
         variant="audit-trail"

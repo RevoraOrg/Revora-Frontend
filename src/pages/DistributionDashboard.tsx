@@ -2,6 +2,8 @@ import React, { useCallback } from 'react';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { UploadQueue } from '../components/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { FinancialTermsForm } from '../components/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
 
 /**
  * Simulated uploader — replace with a real API call (e.g. fetch / axios).
@@ -86,6 +88,24 @@ export const DistributionDashboard: React.FC = () => {
           uploader={mockUploader}
           accept=".pdf,.doc,.docx,.xls,.xlsx,.csv"
         />
+      </section>
+
+      {/* Financial terms wizard step */}
+      <section aria-labelledby="financial-terms-heading">
+        <h2
+          id="financial-terms-heading"
+          style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-md)' }}
+        >
+          Configure Offering Terms
+        </h2>
+        <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
+          <FinancialTermsForm
+            onSubmit={(values: Record<FinancialTermsField, number>) => {
+              // Replace with real API call
+              console.log('Financial terms submitted:', values);
+            }}
+          />
+        </div>
       </section>
 
       <EmptyState

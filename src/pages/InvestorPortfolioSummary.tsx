@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { KpiHeader } from "../components/KpiHeader";
+import { DashboardHero, KPIData } from "../components/DashboardHero";
 import { AllocationWidget, AllocationSlice } from "../components/AllocationWidget";
 import { PerformanceTrendWidget, PerformanceDataPoint } from "../components/PerformanceTrendWidget";
+import { InvestorStatement, usePrintStatement } from "../components/InvestorStatement";
 
 // ─── Mock data (replace with real API call) ───────────────────────────────────
 
@@ -41,36 +42,68 @@ export const InvestorPortfolioSummary: React.FC<InvestorPortfolioSummaryProps> =
   const totalInvested = __allocations.reduce((s, a) => s + a.value, 0);
   const currentValue = __performance.length > 0 ? __performance[__performance.length - 1].value : totalInvested;
   const totalReturn = totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0;
+  
+  const isNewInvestor = __allocations.length === 0;
 
-  const formatUSD = (n: number) =>
-    n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 });
+  const totalValueKPI: KPIData = {
+    label: "Total Value",
+    value: currentValue,
+    type: 'currency',
+    status: isNewInvestor ? 'empty' : 'success',
+    trend: totalReturn,
+  };
+
+  const realizedGainsKPI: KPIData = {
+    label: "Realized Gains",
+    value: isNewInvestor ? null : currentValue - totalInvested, // simplified for mock
+    type: 'currency',
+    status: isNewInvestor ? 'empty' : 'success',
+  };
+
+  const upcomingPayoutsKPI: KPIData = {
+    label: "Upcoming Payouts",
+    value: isNewInvestor ? null : 3,
+    type: 'number',
+    status: isNewInvestor ? 'empty' : 'success',
+    actionText: isNewInvestor ? undefined : 'View calendar',
+    actionLink: isNewInvestor ? undefined : '/investor/calendar'
+  };
+
+  const pendingActionsKPI: KPIData = {
+    label: "Pending Actions",
+    value: 1,
+    type: 'number',
+    status: 'success', // Always show 1 for mock purposes
+    actionText: 'Review now',
+    actionLink: '/investor/actions'
+  };
+
+  const sparklineData = __performance.map(p => p.value);
+
+  const { showStatement, printStatement } = usePrintStatement();
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in" data-testid="portfolio-summary">
-      {/* ── Back nav + page title ── */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <Link
-            to="/investor/portal"
-            className="inline-flex items-center gap-1 text-sm text-muted hover:text-main transition-colors mb-2"
-            aria-label="Back to Investor Discovery"
-          >
-            <ArrowLeft size={14} aria-hidden="true" className="icon-rtl" />
-            Back to Discovery
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight">Portfolio Summary</h1>
-          <p className="text-muted text-sm mt-1">
-            Your holdings, allocation, and 12-month performance at a glance.
-          </p>
-        </div>
+      {/* ── Back nav ── */}
+      <div className="mb-2">
+        <Link
+          to="/investor/portal"
+          className="inline-flex items-center gap-1 text-sm text-muted hover:text-main transition-colors"
+          aria-label="Back to Investor Discovery"
+        >
+          <ArrowLeft size={14} aria-hidden="true" className="icon-rtl" />
+          Back to Discovery
+        </Link>
       </div>
 
-      {/* ── KPI header strip ── */}
-      <KpiHeader
-        totalInvested={formatUSD(totalInvested)}
-        currentValue={formatUSD(currentValue)}
-        totalReturn={totalReturn}
-        activeHoldings={__allocations.length}
+      {/* ── Hero Band ── */}
+      <DashboardHero
+        totalValue={totalValueKPI}
+        realizedGains={realizedGainsKPI}
+        upcomingPayouts={upcomingPayoutsKPI}
+        pendingActions={pendingActionsKPI}
+        sparklineData={sparklineData}
+        isNewInvestor={isNewInvestor}
       />
 
       {/* ── Two-column widget area (stacks on mobile) ── */}

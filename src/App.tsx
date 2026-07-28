@@ -11,6 +11,7 @@ import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
+import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 
 export function App() {
   return (
@@ -42,6 +43,9 @@ export function App() {
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+
+          {/* Admin routes */}
+          <Route path="/admin/alerts" element={<AdminAlertsInbox />} />
         </Route>
       </Routes>
     </Router>
@@ -108,6 +112,7 @@ function Home() {
               <li>• Invest using USDC on Stellar</li>
               <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
               <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

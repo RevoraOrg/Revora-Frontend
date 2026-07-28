@@ -39,8 +39,23 @@ export default defineConfig({
         'src/components/PayoutStatusPill/payoutStatuses.ts',
         'src/components/PayoutStatusPill/PayoutStatusPill.tsx',
         'src/pages/PayoutSchedule.tsx',
+        // Issue #273 – i18n Formatter Preview
+        'src/components/I18nFormatterPreview/I18nFormatterPreview.tsx',
+        'src/pages/SettingsPage.tsx',
       ],
       thresholds: {
+        'src/components/I18nFormatterPreview/I18nFormatterPreview.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/pages/SettingsPage.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
         'src/components/NetworkSwitcher/ChainMismatchModal.tsx': {
           branches: 80,
           functions: 95,

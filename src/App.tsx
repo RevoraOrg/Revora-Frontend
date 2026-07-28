@@ -12,6 +12,7 @@ import { PayoutSchedule } from "./pages/PayoutSchedule";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/settings" element={<SettingsPage />} />
 
           {/* Startup routes */}
           <Route

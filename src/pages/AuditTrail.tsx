@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 /**
  * Audit Trail page with saved-filter and pinned-search UX (Issue #235).
  *
@@ -13,9 +14,9 @@
  * accessibility notes, and axe results.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Link2, Save } from 'lucide-react';
+import { Download, Link2, Save } from 'lucide-react';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { SaveFilterDialog } from '../components/AuditTrailFilters/SaveFilterDialog';
 import { PinnedSearchSidebar } from '../components/AuditTrailFilters/PinnedSearchSidebar';
@@ -34,7 +35,12 @@ import {
   removeSavedFilter,
   togglePinned,
 } from '../components/AuditTrailFilters/savedFilters';
+import {
+  ExportScopeDialog,
+  type ExportParams,
+} from '../components/ExportScopeDialog/ExportScopeDialog';
 import '../components/AuditTrailFilters/AuditTrailFilters.css';
+import '../components/ExportScopeDialog/ExportScopeDialog.css';
 
 /* ─── Mock audit data (until the audit API lands) ────────────────────────── */
 
@@ -90,6 +96,9 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ entries = MOCK_AUDIT_ENT
   const [activeFilterId, setActiveFilterId] = useState<string | null>(null);
   const [shareStatus, setShareStatus] = useState('');
   const [activeTab, setActiveTab] = useState<'audit' | 'export'>('audit');
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportToast, setExportToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const exportToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Persist per-user whenever the saved list changes.
   useEffect(() => {
@@ -135,6 +144,24 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ entries = MOCK_AUDIT_ENT
   const results = filterEntries(entries, filters);
   const filtersActive = hasActiveFilters(filters);
 
+  const showToast = useCallback((message: string, type: 'success' | 'error') => {
+    if (exportToastTimer.current) clearTimeout(exportToastTimer.current);
+    setExportToast({ message, type });
+    exportToastTimer.current = setTimeout(() => setExportToast(null), 4000);
+  }, []);
+
+  const handleExport = useCallback(
+    (params: ExportParams) => {
+      const label = `${results.length} row${results.length === 1 ? '' : 's'}`;
+      const msg = `Export complete — ${label} exported as ${params.format}.`;
+      setTimeout(() => {
+        setExportDialogOpen(false);
+        showToast(msg, 'success');
+      }, 1500);
+    },
+    [results.length, showToast]
+  );
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
       <div>
@@ -142,7 +169,7 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ entries = MOCK_AUDIT_ENT
         <p className="text-muted text-sm mt-1">
           Complete activity log for compliance and transparency.
         </p>
-      </div>
+      </div> 
 
       <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>
         <button 
@@ -260,6 +287,13 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ entries = MOCK_AUDIT_ENT
               >
                 <Link2 size={14} aria-hidden="true" /> Copy link
               </button>
+              <button
+                type="button"
+                className="btn btn--secondary btn--sm"
+                onClick={() => setExportDialogOpen(true)}
+              >
+                <Download size={14} aria-hidden="true" /> Export
+              </button>
               {filtersActive && (
                 <button
                   type="button"
@@ -336,6 +370,192 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ entries = MOCK_AUDIT_ENT
         onSave={handleSave}
         onClose={() => setDialogOpen(false)}
       />
+
+      <ExportScopeDialog
+        open={exportDialogOpen}
+        filters={filters}
+        totalEntries={entries.length}
+        filteredEntries={results.length}
+        onExport={handleExport}
+        onClose={() => setExportDialogOpen(false)}
+      />
+
+      {exportToast && (
+        <div
+          className={`esd-toast esd-toast--${exportToast.type}`}
+          role="status"
+          aria-live="polite"
+          data-testid="export-toast"
+        >
+          {exportToast.message}
+        </div>
+      )}
     </div>
   );
 };
+=======
+import React, { useState } from 'react';
+import ActorDetailPopover from '../components/ActorDetailPopover';
+
+export interface AuditAction {
+  id: string;
+  type: string;
+  description: string;
+  timestamp: string;
+}
+
+export interface Actor {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  lastLogin: string;
+  avatar?: string;
+}
+
+const AuditTrail: React.FC = () => {
+  const [selectedActor, setSelectedActor] = useState<Actor | null>(null);
+  const [popoverAnchor, setPopoverAnchor] = useState<HTMLElement | null>(null);
+
+  // Mock data - in production this would come from an API
+  const actors: Actor[] = [
+    {
+      id: '1',
+      name: 'Sarah Johnson',
+      email: 'sarah.johnson@revora.org',
+      role: 'Administrator',
+      lastLogin: '2024-01-15T09:30:00Z',
+    },
+    {
+      id: '2',
+      name: 'Michael Chen',
+      email: 'michael.chen@revora.org',
+      role: 'Auditor',
+      lastLogin: '2024-01-14T16:45:00Z',
+    },
+    {
+      id: '3',
+      name: 'Emily Rodriguez',
+      email: 'emily.rodriguez@revora.org',
+      role: 'Manager',
+      lastLogin: '2024-01-15T08:15:00Z',
+    },
+  ];
+
+  const mockActions: Record<string, AuditAction[]> = {
+    '1': [
+      { id: 'a1', type: 'user_created', description: 'Created new user account', timestamp: '2024-01-15T10:00:00Z' },
+      { id: 'a2', type: 'permission_updated', description: 'Updated user permissions', timestamp: '2024-01-15T09:45:00Z' },
+      { id: 'a3', type: 'settings_changed', description: 'Modified system settings', timestamp: '2024-01-15T09:30:00Z' },
+      { id: 'a4', type: 'export_generated', description: 'Generated audit report', timestamp: '2024-01-14T14:20:00Z' },
+      { id: 'a5', type: 'user_deleted', description: 'Deleted inactive user', timestamp: '2024-01-14T11:30:00Z' },
+    ],
+    '2': [
+      { id: 'b1', type: 'audit_reviewed', description: 'Reviewed compliance logs', timestamp: '2024-01-14T17:00:00Z' },
+      { id: 'b2', type: 'flag_raised', description: 'Raised security flag', timestamp: '2024-01-14T16:45:00Z' },
+      { id: 'b3', type: 'report_viewed', description: 'Viewed monthly report', timestamp: '2024-01-14T15:30:00Z' },
+      { id: 'b4', type: 'filter_applied', description: 'Applied date filter', timestamp: '2024-01-14T14:00:00Z' },
+      { id: 'b5', type: 'export_downloaded', description: 'Downloaded CSV export', timestamp: '2024-01-13T18:45:00Z' },
+    ],
+    '3': [
+      { id: 'c1', type: 'team_updated', description: 'Updated team assignments', timestamp: '2024-01-15T08:30:00Z' },
+      { id: 'c2', type: 'project_created', description: 'Created new project', timestamp: '2024-01-15T08:15:00Z' },
+      { id: 'c3', type: 'milestone_completed', description: 'Marked milestone complete', timestamp: '2024-01-14T10:00:00Z' },
+      { id: 'c4', type: 'budget_approved', description: 'Approved budget request', timestamp: '2024-01-13T14:30:00Z' },
+      { id: 'c5', type: 'comment_added', description: 'Added project comment', timestamp: '2024-01-12T09:15:00Z' },
+    ],
+  };
+
+  const handleActorClick = (actor: Actor, event: React.MouseEvent<HTMLElement>) => {
+    setSelectedActor(actor);
+    setPopoverAnchor(event.currentTarget);
+  };
+
+  const closePopover = () => {
+    setSelectedActor(null);
+    setPopoverAnchor(null);
+  };
+
+  const getRecentActions = (actorId: string): AuditAction[] => {
+    return mockActions[actorId] || [];
+  };
+
+  return (
+    <div className="audit-trail-page">
+      <div className="glass-card" style={{ padding: '2rem', maxWidth: '1200px', margin: '0 auto' }}>
+        <h1 className="text-main" style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '1.5rem' }}>
+          Audit Trail
+        </h1>
+        <p className="text-muted" style={{ marginBottom: '2rem' }}>
+          Track and review all system actions performed by users. Click on an actor to view their details and recent activity.
+        </p>
+
+        <section aria-label="Actor list">
+          <h2 className="text-main" style={{ fontSize: '1.25rem', fontWeight: '600', marginBottom: '1rem' }}>
+            Active Actors
+          </h2>
+          <div className="actor-grid" style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
+            {actors.map((actor) => (
+              <button
+                key={actor.id}
+                className="glass-card-interactive actor-card"
+                onClick={(e) => handleActorClick(actor, e)}
+                style={{
+                  padding: '1.25rem',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  border: '1px solid var(--glass-border)',
+                  borderRadius: '1rem',
+                  background: 'var(--glass-bg)',
+                  backdropFilter: 'var(--glass-blur)',
+                  transition: 'all 0.2s ease',
+                }}
+                aria-label={`View details for ${actor.name}`}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  <div
+                    style={{
+                      width: '48px',
+                      height: '48px',
+                      borderRadius: '50%',
+                      background: 'var(--primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1.25rem',
+                      fontWeight: '600',
+                      color: 'white',
+                    }}
+                  >
+                    {actor.name.charAt(0)}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 className="text-main" style={{ fontSize: '1rem', fontWeight: '600', margin: 0 }}>
+                      {actor.name}
+                    </h3>
+                    <p className="text-muted" style={{ fontSize: '0.875rem', margin: '0.25rem 0 0' }}>
+                      {actor.role}
+                    </p>
+                  </div>
+                  <span className="text-muted" style={{ fontSize: '0.875rem' }}>→</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        {selectedActor && popoverAnchor && (
+          <ActorDetailPopover
+            actor={selectedActor}
+            recentActions={getRecentActions(selectedActor.id)}
+            anchorEl={popoverAnchor}
+            onClose={closePopover}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AuditTrail;
+>>>>>>> Stashed changes

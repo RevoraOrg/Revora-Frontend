@@ -37,6 +37,10 @@ export default defineConfig({
         'src/hooks/useDensity.ts',
         // Issue #199 – Inline document uploader
         'src/components/DocumentUploader/DocumentUploader.tsx',
+        // Command Palette
+        'src/components/CommandPalette/CommandPalette.tsx',
+        'src/components/CommandPalette/commandPaletteData.ts',
+        'src/hooks/useCommandPalette.ts',
       ],
       thresholds: {
         'src/components/DocumentUploader/DocumentUploader.tsx': {
@@ -102,6 +106,24 @@ export default defineConfig({
         },
         // Issue #225 - Thumbnail Preview Grid
         'src/components/ThumbnailGrid/ThumbnailGrid.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/CommandPalette/CommandPalette.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/components/CommandPalette/commandPaletteData.ts': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/hooks/useCommandPalette.ts': {
           branches: 95,
           functions: 95,
           lines: 95,

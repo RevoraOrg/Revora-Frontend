@@ -1,6 +1,8 @@
 import { useState, useCallback, useRef } from "react";
 import { TOKEN_GROUPS, type TokenGroup, type Token } from "./tokens";
 import { contrastRatio, wcagGrade, LIGHT_SURFACE, DARK_SURFACE } from "./contrast";
+import { DevicePreview } from "./DevicePreview";
+import { ChartPaletteGuidelines } from "./ChartPaletteGuidelines";
 import "./DesignTokensPage.css";
 
 // ─── Copy hook ────────────────────────────────────────────────────────────────
@@ -318,6 +320,12 @@ export function DesignTokensPage() {
           </button>
         </div>
       </header>
+
+      {/* Device Preview Section */}
+      <DevicePreview surface={surface} />
+
+      {/* Dark-Mode Chart Palette & Usage Guidelines */}
+      <ChartPaletteGuidelines surface={surface} />
 
       {/* Search */}
       <div className="dt-search-wrap">

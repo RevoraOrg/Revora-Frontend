@@ -25,6 +25,35 @@ export const REPORT_STATUS_COLORS: Record<ReportStatus, string> = {
   none: 'transparent',
 };
 
+/* ─── Overdue Severity ─────────────────────────────────────────────── */
+
+export type OverdueSeverity = 'mild' | 'moderate' | 'critical';
+
+export const OVERDUE_SEVERITY_LABELS: Record<OverdueSeverity, string> = {
+  mild: 'Mild',
+  moderate: 'Moderate',
+  critical: 'Critical',
+};
+
+export const OVERDUE_SEVERITY_COLORS: Record<OverdueSeverity, string> = {
+  mild: 'var(--rc-overdue-mild)',
+  moderate: 'var(--rc-overdue-moderate)',
+  critical: 'var(--rc-overdue-critical)',
+};
+
+export function getOverdueDays(dueDate: string): number {
+  const due = new Date(dueDate);
+  const now = new Date();
+  const diffMs = now.getTime() - due.getTime();
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+}
+
+export function getOverdueSeverity(days: number): OverdueSeverity {
+  if (days <= 3) return 'mild';
+  if (days >= 30) return 'critical';
+  return 'moderate';
+}
+
 /* ─── Revenue Report Data Model ─────────────────────────────────────── */
 
 export interface RevenueReport {
@@ -75,6 +104,8 @@ export interface RevenueReportingCalendarProps {
   onSubmitReport?: (date: string) => void;
   /** Callback when a report action is triggered */
   onReportAction?: (reportId: string, action: string) => void;
+  /** Callback to open keyboard shortcuts overlay */
+  onOpenShortcuts?: () => void;
   /** Additional CSS class on root */
   className?: string;
 }
@@ -138,4 +169,6 @@ export interface CalendarGridProps {
   onKeyboardNavigate: (direction: string) => void;
   /** Grid aria-label */
   ariaLabel: string;
+  /** Callback when user presses T to jump to today */
+  onJumpToToday?: () => void;
 }

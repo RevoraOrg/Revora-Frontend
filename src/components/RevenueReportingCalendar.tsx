@@ -21,7 +21,7 @@ import React, {
   useRef,
   useEffect,
   KeyboardEvent,
-} from 'react';
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -29,35 +29,52 @@ import {
   Clock,
   CheckCircle2,
   AlertTriangle,
+  AlertOctagon,
   Send,
   X,
   Menu,
-} from 'lucide-react';
+  List,
+  Upload,
+  LayoutGrid,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+} from "lucide-react";
 import {
   formatDate,
   formatCurrency,
   SupportedLocale,
   LOCALE_FORMAT_SETTINGS,
-} from '../constants/i18n';
-import { TERMINOLOGY } from '../constants/terminology';
-import { Button } from './Button';
+} from "../constants/i18n";
+import { TERMINOLOGY } from "../constants/terminology";
+import { Button } from "./Button";
 import {
   RevenueReportingCalendarProps,
   DayCellData,
   ReportStatus,
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
+  OverdueSeverity,
+  OVERDUE_SEVERITY_LABELS,
+  OVERDUE_SEVERITY_COLORS,
+  getOverdueDays,
+  getOverdueSeverity,
 } from './RevenueReportingCalendar.types';
+import RevenueCalendarCsvImport from './RevenueCalendarCsvImport';
 import './RevenueReportingCalendar.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────── */
 
 function toISODate(year: number, month: number, day: number): string {
-  return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  return `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function parseISODate(iso: string): { year: number; month: number; day: number } {
-  const [y, m, d] = iso.split('-').map(Number);
+function parseISODate(iso: string): {
+  year: number;
+  month: number;
+  day: number;
+} {
+  const [y, m, d] = iso.split("-").map(Number);
   return { year: y, month: m - 1, day: d };
 }
 
@@ -79,22 +96,27 @@ function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
 
-function getFirstDayOfMonth(year: number, month: number, weekStartsOn: number): number {
+function getFirstDayOfMonth(
+  year: number,
+  month: number,
+  weekStartsOn: number,
+): number {
   const day = new Date(year, month, 1).getDay();
   return (day - weekStartsOn + 7) % 7;
 }
 
 function getPrimaryStatus(reports: RevenueReport[]): ReportStatus {
-  if (reports.length === 0) return 'none';
+  if (reports.length === 0) return "none";
   // Priority: overdue > due > submitted > accepted
-  if (reports.some((r) => r.status === 'overdue')) return 'overdue';
-  if (reports.some((r) => r.status === 'due')) return 'due';
-  if (reports.some((r) => r.status === 'submitted')) return 'submitted';
-  return 'accepted';
+  if (reports.some((r) => r.status === "overdue")) return "overdue";
+  if (reports.some((r) => r.status === "due")) return "due";
+  if (reports.some((r) => r.status === "submitted")) return "submitted";
+  return "accepted";
 }
 
 function isOverdue(report: RevenueReport): boolean {
-  if (report.status === 'accepted' || report.status === 'submitted') return false;
+  if (report.status === "accepted" || report.status === "submitted")
+    return false;
   const due = new Date(report.dueDate);
   const now = new Date();
   return due < now;
@@ -183,7 +205,7 @@ function buildDayCells(
 /* ─── Status Dot ───────────────────────────────────────────────────── */
 
 function StatusDot({ status }: { status: ReportStatus }) {
-  if (status === 'none') return null;
+  if (status === "none") return null;
   const color = REPORT_STATUS_COLORS[status];
   return (
     <span
@@ -194,6 +216,283 @@ function StatusDot({ status }: { status: ReportStatus }) {
   );
 }
 
+/* ─── Overdue Badge ────────────────────────────────────────────────── */
+
+function OverdueBadge({ dueDate }: { dueDate: string }) {
+  const days = getOverdueDays(dueDate);
+  const severity = getOverdueSeverity(days);
+  const color = OVERDUE_SEVERITY_COLORS[severity];
+
+  return (
+    <span
+      className={`rc-overdue-badge rc-overdue-badge--${severity}`}
+      style={{ backgroundColor: color }}
+      aria-hidden="true"
+    >
+      {severity === 'critical' ? (
+        <AlertOctagon size={10} aria-hidden="true" />
+      ) : (
+        <AlertTriangle size={10} aria-hidden="true" />
+      )}
+      <span className="rc-overdue-badge-days">{days}</span>
+    </span>
+  );
+}
+
+/* ─── Preview Hook ─────────────────────────────────────────────────── */
+
+/** Returns true if user prefers reduced motion */
+function usePrefersReducedMotion(): boolean {
+  const [reduced, setReduced] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  });
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+  return reduced;
+}
+
+/**
+ * Manages show/hide timing for the cell hover preview.
+ * - Opens after 300ms hover/focus (instant if reduced-motion)
+ * - Closes after 120ms blur/mouseleave (instant if reduced-motion)
+ */
+function usePreviewTimer(reducedMotion: boolean) {
+  const [visible, setVisible] = useState(false);
+  const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const open = useCallback(() => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    if (visible) return;
+    if (reducedMotion) {
+      setVisible(true);
+      return;
+    }
+    openTimer.current = setTimeout(() => setVisible(true), 300);
+  }, [visible, reducedMotion]);
+
+  const close = useCallback(() => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (reducedMotion) {
+      setVisible(false);
+      return;
+    }
+    closeTimer.current = setTimeout(() => setVisible(false), 120);
+  }, [reducedMotion]);
+
+  const closeImmediate = useCallback(() => {
+    if (openTimer.current) clearTimeout(openTimer.current);
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setVisible(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (openTimer.current) clearTimeout(openTimer.current);
+      if (closeTimer.current) clearTimeout(closeTimer.current);
+    };
+  }, []);
+
+  return { visible, open, close, closeImmediate };
+}
+
+/* ─── Preview Position ─────────────────────────────────────────────── */
+
+type PreviewPlacement = 'top' | 'bottom' | 'top-start' | 'bottom-start';
+
+/** Computes placement to keep preview inside viewport */
+function getPreviewPlacement(
+  anchorEl: HTMLElement | null,
+  previewWidth = 220,
+  previewHeight = 160,
+): PreviewPlacement {
+  if (!anchorEl) return 'top';
+  const rect = anchorEl.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const spaceAbove = rect.top;
+  const spaceBelow = vh - rect.bottom;
+  const spaceRight = vw - rect.left;
+  const vertical: 'top' | 'bottom' = spaceAbove >= previewHeight + 8 || spaceAbove > spaceBelow
+    ? 'top'
+    : 'bottom';
+  const horizontal = spaceRight >= previewWidth ? '' : '-start';
+  return `${vertical}${horizontal}` as PreviewPlacement;
+}
+
+/* ─── Variance Helper ──────────────────────────────────────────────── */
+
+/** Compute variance of current report vs prior-period report */
+function getVariance(
+  current: RevenueReport[],
+  prior: RevenueReport[],
+): { pct: number | null; direction: 'up' | 'down' | 'flat' } {
+  const curRev = current.reduce((s, r) => s + (r.grossRevenue ?? 0), 0);
+  const priorRev = prior.reduce((s, r) => s + (r.grossRevenue ?? 0), 0);
+  if (priorRev === 0 && curRev === 0) return { pct: null, direction: 'flat' };
+  if (priorRev === 0) return { pct: null, direction: 'up' };
+  const pct = ((curRev - priorRev) / priorRev) * 100;
+  return {
+    pct,
+    direction: pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat',
+  };
+}
+
+/* ─── Spark Trend ──────────────────────────────────────────────────── */
+
+/** Mini 5-point sparkline using an inline SVG path */
+function SparkTrend({ values }: { values: number[] }) {
+  if (values.length < 2) return null;
+  const w = 48;
+  const h = 18;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const pts = values.map((v, i) => {
+    const x = (i / (values.length - 1)) * w;
+    const y = h - ((v - min) / range) * (h - 4) - 2;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox={`0 0 ${w} ${h}`}
+      aria-hidden="true"
+      className="rc-preview-spark"
+      focusable="false"
+    >
+      <polyline
+        points={pts.join(' ')}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* ─── Day Cell Preview ─────────────────────────────────────────────── */
+
+interface DayCellPreviewProps {
+  cell: DayCellData;
+  priorReports: RevenueReport[];
+  locale: string;
+  placement: PreviewPlacement;
+  id: string;
+}
+
+const DayCellPreview: React.FC<DayCellPreviewProps> = ({
+  cell,
+  priorReports,
+  locale,
+  placement,
+  id,
+}) => {
+  const reports = cell.reports;
+  const totalRevenue = reports.reduce((s, r) => s + (r.grossRevenue ?? 0), 0);
+  const currency = reports[0]?.currency ?? 'USD';
+  const variance = getVariance(reports, priorReports);
+  const primaryStatus = cell.primaryStatus;
+  const statusColor = primaryStatus !== 'none' ? REPORT_STATUS_COLORS[primaryStatus] : undefined;
+  const statusLabel = REPORT_STATUS_LABELS[primaryStatus];
+
+  // Spark values: revenue of each report in the cell (padded to 5 points with prior)
+  const sparkValues = [
+    ...priorReports.map((r) => r.grossRevenue ?? 0),
+    ...reports.map((r) => r.grossRevenue ?? 0),
+  ].slice(-5);
+
+  const hasRevenue = reports.some((r) => r.grossRevenue !== undefined);
+
+  const VarianceIcon =
+    variance.direction === 'up' ? TrendingUp
+    : variance.direction === 'down' ? TrendingDown
+    : Minus;
+
+  const varianceClass =
+    variance.direction === 'up' ? 'rc-preview-variance--up'
+    : variance.direction === 'down' ? 'rc-preview-variance--down'
+    : 'rc-preview-variance--flat';
+
+  return (
+    <div
+      id={id}
+      role="tooltip"
+      className={`rc-day-preview rc-day-preview--${placement}`}
+      aria-live="polite"
+    >
+      {/* Header row: date + status pill */}
+      <div className="rc-preview-header">
+        <span className="rc-preview-date">
+          {formatDate(cell.date, locale as SupportedLocale, {
+            month: 'short',
+            day: 'numeric',
+          })}
+        </span>
+        {primaryStatus !== 'none' && (
+          <span
+            className="rc-preview-status-pill"
+            style={{ color: statusColor, borderColor: statusColor }}
+          >
+            {statusLabel}
+          </span>
+        )}
+      </div>
+
+      {/* KPI row */}
+      <div className="rc-preview-kpis">
+        {/* KPI 1: Revenue */}
+        <div className="rc-preview-kpi">
+          <span className="rc-preview-kpi-label">Revenue</span>
+          <span className="rc-preview-kpi-value">
+            {hasRevenue
+              ? formatCurrency(totalRevenue, currency, locale as SupportedLocale)
+              : '—'}
+          </span>
+        </div>
+
+        {/* KPI 2: Payout status */}
+        <div className="rc-preview-kpi">
+          <span className="rc-preview-kpi-label">Reports</span>
+          <span className="rc-preview-kpi-value">
+            {reports.length > 0 ? reports.length : '0'}
+          </span>
+        </div>
+
+        {/* KPI 3: Variance vs prior period */}
+        <div className={`rc-preview-kpi rc-preview-variance ${varianceClass}`}>
+          <span className="rc-preview-kpi-label">vs Prior</span>
+          <span className="rc-preview-kpi-value rc-preview-variance-value">
+            <VarianceIcon size={11} aria-hidden="true" />
+            {variance.pct !== null
+              ? `${variance.pct > 0 ? '+' : ''}${variance.pct.toFixed(1)}%`
+              : '—'}
+          </span>
+        </div>
+      </div>
+
+      {/* Spark trend (hidden if only 1 data point or no revenue) */}
+      {sparkValues.length >= 2 && hasRevenue && (
+        <div className="rc-preview-spark-row">
+          <SparkTrend values={sparkValues} />
+          <span className="rc-preview-spark-label">trend</span>
+        </div>
+      )}
+
+      {/* Arrow caret */}
+      <span className="rc-preview-arrow" aria-hidden="true" />
+    </div>
+  );
+};
+
 /* ─── Calendar Day Cell ────────────────────────────────────────────── */
 
 interface CalendarDayCellProps {
@@ -203,6 +502,8 @@ interface CalendarDayCellProps {
   onSelect: (date: string) => void;
   onFocus: (date: string) => void;
   locale: string;
+  /** Reports from the prior period (same day prev month) for variance KPI */
+  priorReports: RevenueReport[];
 }
 
 const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
@@ -212,52 +513,119 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   onSelect,
   onFocus,
   locale,
+  priorReports,
 }) => {
-  const handleClick = () => onSelect(cell.date);
-  const handleFocus = () => onFocus(cell.date);
+  const reducedMotion = usePrefersReducedMotion();
+  const { visible, open, close, closeImmediate } = usePreviewTimer(reducedMotion);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<PreviewPlacement>('top');
+
+  const previewId = `rc-preview-${cell.date}`;
+
+  const handleOpen = useCallback(() => {
+    setPlacement(getPreviewPlacement(anchorRef.current));
+    open();
+  }, [open]);
+
+  const handleClick = () => {
+    closeImmediate();
+    onSelect(cell.date);
+  };
+  const handleFocus = () => {
+    onFocus(cell.date);
+    handleOpen();
+  };
+  const handleBlur = () => close();
+  const handleMouseEnter = () => handleOpen();
+  const handleMouseLeave = () => close();
+
+  // Dismiss on Escape
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      closeImmediate();
+      return;
+    }
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      closeImmediate();
+      onSelect(cell.date);
+    }
+  };
 
   const statusLabel = REPORT_STATUS_LABELS[cell.primaryStatus];
   const dateFormatted = formatDate(cell.date, locale as SupportedLocale, {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
   });
 
-  const ariaLabel = `${dateFormatted}, ${statusLabel}${cell.reports.length > 1 ? `, ${cell.reports.length} reports` : ''}${cell.isSelected ? ', selected' : ''}`;
+  const overdueReport = cell.primaryStatus === 'overdue'
+    ? cell.reports.find((r) => r.status === 'overdue')
+    : undefined;
+  const overdueDays = overdueReport ? getOverdueDays(overdueReport.dueDate) : 0;
+  const overdueSeverity = overdueReport ? getOverdueSeverity(overdueDays) : null;
+  const severityLabel = overdueSeverity ? OVERDUE_SEVERITY_LABELS[overdueSeverity] : '';
 
-  const cellClass = [
-    'rc-day-cell',
-    !cell.inMonth && 'rc-day-cell--outside',
-    cell.isToday && 'rc-day-cell--today',
-    cell.isSelected && 'rc-day-cell--selected',
-    cell.primaryStatus !== 'none' && `rc-day-cell--${cell.primaryStatus}`,
+  const ariaLabel = [
+    `${dateFormatted}.`,
+    cell.primaryStatus === 'overdue'
+      ? `Report overdue. ${severityLabel}. ${overdueDays} day${overdueDays !== 1 ? 's' : ''} overdue.`
+      : `${statusLabel}.`,
+    cell.reports.length > 1 ? `${cell.reports.length} reports.` : '',
+    cell.isSelected ? 'Selected.' : '',
   ]
     .filter(Boolean)
     .join(' ');
 
+  const cellClass = [
+    "rc-day-cell",
+    !cell.inMonth && "rc-day-cell--outside",
+    cell.isToday && "rc-day-cell--today",
+    cell.isSelected && "rc-day-cell--selected",
+    cell.primaryStatus !== "none" && `rc-day-cell--${cell.primaryStatus}`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
+      ref={anchorRef}
       role="gridcell"
       className={cellClass}
       tabIndex={isFocused ? 0 : -1}
       aria-selected={cell.isSelected}
       aria-label={ariaLabel}
+      aria-describedby={visible && cell.reports.length > 0 ? previewId : undefined}
       onClick={handleClick}
       onFocus={handleFocus}
-      onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(cell.date);
-        }
-      }}
+      onBlur={handleBlur}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onKeyDown={handleKeyDown}
+      data-date={cell.date}
+      style={{ position: 'relative' }}
     >
       <span className="rc-day-number">{cell.day}</span>
       <StatusDot status={cell.primaryStatus} />
+      {cell.primaryStatus === 'overdue' && overdueReport && (
+        <OverdueBadge dueDate={overdueReport.dueDate} />
+      )}
       {cell.reports.length > 1 && (
         <span className="rc-day-count" aria-hidden="true">
           {cell.reports.length}
         </span>
+      )}
+
+      {/* Hover / focus preview — only rendered when there are reports */}
+      {visible && cell.reports.length > 0 && (
+        <DayCellPreview
+          id={previewId}
+          cell={cell}
+          priorReports={priorReports}
+          locale={locale}
+          placement={placement}
+        />
       )}
     </div>
   );
@@ -274,6 +642,8 @@ interface CalendarGridComponentProps {
   onFocusDate: (date: string) => void;
   locale: string;
   ariaLabel: string;
+  /** All reports — used to look up prior-period data for hover previews */
+  allReports: RevenueReport[];
 }
 
 const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
@@ -285,6 +655,7 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
   onFocusDate,
   locale,
   ariaLabel,
+  allReports,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const dayNames = useMemo(() => {
@@ -293,7 +664,9 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
       const day = (weekStartsOn + i) % 7;
       const date = new Date(2024, 0, day + 7); // Use a known Sunday
       names.push(
-        date.toLocaleDateString(locale as SupportedLocale, { weekday: 'short' }),
+        date.toLocaleDateString(locale as SupportedLocale, {
+          weekday: "short",
+        }),
       );
     }
     return names;
@@ -338,29 +711,30 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
     const cols = 7;
 
     switch (e.key) {
-      case 'ArrowRight':
+      case "ArrowRight":
         e.preventDefault();
         newIndex = Math.min(currentIndex + 1, days.length - 1);
         break;
-      case 'ArrowLeft':
+      case "ArrowLeft":
         e.preventDefault();
         newIndex = Math.max(currentIndex - 1, 0);
         break;
-      case 'ArrowDown':
+      case "ArrowDown":
         e.preventDefault();
         newIndex = Math.min(currentIndex + cols, days.length - 1);
         break;
-      case 'ArrowUp':
+      case "ArrowUp":
         e.preventDefault();
         newIndex = Math.max(currentIndex - cols, 0);
         break;
-      case 'Home':
+      case 'Home': {
         e.preventDefault();
         // Move to first day of current week row
         const rowStart = Math.floor(currentIndex / cols) * cols;
         newIndex = rowStart;
         break;
-      case 'End':
+      }
+      case 'End': {
         e.preventDefault();
         // Move to last day of current week row
         const rowEnd = Math.min(
@@ -369,6 +743,7 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
         );
         newIndex = rowEnd;
         break;
+      }
       case 'PageUp': {
         e.preventDefault();
         // Move to same day in previous month
@@ -390,7 +765,7 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
         }
         break;
       }
-      case 'PageDown': {
+      case "PageDown": {
         e.preventDefault();
         // Move to same day in next month
         const curDay = days[currentIndex].day;
@@ -431,7 +806,12 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
       {/* Day name headers */}
       <div className="rc-grid-header" role="row">
         {dayNames.map((name, i) => (
-          <div key={i} className="rc-grid-header-cell" role="columnheader" aria-hidden="true">
+          <div
+            key={i}
+            className="rc-grid-header-cell"
+            role="columnheader"
+            aria-hidden="true"
+          >
             {name}
           </div>
         ))}
@@ -440,17 +820,26 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
       {/* Week rows */}
       {rows.map((row, rowIndex) => (
         <div key={rowIndex} className="rc-grid-row" role="row">
-          {row.map((cell) => (
-            <CalendarDayCell
-              key={cell.date}
-              cell={cell}
-              isFocused={cell.date === focusedDate}
-              weekStartsOn={weekStartsOn}
-              onSelect={onDateSelect}
-              onFocus={onFocusDate}
-              locale={locale}
-            />
-          ))}
+          {row.map((cell) => {
+            // Prior period: same day number one month back
+            const { year: cy, month: cm, day: cd } = parseISODate(cell.date);
+            const priorMonth = cm === 0 ? 11 : cm - 1;
+            const priorYear = cm === 0 ? cy - 1 : cy;
+            const priorDate = toISODate(priorYear, priorMonth, cd);
+            const priorReports = allReports.filter((r) => r.date === priorDate);
+            return (
+              <CalendarDayCell
+                key={cell.date}
+                cell={cell}
+                isFocused={cell.date === focusedDate}
+                weekStartsOn={weekStartsOn}
+                onSelect={onDateSelect}
+                onFocus={onFocusDate}
+                locale={locale}
+                priorReports={priorReports}
+              />
+            );
+          })}
         </div>
       ))}
     </div>
@@ -470,25 +859,38 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
   isOpen = true,
   onClose,
 }) => {
-  const [viewMode, setViewMode] = useState<'day' | 'month'>('day');
+  const [viewMode, setViewMode] = useState<"day" | "month">("day");
 
   const selectedReports = selectedDate
     ? reports.filter((r) => r.date === selectedDate)
     : [];
 
-  const monthDueReports = monthReports.filter((r) => r.status === 'due' || r.status === 'overdue');
-  const monthSubmittedReports = monthReports.filter((r) => r.status === 'submitted');
-  const monthAcceptedReports = monthReports.filter((r) => r.status === 'accepted');
+  const monthDueReports = monthReports.filter(
+    (r) => r.status === "due" || r.status === "overdue",
+  );
+  const monthSubmittedReports = monthReports.filter(
+    (r) => r.status === "submitted",
+  );
+  const monthAcceptedReports = monthReports.filter(
+    (r) => r.status === "accepted",
+  );
 
   const formatReportDate = (iso: string) =>
-    formatDate(iso, locale as SupportedLocale, { month: 'short', day: 'numeric' });
+    formatDate(iso, locale as SupportedLocale, {
+      month: "short",
+      day: "numeric",
+    });
 
   const formatDueDate = (iso: string) =>
-    formatDate(iso, locale as SupportedLocale, { month: 'short', day: 'numeric', year: 'numeric' });
+    formatDate(iso, locale as SupportedLocale, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
 
   const renderReportItem = (report: RevenueReport) => {
     const overdue = isOverdue(report);
-    const displayStatus = overdue ? 'overdue' : report.status;
+    const displayStatus = overdue ? "overdue" : report.status;
     const statusColor = REPORT_STATUS_COLORS[displayStatus];
     const statusLabel = REPORT_STATUS_LABELS[displayStatus];
 
@@ -501,12 +903,18 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
             aria-label={statusLabel}
           />
           <span className="rc-report-status-label">{statusLabel}</span>
-          <span className="rc-report-date">{formatReportDate(report.date)}</span>
+          <span className="rc-report-date">
+            {formatReportDate(report.date)}
+          </span>
         </div>
         <div className="rc-report-item-body">
           {report.grossRevenue !== undefined && (
             <p className="rc-report-revenue">
-              {formatCurrency(report.grossRevenue, report.currency || 'USD', locale as SupportedLocale)}
+              {formatCurrency(
+                report.grossRevenue,
+                report.currency || "USD",
+                locale as SupportedLocale,
+              )}
             </p>
           )}
           {report.dueDate && (
@@ -521,12 +929,10 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
               Accepted: {formatReportDate(report.acceptedAt)}
             </p>
           )}
-          {report.notes && (
-            <p className="rc-report-notes">{report.notes}</p>
-          )}
+          {report.notes && <p className="rc-report-notes">{report.notes}</p>}
         </div>
         <div className="rc-report-item-actions">
-          {displayStatus === 'due' && onSubmitReport && (
+          {displayStatus === "due" && onSubmitReport && (
             <Button
               variant="primary"
               size="sm"
@@ -537,13 +943,13 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
               Submit Report
             </Button>
           )}
-          {displayStatus === 'submitted' && (
+          {displayStatus === "submitted" && (
             <span className="rc-report-awaiting">Awaiting review</span>
           )}
-          {displayStatus === 'accepted' && (
+          {displayStatus === "accepted" && (
             <span className="rc-report-confirmed">Confirmed</span>
           )}
-          {displayStatus === 'overdue' && (
+          {displayStatus === "overdue" && (
             <Button
               variant="primary"
               size="sm"
@@ -559,15 +965,18 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
     );
   };
 
-  const [monthLabel, yearStr] = viewMonth.split('-');
-  const monthName = new Date(Number(yearStr), Number(monthLabel) - 1).toLocaleDateString(
-    locale as SupportedLocale,
-    { month: 'long', year: 'numeric' },
-  );
+  const [monthLabel, yearStr] = viewMonth.split("-");
+  const monthName = new Date(
+    Number(yearStr),
+    Number(monthLabel) - 1,
+  ).toLocaleDateString(locale as SupportedLocale, {
+    month: "long",
+    year: "numeric",
+  });
 
   return (
     <aside
-      className={`rc-details-panel ${isOpen ? 'rc-details-panel--open' : 'rc-details-panel--closed'}`}
+      className={`rc-details-panel ${isOpen ? "rc-details-panel--open" : "rc-details-panel--closed"}`}
       aria-label="Report details panel"
     >
       {/* Mobile close button */}
@@ -592,38 +1001,40 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
         <button
           type="button"
           role="tab"
-          aria-selected={viewMode === 'day'}
-          className={`rc-details-tab ${viewMode === 'day' ? 'rc-details-tab--active' : ''}`}
-          onClick={() => setViewMode('day')}
+          aria-selected={viewMode === "day"}
+          className={`rc-details-tab ${viewMode === "day" ? "rc-details-tab--active" : ""}`}
+          onClick={() => setViewMode("day")}
         >
           Day
         </button>
         <button
           type="button"
           role="tab"
-          aria-selected={viewMode === 'month'}
-          className={`rc-details-tab ${viewMode === 'month' ? 'rc-details-tab--active' : ''}`}
-          onClick={() => setViewMode('month')}
+          aria-selected={viewMode === "month"}
+          className={`rc-details-tab ${viewMode === "month" ? "rc-details-tab--active" : ""}`}
+          onClick={() => setViewMode("month")}
         >
           Month
         </button>
       </div>
 
-      {viewMode === 'day' ? (
+      {viewMode === "day" ? (
         <div className="rc-details-content" role="tabpanel">
           {selectedDate ? (
             <>
               <h3 className="rc-details-day-title">
                 {formatDate(selectedDate, locale as SupportedLocale, {
-                  weekday: 'long',
-                  month: 'long',
-                  day: 'numeric',
+                  weekday: "long",
+                  month: "long",
+                  day: "numeric",
                 })}
               </h3>
 
               {selectedReports.length === 0 ? (
                 <div className="rc-details-empty">
-                  <p className="rc-details-empty-text">No reports for this date.</p>
+                  <p className="rc-details-empty-text">
+                    No reports for this date.
+                  </p>
                   {onSubmitReport && (
                     <Button
                       variant="primary"
@@ -643,7 +1054,9 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
             </>
           ) : (
             <div className="rc-details-empty">
-              <p className="rc-details-empty-text">Select a date to view report details.</p>
+              <p className="rc-details-empty-text">
+                Select a date to view report details.
+              </p>
             </div>
           )}
         </div>
@@ -652,15 +1065,21 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
           {/* Month summary */}
           <div className="rc-month-summary">
             <div className="rc-month-stat">
-              <span className="rc-month-stat-value">{monthDueReports.length}</span>
+              <span className="rc-month-stat-value">
+                {monthDueReports.length}
+              </span>
               <span className="rc-month-stat-label">Due / Overdue</span>
             </div>
             <div className="rc-month-stat">
-              <span className="rc-month-stat-value">{monthSubmittedReports.length}</span>
+              <span className="rc-month-stat-value">
+                {monthSubmittedReports.length}
+              </span>
               <span className="rc-month-stat-label">Submitted</span>
             </div>
             <div className="rc-month-stat">
-              <span className="rc-month-stat-value">{monthAcceptedReports.length}</span>
+              <span className="rc-month-stat-value">
+                {monthAcceptedReports.length}
+              </span>
               <span className="rc-month-stat-label">Accepted</span>
             </div>
           </div>
@@ -677,13 +1096,16 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
               }}
             >
               <Send size={16} aria-hidden="true" />
-              Submit {monthDueReports.length} Pending Report{monthDueReports.length > 1 ? 's' : ''}
+              Submit {monthDueReports.length} Pending Report
+              {monthDueReports.length > 1 ? "s" : ""}
             </Button>
           )}
 
           {/* Month report list */}
           {monthReports.length === 0 ? (
-            <p className="rc-details-empty-text">No reports scheduled for this month.</p>
+            <p className="rc-details-empty-text">
+              No reports scheduled for this month.
+            </p>
           ) : (
             <div className="rc-month-reports">
               {monthReports.map(renderReportItem)}
@@ -697,42 +1119,53 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
 
 /* ─── Main Component ───────────────────────────────────────────────── */
 
-export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> = ({
+export const RevenueReportingCalendar: React.FC<
+  RevenueReportingCalendarProps
+> = ({
   reports,
   selectedDate: controlledSelectedDate,
   viewMonth: controlledViewMonth,
   isLoading = false,
   error = null,
-  locale = 'en-US',
+  locale = "en-US",
   weekStartsOn = 0, // Sunday by default
   onDateSelect,
   onMonthChange,
   onSubmitReport,
   onReportAction,
-  className = '',
+  className = "",
 }) => {
   // Determine current month from reports or use today
   const today = new Date();
-  const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
 
   const [internalViewMonth, setInternalViewMonth] = useState(defaultMonth);
-  const [internalSelectedDate, setInternalSelectedDate] = useState<string | undefined>(
-    controlledSelectedDate,
-  );
+  const [internalSelectedDate, setInternalSelectedDate] = useState<
+    string | undefined
+  >(controlledSelectedDate);
   const [focusedDate, setFocusedDate] = useState<string | undefined>(undefined);
   const [panelOpen, setPanelOpen] = useState(true);
+  const [mobileView, setMobileView] = useState<"calendar" | "agenda">("agenda");
+  const [showImportWizard, setShowImportWizard] = useState(false);
 
   const viewMonth = controlledViewMonth ?? internalViewMonth;
   const selectedDate = controlledSelectedDate ?? internalSelectedDate;
 
   const [viewYear, viewMonthNum] = useMemo(() => {
-    const [y, m] = viewMonth.split('-').map(Number);
+    const [y, m] = viewMonth.split("-").map(Number);
     return [y, m - 1];
   }, [viewMonth]);
 
   // Build day cells
   const dayCells = useMemo(
-    () => buildDayCells(viewYear, viewMonthNum, reports, selectedDate, weekStartsOn),
+    () =>
+      buildDayCells(
+        viewYear,
+        viewMonthNum,
+        reports,
+        selectedDate,
+        weekStartsOn,
+      ),
     [viewYear, viewMonthNum, reports, selectedDate, weekStartsOn],
   );
 
@@ -750,7 +1183,7 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
       newMonth = 11;
       newYear--;
     }
-    const newMonthStr = `${newYear}-${String(newMonth + 1).padStart(2, '0')}`;
+    const newMonthStr = `${newYear}-${String(newMonth + 1).padStart(2, "0")}`;
     setInternalViewMonth(newMonthStr);
     onMonthChange?.(newMonthStr);
   }, [viewMonthNum, viewYear, onMonthChange]);
@@ -762,7 +1195,7 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
       newMonth = 0;
       newYear++;
     }
-    const newMonthStr = `${newYear}-${String(newMonth + 1).padStart(2, '0')}`;
+    const newMonthStr = `${newYear}-${String(newMonth + 1).padStart(2, "0")}`;
     setInternalViewMonth(newMonthStr);
     onMonthChange?.(newMonthStr);
   }, [viewMonthNum, viewYear, onMonthChange]);
@@ -798,13 +1231,17 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
   // Month label
   const monthName = new Date(viewYear, viewMonthNum).toLocaleDateString(
     locale as SupportedLocale,
-    { month: 'long', year: 'numeric' },
+    { month: "long", year: "numeric" },
   );
 
   // Loading state
   if (isLoading) {
     return (
-      <div className={`rc-container ${className}`} aria-busy="true" aria-label="Loading calendar">
+      <div
+        className={`rc-container ${className}`}
+        aria-busy="true"
+        aria-label="Loading calendar"
+      >
         <div className="rc-loading">
           <div className="rc-loading-spinner" aria-hidden="true" />
           <p className="rc-loading-text">Loading reports…</p>
@@ -837,22 +1274,25 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
         onClick={() => setPanelOpen((prev) => !prev)}
         aria-expanded={panelOpen}
         aria-controls="rc-details-panel"
-        aria-label={panelOpen ? 'Hide details panel' : 'Show details panel'}
+        aria-label={panelOpen ? "Hide details panel" : "Show details panel"}
       >
         <Menu size={18} aria-hidden="true" />
-        {panelOpen ? 'Hide Details' : 'Show Details'}
+        {panelOpen ? "Hide Details" : "Show Details"}
       </button>
 
       <div className="rc-layout">
         {/* Calendar section */}
-        <section className="rc-calendar-section" aria-label="Revenue reporting calendar">
+        <section
+          className="rc-calendar-section"
+          aria-label="Revenue reporting calendar"
+        >
           {/* Month navigation */}
           <div className="rc-month-nav">
             <button
               type="button"
               className="rc-nav-btn"
               onClick={goToPrevMonth}
-              aria-label={`Previous month: ${new Date(viewYear, viewMonthNum - 1).toLocaleDateString(locale as SupportedLocale, { month: 'long', year: 'numeric' })}`}
+              aria-label={`Previous month: ${new Date(viewYear, viewMonthNum - 1).toLocaleDateString(locale as SupportedLocale, { month: "long", year: "numeric" })}`}
             >
               <ChevronLeft size={20} aria-hidden="true" />
             </button>
@@ -861,43 +1301,122 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
               type="button"
               className="rc-nav-btn"
               onClick={goToNextMonth}
-              aria-label={`Next month: ${new Date(viewYear, viewMonthNum + 1).toLocaleDateString(locale as SupportedLocale, { month: 'long', year: 'numeric' })}`}
+              aria-label={`Next month: ${new Date(viewYear, viewMonthNum + 1).toLocaleDateString(locale as SupportedLocale, { month: "long", year: "numeric" })}`}
             >
               <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
+          
+          <div className="rc-actions" style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 var(--spacing-6) var(--spacing-4)' }}>
+            <Button variant="secondary" onClick={() => setShowImportWizard(true)} aria-label="Import historical revenue from CSV">
+              <Upload size={16} aria-hidden="true" />
+              Import CSV
+            </Button>
+          </div>
+
+          {/* Mobile view toggle (calendar/agenda */}
+          <div
+            className="rc-view-toggle"
+            role="tablist"
+            aria-label="Calendar view mode"
+          >
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobileView === "calendar"}
+              className={`rc-view-toggle-btn ${mobileView === "calendar" ? "rc-view-toggle-btn--active" : ""}`}
+              onClick={() => setMobileView("calendar")}
+              aria-label="Calendar view"
+            >
+              <Calendar size={16} aria-hidden="true" />
+              <span>Calendar</span>
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={mobileView === "agenda"}
+              className={`rc-view-toggle-btn ${mobileView === "agenda" ? "rc-view-toggle-btn--active" : ""}`}
+              onClick={() => setMobileView("agenda")}
+              aria-label="Agenda view"
+            >
+              <List size={16} aria-hidden="true" />
+              <span>Agenda</span>
+            </button>
+          </div>
 
           {/* Legend */}
-          <div className="rc-legend" aria-label="Status legend">
+          <div
+            className={`rc-legend ${mobileView === "agenda" ? "rc-legend--hidden-on-agenda" : ""}`}
+            aria-label="Status legend"
+          >
             <span className="rc-legend-item">
-              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-status-due)' }} aria-hidden="true" />
+              <span
+                className="rc-legend-dot"
+                style={{ backgroundColor: "var(--rc-status-due)" }}
+                aria-hidden="true"
+              />
               Due
             </span>
             <span className="rc-legend-item">
-              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-status-submitted)' }} aria-hidden="true" />
+              <span
+                className="rc-legend-dot"
+                style={{ backgroundColor: "var(--rc-status-submitted)" }}
+                aria-hidden="true"
+              />
               Submitted
             </span>
             <span className="rc-legend-item">
-              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-status-accepted)' }} aria-hidden="true" />
+              <span
+                className="rc-legend-dot"
+                style={{ backgroundColor: "var(--rc-status-accepted)" }}
+                aria-hidden="true"
+              />
               Accepted
             </span>
             <span className="rc-legend-item">
-              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-status-overdue)' }} aria-hidden="true" />
-              Overdue
+              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-overdue-mild)' }} aria-hidden="true" />
+              Overdue (1–3 days)
+            </span>
+            <span className="rc-legend-item">
+              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-overdue-moderate)' }} aria-hidden="true" />
+              Overdue (4–29 days)
+            </span>
+            <span className="rc-legend-item">
+              <span className="rc-legend-dot" style={{ backgroundColor: 'var(--rc-overdue-critical)' }} aria-hidden="true" />
+              Overdue (30+ days)
             </span>
           </div>
 
-          {/* Calendar grid */}
-          <CalendarGridComponent
-            days={dayCells}
-            selectedDate={selectedDate}
-            focusedDate={focusedDate}
-            weekStartsOn={weekStartsOn}
-            onDateSelect={handleDateSelect}
-            onFocusDate={handleFocusDate}
-            locale={locale}
-            ariaLabel={`Revenue reporting calendar for ${monthName}. Use arrow keys to navigate, Home and End for row edges, Page Up and Page Down for month navigation, Enter or Space to select.`}
-          />
+          {/* Calendar grid (shown on desktop, or when mobile view is calendar */}
+          <div
+            className={`rc-calendar-wrapper ${mobileView === "agenda" ? "rc-calendar-wrapper--hidden-on-agenda" : ""}`}
+          >
+            <CalendarGridComponent
+              days={dayCells}
+              selectedDate={selectedDate}
+              focusedDate={focusedDate}
+              weekStartsOn={weekStartsOn}
+              onDateSelect={handleDateSelect}
+              onFocusDate={handleFocusDate}
+              locale={locale}
+              allReports={reports}
+              ariaLabel={`Revenue reporting calendar for ${monthName}. Use arrow keys to navigate, Home and End for row edges, Page Up and Page Down for month navigation, Enter or Space to select.`}
+            />
+          </div>
+
+          {/* Agenda view (shown when mobile view is agenda) */}
+          <div
+            className={`rc-agenda-wrapper ${mobileView === "calendar" ? "rc-agenda-wrapper--hidden-on-calendar" : ""}`}
+          >
+            <AgendaView
+              reports={reports}
+              selectedDate={selectedDate}
+              locale={locale}
+              onSelect={handleDateSelect}
+              onSubmitReport={handleSubmitReport}
+              viewMonth={viewMonth}
+            />
+          </div>
         </section>
 
         {/* Details panel */}
@@ -915,6 +1434,25 @@ export const RevenueReportingCalendar: React.FC<RevenueReportingCalendarProps> =
           />
         </div>
       </div>
+      
+      {/* Import Wizard Modal */}
+      {showImportWizard && (
+        <div className="rc-modal-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'var(--color-overlay, rgba(0, 0, 0, 0.5))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: 'var(--spacing-4)'
+        }}>
+          <RevenueCalendarCsvImport 
+            onCancel={() => setShowImportWizard(false)}
+            onImport={(rows) => {
+              console.log('Imported rows:', rows);
+              setShowImportWizard(false);
+              // Handle import logic here
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

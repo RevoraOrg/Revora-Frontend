@@ -3,13 +3,18 @@ import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-rout
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
+import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
+import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
+import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
+import { StartupDashboard } from "./pages/StartupDashboard";
 
 export function App() {
   return (
@@ -20,15 +25,26 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/recover-2fa" element={<TwoFactorRecoveryPage />} />
 
           {/* Startup routes */}
           <Route
             path="/startup/dashboard"
-            element={<Placeholder title="Startup Dashboard" />}
+            element={<StartupDashboard />}
           />
           <Route
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
+          />
+          {/* Issue #199 – Inline document uploader (Offering Registration wizard) */}
+          <Route
+            path="/startup/offering-registration"
+            element={<OfferingRegistrationDemo />}
+          />
+          {/* Issue #247 – Governance proposal creation multi-step form */}
+          <Route
+            path="/startup/governance/proposals/create"
+            element={<GovernanceProposalCreatePage />}
           />
 
           {/* Investor routes */}
@@ -36,6 +52,10 @@ export function App() {
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+
+          {/* Admin routes */}
+          <Route path="/admin/alerts" element={<AdminAlertsInbox />} />
+          <Route path="/admin/scheduled-exports" element={<ScheduledExportsPage />} />
         </Route>
       </Routes>
     </Router>
@@ -84,9 +104,15 @@ function Home() {
           <section className="home-section glass-card">
             <h2 className="home-section-title">Startup Dashboard</h2>
             <ul className="home-list">
+              <li>
+                • <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
+              </li>
               <li>• Configure RevenueShare offerings</li>
               <li>
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
+              </li>
+              <li>
+                • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
               <li>• Track on-chain RevenueShare payouts</li>
             </ul>
@@ -99,6 +125,7 @@ function Home() {
               <li>• Invest using USDC on Stellar</li>
               <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
               <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

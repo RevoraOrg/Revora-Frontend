@@ -14,7 +14,7 @@ describe('App Components Accessibility', () => {
     expect(getStartedLink).toBeInTheDocument();
     expect(getStartedLink.tagName.toLowerCase()).toBe('a');
     expect(signInLink).toBeInTheDocument();
-    expect(signInLink.tagName.toLowerCase()).toBe('a');
+    expect(signInLink.tagName.toLowerCase()).toBe('a'); 
   });
 
   it('renders the header correctly', () => {
@@ -73,5 +73,12 @@ describe('App Components Accessibility', () => {
     window.history.pushState({}, '', '/startup/dashboard');
     render(<App />);
     expect(screen.getByRole('heading', { level: 1, name: /startup dashboard/i })).toBeInTheDocument();
+  });
+
+  it('renders the offering registration route with its document uploader', () => {
+    window.history.pushState({}, '', '/startup/offering-registration');
+    render(<App />);
+    expect(screen.getByRole('heading', { level: 1, name: /offering registration/i })).toBeInTheDocument();
+    expect(screen.getByText('Upload KYC documents')).toBeInTheDocument();
   });
 });

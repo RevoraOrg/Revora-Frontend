@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
@@ -149,6 +150,18 @@
   --st-pending-border: rgba(148, 163, 184, 0.25);  /* ○ pending ring / connector        */
   --st-pending-fg: #94a3b8;                         /* ○ pending icon                    */
 
+  /* On-chain status badge (Issue #256) */
+  --ocb-badge-gap: 0.25rem;
+  --ocb-badge-pad-y: 0.125rem;
+  --ocb-badge-pad-x: 0.5rem;
+  --ocb-badge-bg: rgba(16, 185, 129, 0.12);
+  --ocb-badge-bg-hover: rgba(16, 185, 129, 0.2);
+  --ocb-badge-border: rgba(16, 185, 129, 0.45);
+  --ocb-badge-border-hover: #10b981;
+  --ocb-badge-fg: #10b981;
+  --ocb-badge-focus-ring: rgba(16, 185, 129, 0.25);
+  --ocb-panel-width: 18rem;
+
   /* ─── Density Mode Tokens (Issue #174) ───────────────────────────────
    * Three modes: comfortable (spacious), cozy (normal), compact.
    * Applied by setting data-density="comfortable|cozy|compact" on <html>.
@@ -193,6 +206,57 @@
     rgba(148, 163, 184, 0.18) 50%,
     rgba(148, 163, 184, 0.06) 75%
   );
+
+  /* ─── Notification Bell Tokens (Issue #270) ──────────────────────── */
+  /* Default pulse variant (motion OK) */
+  --bell-badge-bg-default: #dc2626;                 /* bg-red-600 */
+  
+  /* Static badge variant (reduced motion) */
+  --bell-badge-bg-static: #b91c1c;                  /* bg-red-700 for subtle contrast change */
+  --bell-badge-ring-static: #fee2e2;                /* ring-red-100 for subtle border */
+  
+  /* Usage Guidance: Use motion-reduce utility classes (e.g., motion-reduce:animate-none, 
+     motion-reduce:bg-red-700) to fall back to a static state. The static badge uses 
+     a darker background (--bell-badge-bg-static) and a distinct ring (--bell-badge-ring-static) 
+     to maintain at least a 3:1 contrast ratio against the header. */
+
+  /* ─── Chart Tooltip & Axis Tokens (Issue #268) ──────────────────────── */
+  --chart-tooltip-bg: #0f172a;                      /* Dark surface for tooltip */
+  --chart-tooltip-fg: #f8fafc;                      /* High contrast foreground */
+  --chart-tooltip-border: #334155;                  /* Visible border on dark surface */
+  --chart-axis-label-color: #94a3b8;                /* WCAG AA contrast for dark surfaces */
+  --chart-axis-label-size: 0.75rem;                 /* 12px for axis text */
+
+  /* ─── Categorical Chart Palette (Issue #267) ────────────────────────── */
+  /* Light-mode categorical hues (for white/light surfaces) */
+  --chart-cat-1-light: #2563eb;                     /* Blue 600 - 4.6:1 contrast on #ffffff */
+  --chart-cat-2-light: #059669;                     /* Emerald 600 - 4.5:1 contrast on #ffffff */
+  --chart-cat-3-light: #d97706;                     /* Amber 600 - 3.1:1 contrast on #ffffff */
+  --chart-cat-4-light: #7c3aed;                     /* Violet 600 - 5.8:1 contrast on #ffffff */
+  --chart-cat-5-light: #dc2626;                     /* Red 600 - 4.5:1 contrast on #ffffff */
+  --chart-cat-6-light: #0891b2;                     /* Cyan 600 - 3.4:1 contrast on #ffffff */
+  --chart-cat-7-light: #ea580c;                     /* Orange 600 - 4.8:1 contrast on #ffffff */
+  --chart-cat-8-light: #be185d;                     /* Pink 600 - 5.5:1 contrast on #ffffff */
+
+  /* Dark-mode categorical hues (3:1+ WCAG AA contrast on #020617 / #0f172a dark surfaces) */
+  --chart-cat-1-dark: #60a5fa;                      /* Blue 400 - 8.5:1 contrast on #020617 */
+  --chart-cat-2-dark: #34d399;                      /* Emerald 400 - 10.2:1 contrast on #020617 */
+  --chart-cat-3-dark: #fbbf24;                      /* Amber 400 - 11.8:1 contrast on #020617 */
+  --chart-cat-4-dark: #a78bfa;                      /* Violet 400 - 7.4:1 contrast on #020617 */
+  --chart-cat-5-dark: #f87171;                      /* Rose 400 - 6.8:1 contrast on #020617 */
+  --chart-cat-6-dark: #22d3ee;                      /* Cyan 400 - 11.0:1 contrast on #020617 */
+  --chart-cat-7-dark: #fb923c;                      /* Orange 400 - 8.9:1 contrast on #020617 */
+  --chart-cat-8-dark: #f472b6;                      /* Pink 400 - 7.7:1 contrast on #020617 */
+
+  /* Active categorical chart tokens (default to dark-mode for dark surfaces; mirrored for easy swapping) */
+  --chart-cat-1: var(--chart-cat-1-dark);
+  --chart-cat-2: var(--chart-cat-2-dark);
+  --chart-cat-3: var(--chart-cat-3-dark);
+  --chart-cat-4: var(--chart-cat-4-dark);
+  --chart-cat-5: var(--chart-cat-5-dark);
+  --chart-cat-6: var(--chart-cat-6-dark);
+  --chart-cat-7: var(--chart-cat-7-dark);
+  --chart-cat-8: var(--chart-cat-8-dark);
 }
 
 /* ─── Density mode overrides ─────────────────────────────────────
@@ -1055,4 +1119,409 @@ input:focus-visible,
 .skeleton-rect {
   width: 100%;
   height: 10rem;
-}
+}
+
+/* ─── Multi-Issuer Comparison View (Issue #231) ─────────────────────────────
+ *  Accessible, responsive side-by-side issuer comparison.
+ *  Tokens: --glass-*, --primary, --text-*, --success, --error
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* Column sync: dim non-hovered columns */
+.mic-column {
+  background: var(--glass-bg-accent);
+  transition: border-color 0.2s ease, background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.mic-column--hover {
+  z-index: 2;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+.mic-column--dim {
+  opacity: 0.55;
+}
+
+/* Responsive: stack columns on narrow viewports */
+@media (max-width: 767px) {
+  .mic-column {
+    opacity: 1 !important;
+  }
+}
+
+/* Compliance status pills */
+.mic-compliance--compliant {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.mic-compliance--review {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.mic-compliance--hold {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+/* Chart snippet */
+.mic-chart-snippet {
+  background: rgba(15, 23, 42, 0.35);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-sm);
+}
+
+/* Button overrides */
+.btn--sm {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-md);
+  width: auto;
+}
+=======
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root {
+  --bg-color: #020617;
+  --bg-gradient: radial-gradient(
+    circle at top,
+    #0f172a 0,
+    #020617 40%,
+    #000000 100%
+  );
+
+  /* Standardized Design Tokens - Issue #68 */
+  --glass-bg: rgba(15, 23, 42, 0.85);
+  --glass-bg-accent: rgba(30, 41, 59, 0.5);
+  --glass-border: rgba(148, 163, 184, 0.15);
+  --glass-border-bright: rgba(148, 163, 184, 0.35);
+  --glass-blur: blur(12px);
+
+  /* Elevation Tokens */
+  --shadow-sm:
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-md:
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-lg:
+    0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 24px 80px rgba(0, 0, 0, 0.45); /* Standardized Card Elevation */
+
+  --primary: #3b82f6;
+  --primary-hover: #2563eb;
+  --text-main: #e5e7eb;
+  --text-muted: #cbd5e1; /* Improved contrast for WCAG AA on dark backgrounds */
+  --text-accent: #38bdf8;
+  --error: #ef4444;
+  --success: #10b981;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text-main);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.glass-card {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  border-radius: 1.5rem;
+  box-shadow: var(--shadow-xl);
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.glass-card-interactive:hover {
+  border-color: var(--glass-border-bright);
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
+
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  border-radius: 0.75rem;
+}
+
+.btn-secondary {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.btn-secondary:hover {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.btn-secondary:focus {
+  outline: 2px solid var(--text-main);
+  outline-offset: 2px;
+}
+
+.input-group {
+  margin-bottom: 1.25rem;
+}
+
+.input-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.input-field {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.5);
+  border: 1px solid var(--glass-border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: var(--text-main);
+  font-size: 1rem;
+  transition: border-color 0.2s ease;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+/* WCAG 2.1 AA: Focus visible for keyboard navigation */
+.input-field:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.4);
+}
+
+button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.6);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.input-field.input-error {
+  border-color: var(--error);
+}
+
+.input-field.input-error:focus {
+  outline: 2px solid var(--error);
+  outline-offset: 2px;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes shake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+  40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Accessibility: Focus rings for interactive elements */
+a:focus-visible, 
+button:focus-visible, 
+input:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Utilities for accessibility and consistency */
+.text-primary {
+  color: var(--primary);
+}
+
+.text-primary:hover {
+  color: var(--primary-hover);
+}
+
+.hover-underline:hover {
+  text-decoration: underline;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+.link-styled {
+  color: var(--primary);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  text-underline-offset: 2px;
+}
+
+.link-styled:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
+.link-styled:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Utility Classes */
+.text-muted { color: var(--text-muted); }
+.text-main { color: var(--text-main); }
+.text-success { color: var(--success); }
+.text-error { color: var(--error); }
+
+/* Activity Feed Styles */
+.activity-feed { padding: 1rem; }
+.activity-list { list-style: none; margin: 0; padding: 0; }
+.activity-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--glass-border); }
+.activity-item:last-child { border-bottom: none; }
+.activity-item .icon { width: 1.5rem; height: 1.5rem; flex-shrink: 0; }
+.activity-item .content { flex: 1; }
+.activity-item .title { font-weight: 600; color: var(--text-main); }
+.activity-item .description { color: var(--text-muted); margin-top: 0.25rem; }
+.activity-item .timestamp { font-size: 0.875rem; color: var(--text-muted); }
+.activity-date-group { margin-top: 1.5rem; margin-bottom: 0.5rem; font-weight: 600; color: var(--primary); }
+.load-more { margin-top: 1rem; }
+
+/* Actor Detail Popover Styles */
+.actor-detail-popover {
+  animation: popoverFadeIn 0.2s ease-out;
+}
+
+.actor-detail-popover .popover-close-btn:hover {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-main);
+}
+
+.actor-detail-popover .popover-close-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.actor-detail-popover ul::-webkit-scrollbar {
+  width: 6px;
+}
+
+.actor-detail-popover ul::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 3px;
+}
+
+.actor-detail-popover ul::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 3px;
+}
+
+.actor-detail-popover ul::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+@keyframes popoverFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Audit Trail Page Styles */
+.audit-trail-page {
+  padding: 2rem;
+  min-height: 100vh;
+}
+
+.actor-card:hover {
+  border-color: var(--glass-border-bright);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.actor-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .actor-detail-popover {
+    animation: none;
+  }
+  
+  .actor-card {
+    transition: none;
+  }
+}
+>>>>>>> Stashed changes

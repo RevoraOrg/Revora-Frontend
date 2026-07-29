@@ -21,6 +21,11 @@
   --rc-status-accepted: #10b981;
   --rc-status-overdue: #ef4444;
 
+  /* Overdue severity colours */
+  --rc-overdue-mild: #f59e0b;
+  --rc-overdue-moderate: #f97316;
+  --rc-overdue-critical: #ef4444;
+
   /* Calendar sizing */
   --rc-cell-size: 2.75rem;
   --rc-cell-gap: 0.25rem;
@@ -331,7 +336,10 @@
   position: relative;
   border-radius: var(--rc-radius-sm);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   border: 1px solid transparent;
   background: transparent;
   user-select: none;
@@ -437,6 +445,28 @@
   z-index: 1;
 }
 
+/* Overdue badge */
+.rc-overdue-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  border-radius: var(--radius-full);
+  font-size: 0.5625rem;
+  font-weight: var(--font-weight-bold);
+  color: #fff;
+  line-height: 1;
+  z-index: 1;
+}
+
+.rc-overdue-badge-days {
+  min-width: 0.5rem;
+  text-align: center;
+}
+
 /* Count badge for multiple reports */
 .rc-day-count {
   position: absolute;
@@ -470,7 +500,9 @@
   flex-direction: column;
   gap: var(--spacing-md);
   position: relative;
-  transition: opacity 0.2s ease, transform 0.2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .rc-details-panel--closed {
@@ -747,9 +779,14 @@
 
 /* ─── RTL Support ──────────────────────────────────────────────────── */
 
-[dir='rtl'] .rc-day-count {
+[dir="rtl"] .rc-day-count {
   right: auto;
   left: 3px;
+}
+
+[dir='rtl'] .rc-overdue-badge {
+  right: auto;
+  left: 2px;
 }
 
 [dir='rtl'] .rc-report-date {
@@ -757,7 +794,7 @@
   margin-inline-end: auto;
 }
 
-[dir='rtl'] .rc-details-close {
+[dir="rtl"] .rc-details-close {
   right: auto;
   left: var(--spacing-sm);
 }
@@ -792,6 +829,10 @@
     forced-color-adjust: none;
   }
 
+  .rc-overdue-badge {
+    forced-color-adjust: none;
+  }
+
   .rc-nav-btn {
     border: 1px solid ButtonText;
   }
@@ -811,9 +852,684 @@
     break-inside: avoid;
   }
 
+  .rc-overdue-badge {
+    border: 1px solid #333;
+  }
+
   .rc-mobile-toggle,
   .rc-nav-btn,
-  .rc-submit-cta {
+  .rc-submit-cta,
+  .rc-view-toggle {
+    display: none;
+  }
+}
+
+/* ─── Mobile View Toggle ────────────────────────────────────────────── */
+
+.rc-view-toggle {
+  display: none;
+  gap: var(--spacing-2xs);
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: var(--rc-radius-sm);
+  padding: var(--spacing-2xs);
+  margin-bottom: var(--spacing-md);
+}
+
+@media (max-width: 767px) {
+  .rc-view-toggle {
+    display: inline-flex;
+    width: 100%;
+  }
+}
+
+.rc-view-toggle-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  border-radius: calc(var(--rc-radius-sm) - 2px);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.rc-view-toggle-btn:hover {
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.08);
+}
+
+.rc-view-toggle-btn--active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.rc-view-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+/* ─── Calendar / Agenda Wrappers ────────────────────────────────────── */
+
+@media (min-width: 768px) {
+  .rc-agenda-wrapper {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .rc-calendar-wrapper--hidden-on-agenda {
+    display: none;
+  }
+
+  .rc-agenda-wrapper--hidden-on-calendar {
+    display: none;
+  }
+
+  .rc-legend--hidden-on-agenda {
+    display: none;
+  }
+}
+
+/* ─── Status Pill ────────────────────────────────────────────────────── */
+
+.rc-status-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--radius-full);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  color: #fff;
+  background-color: var(--rc-status-pill-color);
+  border: 1px solid transparent;
+}
+
+.rc-status-pill--due {
+  color: #92400e;
+  background-color: rgba(245, 158, 11, 0.18);
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.rc-status-pill--submitted {
+  color: #1e40af;
+  background-color: rgba(59, 130, 246, 0.18);
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.rc-status-pill--accepted {
+  color: #065f46;
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.rc-status-pill--overdue {
+  color: #991b1b;
+  background-color: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* ─── Agenda View ────────────────────────────────────────────────────── */
+
+.rc-agenda-view {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+.rc-agenda-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-md);
+  padding: var(--spacing-3xl) var(--spacing-md);
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.rc-agenda-empty-text {
+  font-size: var(--font-size-sm);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+.rc-agenda-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.rc-agenda-group-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  line-height: var(--line-height-tight);
+  margin: 0;
+  padding-inline: var(--spacing-xs);
+}
+
+.rc-agenda-group--overdue .rc-agenda-group-title {
+  color: var(--rc-status-overdue);
+}
+
+.rc-agenda-group--due .rc-agenda-group-title {
+  color: var(--rc-status-due);
+}
+
+.rc-agenda-group--submitted .rc-agenda-group-title {
+  color: var(--rc-status-submitted);
+}
+
+.rc-agenda-group--accepted .rc-agenda-group-title {
+  color: var(--rc-status-accepted);
+}
+
+.rc-agenda-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 var(--spacing-2xs);
+  border-radius: var(--radius-full);
+  background: rgba(148, 163, 184, 0.15);
+  font-size: 0.6875rem;
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.rc-agenda-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.rc-agenda-listitem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.rc-agenda-row {
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--rc-radius-sm);
+  cursor: pointer;
+  text-align: start;
+  color: inherit;
+  font: inherit;
+  transition: all 0.18s ease;
+  gap: var(--spacing-sm);
+  position: relative;
+}
+
+.rc-agenda-row:hover {
+  border-color: var(--glass-border-bright);
+  background: rgba(148, 163, 184, 0.05);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.rc-agenda-row:active {
+  transform: translateY(0);
+}
+
+.rc-agenda-row:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.rc-agenda-row--selected {
+  border-color: var(--primary);
+  background: rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.18);
+}
+
+.rc-agenda-row--due {
+  border-inline-start: 3px solid var(--rc-status-due);
+}
+
+.rc-agenda-row--overdue {
+  border-inline-start: 3px solid var(--rc-status-overdue);
+}
+
+.rc-agenda-row--submitted {
+  border-inline-start: 3px solid var(--rc-status-submitted);
+}
+
+.rc-agenda-row--accepted {
+  border-inline-start: 3px solid var(--rc-status-accepted);
+}
+
+.rc-agenda-row-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 3.25rem;
+  padding: var(--spacing-xs) 0;
+  background: rgba(148, 163, 184, 0.06);
+  border-radius: var(--rc-radius-sm);
+  min-width: 0;
+}
+
+.rc-agenda-row-weekday {
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  line-height: 1.2;
+}
+
+.rc-agenda-row-day {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-main);
+  line-height: 1.1;
+  margin-top: 1px;
+}
+
+.rc-agenda-row-body {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--spacing-2xs);
+  min-width: 0;
+}
+
+.rc-agenda-row-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.rc-agenda-row-duedate {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rc-agenda-row-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rc-agenda-row-revenue {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.rc-agenda-row-submitted,
+.rc-agenda-row-accepted {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.6875rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+}
+
+.rc-agenda-row-chevron {
+  flex: 0 0 auto;
+  align-self: center;
+  color: var(--text-muted);
+  opacity: 0.5;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.rc-agenda-row:hover .rc-agenda-row-chevron {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+[dir="rtl"] .rc-agenda-row:hover .rc-agenda-row-chevron {
+  transform: translateX(-2px) scaleX(-1);
+}
+
+.rc-agenda-row-cta {
+  padding-inline-start: calc(3.25rem + var(--spacing-sm));
+  padding-inline-end: var(--spacing-sm);
+}
+
+@media (forced-colors: active) {
+  .rc-status-pill {
+    forced-color-adjust: none;
+  }
+
+  .rc-agenda-row {
+    border: 1px solid ButtonText;
+  }
+
+  .rc-agenda-row--selected {
+    border: 2px solid Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rc-agenda-row,
+  .rc-view-toggle-btn {
+    transition: none;
+  }
+
+  .rc-agenda-row-chevron {
+    transition: none;
+  }
+}
+
+[dir="rtl"] .rc-agenda-row-chevron {
+  transform: scaleX(-1);
+}
+
+/* ─── Day Cell Hover / Focus Preview ────────────────────────────────── */
+
+/*
+ * The preview card is positioned absolutely relative to the day cell
+ * (rc-day-cell has position: relative set inline by the component).
+ * Placement variants: top, bottom, top-start, bottom-start.
+ *
+ * z-index 100 keeps it above all sibling cells and the grid.
+ * The card is 220px wide; on narrow viewports the component falls back
+ * to bottom / bottom-start placement automatically.
+ */
+
+.rc-day-preview {
+  position: absolute;
+  z-index: 100;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  background: var(--glass-bg, rgba(15, 23, 42, 0.95));
+  border: 1px solid var(--glass-border-bright, rgba(148, 163, 184, 0.25));
+  border-radius: var(--radius-lg, 0.75rem);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.35),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  padding: var(--spacing-sm, 0.5rem) var(--spacing-md, 0.75rem);
+  pointer-events: none;        /* never steals hover from the cell */
+  animation: rc-preview-in 0.12s ease forwards;
+  /* Keep text left-aligned regardless of cell text-align */
+  text-align: start;
+}
+
+/* Placement: above the cell */
+.rc-day-preview--top,
+.rc-day-preview--top-start {
+  bottom: calc(100% + 8px);
+  top: auto;
+}
+
+/* Placement: below the cell */
+.rc-day-preview--bottom,
+.rc-day-preview--bottom-start {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+
+/* Right-edge: anchor to left instead of centering */
+.rc-day-preview--top-start,
+.rc-day-preview--bottom-start {
+  left: 0;
+  transform: none;
+}
+
+/* Entrance animation */
+@keyframes rc-preview-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.rc-day-preview--top-start,
+.rc-day-preview--bottom-start {
+  animation-name: rc-preview-in-start;
+}
+
+@keyframes rc-preview-in-start {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Preview Header ─────────────────────────────────────────────────── */
+
+.rc-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-xs, 0.375rem);
+  margin-bottom: var(--spacing-xs, 0.375rem);
+  flex-wrap: wrap;
+}
+
+.rc-preview-date {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-muted, #94a3b8);
+  white-space: nowrap;
+}
+
+.rc-preview-status-pill {
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-bold, 700);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid currentColor;
+  line-height: 1.6;
+  white-space: nowrap;
+}
+
+/* ─── Preview KPIs ───────────────────────────────────────────────────── */
+
+.rc-preview-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-xs, 0.375rem);
+  margin-bottom: var(--spacing-xs, 0.375rem);
+}
+
+.rc-preview-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.rc-preview-kpi-label {
+  font-size: 0.5625rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.rc-preview-kpi-value {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-main, #f1f5f9);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── Variance KPI ───────────────────────────────────────────────────── */
+
+.rc-preview-variance-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.rc-preview-variance--up .rc-preview-kpi-value {
+  color: var(--rc-status-accepted, #10b981);
+}
+
+.rc-preview-variance--down .rc-preview-kpi-value {
+  color: var(--rc-status-overdue, #ef4444);
+}
+
+.rc-preview-variance--flat .rc-preview-kpi-value {
+  color: var(--text-muted, #94a3b8);
+}
+
+/* ─── Spark Trend ────────────────────────────────────────────────────── */
+
+.rc-preview-spark-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.375rem);
+  padding-top: var(--spacing-2xs, 0.25rem);
+  border-top: 1px solid var(--glass-border, rgba(148, 163, 184, 0.12));
+}
+
+.rc-preview-spark {
+  color: var(--primary, #3b82f6);
+  flex-shrink: 0;
+}
+
+.rc-preview-spark-label {
+  font-size: 0.5625rem;
+  font-weight: var(--font-weight-medium, 500);
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ─── Caret Arrow ────────────────────────────────────────────────────── */
+
+.rc-preview-arrow {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+}
+
+.rc-day-preview--top .rc-preview-arrow,
+.rc-day-preview--top-start .rc-preview-arrow {
+  bottom: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--glass-border-bright, rgba(148, 163, 184, 0.25));
+}
+
+.rc-day-preview--bottom .rc-preview-arrow,
+.rc-day-preview--bottom-start .rc-preview-arrow {
+  top: -5px;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-bottom: 5px solid var(--glass-border-bright, rgba(148, 163, 184, 0.25));
+}
+
+.rc-day-preview--top-start .rc-preview-arrow,
+.rc-day-preview--bottom-start .rc-preview-arrow {
+  left: 1rem;
+  transform: none;
+}
+
+/* ─── Touch / mobile: suppress preview on touch-only ─────────────────── */
+/*
+ * On hover-incapable devices (phones) the preview would flash on tap.
+ * pointer: coarse + hover: none targets touch-only devices; we hide
+ * the preview there since the side panel provides the same info on tap.
+ */
+@media (hover: none) and (pointer: coarse) {
+  .rc-day-preview {
+    display: none;
+  }
+}
+
+/* ─── Reduced motion: no animation ──────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .rc-day-preview {
+    animation: none;
+  }
+}
+
+/* ─── High Contrast ──────────────────────────────────────────────────── */
+@media (forced-colors: active) {
+  .rc-day-preview {
+    border: 2px solid ButtonText;
+    background: Canvas;
+    color: CanvasText;
+    forced-color-adjust: none;
+  }
+
+  .rc-preview-spark {
+    forced-color-adjust: none;
+  }
+}
+
+/* ─── RTL ────────────────────────────────────────────────────────────── */
+[dir="rtl"] .rc-day-preview--top-start,
+[dir="rtl"] .rc-day-preview--bottom-start {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+
+[dir="rtl"] .rc-day-preview--top-start .rc-preview-arrow,
+[dir="rtl"] .rc-day-preview--bottom-start .rc-preview-arrow {
+  left: auto;
+  right: 1rem;
+}
+
+/* ─── Print: never print tooltips ───────────────────────────────────── */
+@media print {
+  .rc-day-preview {
     display: none;
   }
 }

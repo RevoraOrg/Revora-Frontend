@@ -4,6 +4,7 @@ import {
   SlidersHorizontal,
   X,
   ChevronRight,
+  ChevronDown,
   ExternalLink,
 } from 'lucide-react';
 import './LedgerTable.css';
@@ -27,21 +28,19 @@ export interface LedgerTableProps<T> {
   rowKey: (row: T) => string | number;
   rowDetail?: (row: T) => React.ReactNode;
   pageSize?: number;
-  /** Override the density for this table instance.
-   *  When omitted the global density from DensityProvider is used. */
   defaultDensity?: DensityMode;
   stickyHeader?: boolean;
   ariaLabel?: string;
+  groupableColumns?: { key: keyof T; label: string }[];
+  renderGroupHeader?: (groupValue: any, items: T[]) => React.ReactNode;
 }
 
-/** CSS class applied to the table wrapper per density mode */
 const DENSITY_CLASS: Record<DensityMode, string> = {
   comfortable: 'lt-density--comfortable',
   cozy:        'lt-density--cozy',
   compact:     'lt-density--compact',
 };
 
-/** Row heights mirror --density-row-height tokens */
 const ROW_HEIGHTS: Record<DensityMode, number> = {
   comfortable: 56,
   cozy:        48,
@@ -49,6 +48,10 @@ const ROW_HEIGHTS: Record<DensityMode, number> = {
 };
 
 const OVERSCAN = 5;
+
+type FlattenedRow<T> = 
+  | { isGroup: true; key: string; value: any; items: T[] }
+  | { isGroup: false; row: T };
 
 function LedgerTable<T>({
   data,
@@ -59,24 +62,58 @@ function LedgerTable<T>({
   defaultDensity = 'cozy',
   stickyHeader = true,
   ariaLabel = 'Ledger table',
+  groupableColumns,
+  renderGroupHeader,
 }: LedgerTableProps<T>) {
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() =>
     new Set(columns.filter((c) => c.defaultVisible !== false).map((c) => c.key)),
   );
-  // Local density allows table-level override; falls back to defaultDensity
   const [density, setDensity] = useState<DensityMode>(defaultDensity);
   const [currentPage, setCurrentPage] = useState(0);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showDensityMenu, setShowDensityMenu] = useState(false);
   const [selectedRow, setSelectedRow] = useState<string | number | null>(null);
   const [detailRow, setDetailRow] = useState<string | number | null>(null);
+  
+  const [groupBy, setGroupBy] = useState<keyof T | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+
   const columnMenuRef = useRef<HTMLDivElement>(null);
   const densityMenuRef = useRef<HTMLDivElement>(null);
 
-  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+  const flattenedData = useMemo(() => {
+    if (!groupBy) {
+      return data.map(row => ({ isGroup: false, row } as FlattenedRow<T>));
+    }
+
+    const groups = new Map<any, T[]>();
+    data.forEach(row => {
+      const val = row[groupBy];
+      if (!groups.has(val)) groups.set(val, []);
+      groups.get(val)!.push(row);
+    });
+
+    const flat: FlattenedRow<T>[] = [];
+    groups.forEach((items, value) => {
+      const groupKey = String(value);
+      flat.push({ isGroup: true, key: groupKey, value, items });
+      if (!collapsedGroups.has(groupKey)) {
+        items.forEach(row => flat.push({ isGroup: false, row }));
+      }
+    });
+    return flat;
+  }, [data, groupBy, collapsedGroups]);
+
+  const totalPages = Math.max(1, Math.ceil(flattenedData.length / pageSize));
+  
+  // reset to page 0 if grouping changes
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [groupBy]);
+
   const pageData = useMemo(
-    () => data.slice(currentPage * pageSize, (currentPage + 1) * pageSize),
-    [data, currentPage, pageSize],
+    () => flattenedData.slice(currentPage * pageSize, (currentPage + 1) * pageSize),
+    [flattenedData, currentPage, pageSize],
   );
 
   const filteredColumns = useMemo(
@@ -86,7 +123,6 @@ function LedgerTable<T>({
 
   const rowHeight = ROW_HEIGHTS[density];
 
-  // Virtualization state
   const [containerHeight, setContainerHeight] = useState(400);
   const [scrollTop, setScrollTop] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -102,6 +138,11 @@ function LedgerTable<T>({
   );
 
   const [selectedRowIndex, setSelectedRowIndex] = useState(-1);
+  const [focusedColumnIndex, setFocusedColumnIndex] = useState<number>(-1);
+  const [focusBounds, setFocusBounds] = useState<{ left: number; width: number } | null>(null);
+  const focusedRowRef = useRef<HTMLDivElement | null>(null);
+
+  const totalCols = (rowDetail ? 1 : 0) + filteredColumns.length;
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -114,9 +155,7 @@ function LedgerTable<T>({
       observer.observe(current);
     }
     return () => {
-      if (current) {
-        observer.unobserve(current);
-      }
+      if (current) observer.unobserve(current);
     };
   }, []);
 
@@ -133,13 +172,32 @@ function LedgerTable<T>({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const updateFocusBounds = useCallback(() => {
+    if (selectedRowIndex < 0 || focusedColumnIndex < 0 || !focusedRowRef.current) {
+      setFocusBounds(null);
+      return;
+    }
+    const children = focusedRowRef.current.children;
+    if (children && children[focusedColumnIndex]) {
+      const cellEl = children[focusedColumnIndex] as HTMLElement;
+      setFocusBounds({
+        left: cellEl.offsetLeft,
+        width: cellEl.offsetWidth,
+      });
+    } else {
+      setFocusBounds(null);
+    }
+  }, [selectedRowIndex, focusedColumnIndex]);
+
+  useEffect(() => {
+    updateFocusBounds();
+  }, [updateFocusBounds, selectedRowIndex, focusedColumnIndex, startIndex, endIndex, filteredColumns, density, scrollTop, containerHeight]);
+
   const toggleColumn = useCallback((key: string) => {
     setVisibleColumns((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
-        if (next.size > 1) {
-          next.delete(key);
-        }
+        if (next.size > 1) next.delete(key);
       } else {
         next.add(key);
       }
@@ -167,17 +225,42 @@ function LedgerTable<T>({
     [rowKey, rowDetail],
   );
 
+  const handleCellClick = useCallback(
+    (row: T, index: number, colIndex: number, e: React.MouseEvent) => {
+      e.stopPropagation();
+      handleRowClick(row, index);
+      setFocusedColumnIndex(colIndex);
+    },
+    [handleRowClick],
+  );
+
+  const toggleGroup = useCallback((key: string) => {
+    setCollapsedGroups(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const maxIndex = pageData.length - 1;
+      const isRtl = scrollRef.current
+        ? getComputedStyle(scrollRef.current).direction === 'rtl' || document.dir === 'rtl'
+        : false;
+
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
           setSelectedRowIndex((prev) => {
             const next = Math.min(prev + 1, maxIndex);
             if (next >= 0) {
-              setSelectedRow(rowKey(pageData[next]));
-              if (rowDetail) setDetailRow(rowKey(pageData[next]));
+              const item = pageData[next];
+              if (!item.isGroup) {
+                setSelectedRow(rowKey(item.row));
+                if (rowDetail) setDetailRow(rowKey(item.row));
+              }
             }
             return next;
           });
@@ -187,17 +270,61 @@ function LedgerTable<T>({
           setSelectedRowIndex((prev) => {
             const next = Math.max(prev - 1, 0);
             if (next >= 0) {
-              setSelectedRow(rowKey(pageData[next]));
-              if (rowDetail) setDetailRow(rowKey(pageData[next]));
+              const item = pageData[next];
+              if (!item.isGroup) {
+                setSelectedRow(rowKey(item.row));
+                if (rowDetail) setDetailRow(rowKey(item.row));
+              }
             }
             return next;
           });
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          setFocusedColumnIndex((prev) => {
+            if (isRtl) {
+              return Math.max(-1, prev - 1);
+            } else {
+              return Math.min(totalCols - 1, prev + 1);
+            }
+          });
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          setFocusedColumnIndex((prev) => {
+            if (isRtl) {
+              return Math.min(totalCols - 1, prev + 1);
+            } else {
+              return Math.max(-1, prev - 1);
+            }
+          });
+          break;
+        case 'Home':
+          e.preventDefault();
+          if (e.ctrlKey || e.metaKey) {
+            setSelectedRowIndex(0);
+          } else {
+            setFocusedColumnIndex(0);
+          }
+          break;
+        case 'End':
+          e.preventDefault();
+          if (e.ctrlKey || e.metaKey) {
+            setSelectedRowIndex(maxIndex);
+          } else {
+            setFocusedColumnIndex(Math.max(0, totalCols - 1));
+          }
           break;
         case 'Enter':
         case ' ':
           e.preventDefault();
           if (selectedRowIndex >= 0 && selectedRowIndex <= maxIndex) {
-            handleRowClick(pageData[selectedRowIndex], selectedRowIndex);
+            const item = pageData[selectedRowIndex];
+            if (item.isGroup) {
+              toggleGroup(item.key);
+            } else {
+              handleRowClick(item.row, selectedRowIndex);
+            }
           }
           break;
         case 'Escape':
@@ -205,12 +332,7 @@ function LedgerTable<T>({
           break;
       }
     },
-    [pageData, selectedRowIndex, rowKey, rowDetail, handleRowClick],
-  );
-
-  const totalRowKey = useCallback(
-    () => 'ledger-table-header',
-    [],
+    [pageData, selectedRowIndex, totalCols, rowKey, rowDetail, handleRowClick, toggleGroup],
   );
 
   if (columns.length === 0) {
@@ -223,9 +345,8 @@ function LedgerTable<T>({
 
   return (
     <div className="lt-root" role="region" aria-label={ariaLabel}>
-      {/* Toolbar */}
       <div className="lt-toolbar">
-        <div className="lt-toolbar-left">
+        <div className="lt-toolbar-left" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           <span className="lt-row-count">
             {data.length} row{data.length !== 1 ? 's' : ''}
           </span>
@@ -233,6 +354,19 @@ function LedgerTable<T>({
             <span className="lt-page-info">
               Page {currentPage + 1} of {totalPages}
             </span>
+          )}
+          {groupableColumns && groupableColumns.length > 0 && (
+            <select
+              value={groupBy as string || ''}
+              onChange={(e) => setGroupBy((e.target.value as keyof T) || null)}
+              className="lt-group-select"
+              aria-label="Group by"
+            >
+              <option value="">No Grouping</option>
+              {groupableColumns.map(c => (
+                <option key={String(c.key)} value={String(c.key)}>Group by {c.label}</option>
+              ))}
+            </select>
           )}
         </div>
         <div className="lt-toolbar-right">
@@ -294,7 +428,6 @@ function LedgerTable<T>({
         </div>
       </div>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="lt-pagination" role="navigation" aria-label="Table pagination">
           <button
@@ -321,7 +454,6 @@ function LedgerTable<T>({
         </div>
       )}
 
-      {/* Table Container */}
       <div
         ref={scrollRef}
         className={`lt-table-wrap ${DENSITY_CLASS[density]}`}
@@ -332,7 +464,6 @@ function LedgerTable<T>({
         onScroll={(e) => setScrollTop((e.target as HTMLDivElement).scrollTop)}
         aria-rowcount={pageData.length}
       >
-        {/* Sticky Header */}
         {stickyHeader && (
           <div className="lt-header" role="row" aria-rowindex={0}>
             {rowDetail && <div className="lt-cell lt-cell--detail" role="columnheader" aria-label="Detail" />}
@@ -350,21 +481,77 @@ function LedgerTable<T>({
           </div>
         )}
 
-        {/* Virtualized body */}
         <div
           className="lt-body"
           role="rowgroup"
           style={{ height: totalHeight, position: 'relative' }}
         >
-          {visibleRows.map((row, i) => {
+          {selectedRowIndex >= 0 && selectedRowIndex < pageData.length && (
+            <div
+              className={`lt-focus-ring-overlay ${focusedColumnIndex >= 0 ? 'lt-focus-ring-overlay--cell' : 'lt-focus-ring-overlay--row'}`}
+              data-testid="focus-ring-overlay"
+              role="presentation"
+              aria-hidden="true"
+              style={{
+                top: selectedRowIndex * rowHeight,
+                height: rowHeight,
+                ...(focusBounds
+                  ? { left: focusBounds.left, width: focusBounds.width }
+                  : { left: 0, right: 0 }),
+              }}
+            />
+          )}
+          {visibleRows.map((item, i) => {
             const globalIndex = startIndex + i;
+            const isRowFocused = selectedRowIndex === globalIndex;
+            
+            if (item.isGroup) {
+              const isCollapsed = collapsedGroups.has(item.key);
+              return (
+                <div
+                  key={`group-${item.key}`}
+                  ref={isRowFocused ? focusedRowRef : undefined}
+                  className={`lt-row lt-row--group ${selectedRowIndex === globalIndex ? 'lt-row--selected' : ''}`}
+                  role="row"
+                  aria-rowindex={globalIndex + 1}
+                  aria-expanded={!isCollapsed}
+                  style={{
+                    position: 'absolute',
+                    top: globalIndex * rowHeight,
+                    left: 0,
+                    right: 0,
+                    height: rowHeight,
+                  }}
+                  onClick={() => toggleGroup(item.key)}
+                  tabIndex={-1}
+                >
+                  <div className="lt-cell lt-cell--group-header" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                      type="button"
+                      className="lt-group-toggle"
+                      aria-label={isCollapsed ? 'Expand group' : 'Collapse group'}
+                      tabIndex={-1} // Handled by row focus
+                    >
+                      {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    {renderGroupHeader ? renderGroupHeader(item.value, item.items) : (
+                      <span className="font-medium">{String(item.value)} <span className="text-muted">({item.items.length})</span></span>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+
+            const row = item.row;
             const key = rowKey(row);
             const isSelected = selectedRow === key;
             const isDetailOpen = detailRow === key;
+            
             return (
               <React.Fragment key={key}>
                 <div
-                  className={`lt-row ${isSelected ? 'lt-row--selected' : ''}`}
+                  ref={isRowFocused ? focusedRowRef : undefined}
+                  className={`lt-row ${isSelected ? 'lt-row--selected' : ''} ${isRowFocused ? 'lt-row--focused' : ''}`}
                   role="row"
                   aria-rowindex={globalIndex + 1}
                   aria-selected={isSelected}
@@ -376,16 +563,13 @@ function LedgerTable<T>({
                     height: rowHeight,
                   }}
                   onClick={() => handleRowClick(row, globalIndex)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleRowClick(row, globalIndex);
-                    }
-                  }}
                   tabIndex={-1}
                 >
                   {rowDetail && (
-                    <div className="lt-cell lt-cell--detail">
+                    <div
+                      className={`lt-cell lt-cell--detail ${isRowFocused && focusedColumnIndex === 0 ? 'lt-cell--focused' : ''}`}
+                      onClick={(e) => handleCellClick(row, globalIndex, 0, e)}
+                    >
                       <button
                         type="button"
                         className="lt-detail-toggle"
@@ -395,6 +579,7 @@ function LedgerTable<T>({
                         }}
                         aria-label={isDetailOpen ? 'Close detail' : 'Open detail'}
                         aria-expanded={isDetailOpen}
+                        tabIndex={-1}
                       >
                         <ChevronRight
                           size={14}
@@ -404,16 +589,21 @@ function LedgerTable<T>({
                       </button>
                     </div>
                   )}
-                  {filteredColumns.map((col) => (
-                    <div
-                      key={col.key}
-                      className="lt-cell"
-                      role="gridcell"
-                      style={col.width ? { width: col.width, minWidth: col.width } : undefined}
-                    >
-                      {col.render(row)}
-                    </div>
-                  ))}
+                  {filteredColumns.map((col, cIdx) => {
+                    const colIndex = rowDetail ? cIdx + 1 : cIdx;
+                    const isCellFocused = isRowFocused && focusedColumnIndex === colIndex;
+                    return (
+                      <div
+                        key={col.key}
+                        className={`lt-cell ${isCellFocused ? 'lt-cell--focused' : ''}`}
+                        role="gridcell"
+                        style={col.width ? { width: col.width, minWidth: col.width } : undefined}
+                        onClick={(e) => handleCellClick(row, globalIndex, colIndex, e)}
+                      >
+                        {col.render(row)}
+                      </div>
+                    );
+                  })}
                 </div>
                 {isDetailOpen && rowDetail && (
                   <div

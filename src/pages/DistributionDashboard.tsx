@@ -1,14 +1,17 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '../components/Button';
+import { LockupClaimModal } from '../components/LockupClaimModal';
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
-import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
-import { GovernanceResults } from '../components/designSystem/GovernanceResults';
-import { GovernanceProposalDetail } from '../components/designSystem/GovernanceProposalDetail';
-import { ThumbnailGrid, ThumbnailFile } from '../components/ThumbnailGrid/ThumbnailGrid';
-import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
-import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { UploadQueue } from '../components/UploadQueue';
+import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { FinancialTermsForm } from '../components/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
 
 export const DistributionDashboard: React.FC = () => {
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [filterState, setFilterState] = useState<DistributionFilterState>(() => {
@@ -23,67 +26,30 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(
-    searchParams.get('payoutId')
-  );
-  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+export const DistributionDashboard: React.FC = () => {
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
 
-  const [uploadedFiles, setUploadedFiles] = useState<ThumbnailFile[]>([
-    { id: 'doc-1', name: 'Q3_Revenue_Report.pdf', size: 245760, type: 'application/pdf', previewUrl: '/previews/q3-report.png' },
-    { id: 'doc-2', name: 'Financial_Audit_2023.pdf', size: 524288, type: 'application/pdf' },
-    { id: 'doc-3', name: 'Distribution_Chart.png', size: 102400, type: 'image/png', previewUrl: '/previews/dist-chart.png' },
-    { id: 'doc-4', name: 'K-1_Distribution_Schedule.xlsx', size: 1048576, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-  ]);
+  const handleUploadAll = useCallback(() => {
+    uploadFiles(mockUploader);
+  }, [uploadFiles]);
 
-  const handleViewFile = useCallback((file: ThumbnailFile) => {
-    window.open(file.previewUrl || '#', '_blank', 'noopener,noreferrer');
-  }, []);
-
-  const handleReplaceFile = useCallback((file: ThumbnailFile) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.png,.jpg,.xlsx,.docx';
-    input.onchange = (e) => {
-      const selected = (e.target as HTMLInputElement).files?.[0];
-      if (!selected) return;
-      setUploadedFiles((prev) =>
-        prev.map((f) =>
-          f.id === file.id
-            ? { ...f, name: selected.name, size: selected.size, type: selected.type, previewUrl: selected.type.startsWith('image/') ? URL.createObjectURL(selected) : undefined }
-            : f
-        )
-      );
-    };
-    input.click();
-  }, []);
-
-  const handleRemoveFile = useCallback((fileId: string) => {
-    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  }, []);
-
-  const handleReorderFiles = useCallback((fileIds: string[]) => {
-    setUploadedFiles((prev) => fileIds.map((id) => prev.find((f) => f.id === id)!).filter(Boolean));
-  }, []);
-
-  const rowRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
-
-  const updateFiltersAndUrl = useCallback(
-    (newState: DistributionFilterState) => {
-      setFilterState(newState);
-
-      const params: Record<string, string> = {};
-      if (newState.searchQuery) params.search = newState.searchQuery;
-      if (newState.dateRange !== 'all') params.date = newState.dateRange;
-      if (newState.issuer !== 'all' && newState.issuer !== 'All Issuers') params.issuer = newState.issuer;
-      if (newState.region !== 'all' && newState.region !== 'All Regions') params.region = newState.region;
-      if (newState.status !== 'all' && newState.status !== 'All Statuses') params.status = newState.status;
-      if (newState.segmentBy !== 'none') params.segment = newState.segmentBy;
-      if (newState.compareMode) params.compare = 'true';
-      if (selectedPayoutId) params.payoutId = selectedPayoutId;
-
-      setSearchParams(params);
+  const handleRetry = useCallback(
+    (id: string, uploader: Uploader) => {
+      retryFile(id, uploader);
     },
-    [selectedPayoutId, setSearchParams]
+    [retryFile],
   );
 
   const handleResetFilters = useCallback(() => {
@@ -331,6 +297,44 @@ export const DistributionDashboard: React.FC = () => {
         />
       </div>
 
+      <section className="grid gap-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:grid-cols-[1.3fr_0.7fr] dark:border-slate-700 dark:bg-slate-900">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.2em] text-primary">Partial unlock ready</p>
+          <h2 className="mt-2 text-2xl font-semibold text-slate-900 dark:text-white">
+            A portion of your lockup has unlocked.
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Investors can claim immediately, defer the action, or turn on auto-claim for the next unlock so the experience remains simple and predictable.
+          </p>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Button type="button" onClick={() => setIsClaimModalOpen(true)}>
+              Review claim options
+            </Button>
+            <Link to="/investor/portal" className="inline-flex items-center rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-800">
+              Back to discovery
+            </Link>
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-800/70">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">Next action</p>
+          <p className="mt-2 text-3xl font-semibold text-slate-900 dark:text-white">$12,480.00</p>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Available to claim with a low gas estimate and clear options for later or automatic claiming.</p>
+        </div>
+      </section>
+
+      <EmptyState
+        variant="distribution-dashboard"
+        title="No distributions yet"
+        description="When revenue is reported and payouts are processed, your distribution history will appear here."
+        primaryAction={{
+          label: 'Report Revenue',
+          href: '/startup/report-revenue',
+        }}
+        secondaryAction={{
+          label: 'Back to Discovery',
+          href: '/investor/portal',
+        }}
       {/* Governance Proposal Detail */}
       <section aria-label="Governance proposal detail">
         <GovernanceProposalDetail
@@ -354,11 +358,23 @@ export const DistributionDashboard: React.FC = () => {
         />
       </section>
 
-      <GovernanceResults
-        results={{ for: 2500000, against: 450000, abstain: 50000 }}
-        participation={{ turnout: 68.4, uniqueVoters: 142, delegates: 12 }}
-        status="passed"
-      />
+      {/* Financial terms wizard step */}
+      <section aria-labelledby="financial-terms-heading">
+        <h2
+          id="financial-terms-heading"
+          style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-md)' }}
+        >
+          Configure Offering Terms
+        </h2>
+        <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
+          <FinancialTermsForm
+            onSubmit={(values: Record<FinancialTermsField, number>) => {
+              // Replace with real API call
+              console.log('Financial terms submitted:', values);
+            }}
+          />
+        </div>
+      </section>
 
       {/* Drill-down Panel */}
       <PayoutDrillDownPanel
@@ -368,6 +384,13 @@ export const DistributionDashboard: React.FC = () => {
         onClose={handleClosePanel}
         onRetryBatch={handleRetryBatch}
         onExportCsv={handleExportCsv}
+      />
+
+      <LockupClaimModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        unlockedAmount="$12,480.00"
+        gasEstimate={22}
       />
     </div>
   );

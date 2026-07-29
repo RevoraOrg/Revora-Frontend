@@ -17,6 +17,7 @@ export type EmptyStateAction = {
   onClick?: () => void;
   href?: string;
   ariaLabel?: string;
+  testId?: string;
 };
 
 export type EmptyStateProps = {
@@ -84,6 +85,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
           href={action.href}
           className={actionClass}
           aria-label={action.ariaLabel || action.label}
+          data-testid={action.testId}
         >
           {action.label}
         </a>
@@ -96,6 +98,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         className={actionClass}
         onClick={action.onClick}
         aria-label={action.ariaLabel || action.label}
+        data-testid={action.testId}
       >
         {action.label}
       </button>

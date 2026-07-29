@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-rout
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
@@ -24,6 +25,7 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/recover-2fa" element={<TwoFactorRecoveryPage />} />
 
           {/* Startup routes */}
           <Route
@@ -38,6 +40,11 @@ export function App() {
           <Route
             path="/startup/offering-registration"
             element={<OfferingRegistrationDemo />}
+          />
+          {/* Issue #247 – Governance proposal creation multi-step form */}
+          <Route
+            path="/startup/governance/proposals/create"
+            element={<GovernanceProposalCreatePage />}
           />
 
           {/* Investor routes */}

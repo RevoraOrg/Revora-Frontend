@@ -97,7 +97,9 @@ export const OfferingDetail: React.FC = () => {
         </button>
       </div>
 
-      {activeTab === 'payouts' ? (
+      {activeTab === 'compliance' ? (
+        <ComplianceSettingsTab />
+      ) : activeTab === 'payouts' ? (
         <PayoutSettingsTab />
       ) : activeTab === 'general' ? (
         <OfferingSettingsGeneralTab 
@@ -311,6 +313,7 @@ export const OfferingDetail: React.FC = () => {
           </div>
         </div>
       </div>
+      </>
       )}
     </div>
   );

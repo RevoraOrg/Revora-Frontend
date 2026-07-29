@@ -13,6 +13,7 @@ import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
+import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/settings" element={<SettingsPage />} />
 
           {/* Startup routes */}
           <Route
@@ -37,6 +39,11 @@ export function App() {
           <Route
             path="/startup/offering-registration"
             element={<OfferingRegistrationDemo />}
+          />
+          {/* Issue #247 – Governance proposal creation multi-step form */}
+          <Route
+            path="/startup/governance/proposals/create"
+            element={<GovernanceProposalCreatePage />}
           />
 
           {/* Investor routes */}

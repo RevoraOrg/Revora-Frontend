@@ -1,3 +1,7 @@
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button } from '../components/Button';
+import { LockupClaimModal } from '../components/LockupClaimModal';
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
@@ -6,10 +10,19 @@ import { GovernanceResults } from '../components/designSystem/GovernanceResults'
 import { GovernanceProposalDetail } from '../components/designSystem/GovernanceProposalDetail';
 import { ThumbnailGrid, ThumbnailFile } from '../components/ThumbnailGrid/ThumbnailGrid';
 import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
-import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { PreOpenBanner } from '../components/PreOpenBanner';
 
 export const DistributionDashboard: React.FC = () => {
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const preopenTargetDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    d.setHours(9, 0, 0, 0);
+    return d;
+  }, []);
 
   const [filterState, setFilterState] = useState<DistributionFilterState>(() => {
     return {
@@ -23,67 +36,30 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(
-    searchParams.get('payoutId')
-  );
-  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+export const DistributionDashboard: React.FC = () => {
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
 
-  const [uploadedFiles, setUploadedFiles] = useState<ThumbnailFile[]>([
-    { id: 'doc-1', name: 'Q3_Revenue_Report.pdf', size: 245760, type: 'application/pdf', previewUrl: '/previews/q3-report.png' },
-    { id: 'doc-2', name: 'Financial_Audit_2023.pdf', size: 524288, type: 'application/pdf' },
-    { id: 'doc-3', name: 'Distribution_Chart.png', size: 102400, type: 'image/png', previewUrl: '/previews/dist-chart.png' },
-    { id: 'doc-4', name: 'K-1_Distribution_Schedule.xlsx', size: 1048576, type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' },
-  ]);
+  const handleUploadAll = useCallback(() => {
+    uploadFiles(mockUploader);
+  }, [uploadFiles]);
 
-  const handleViewFile = useCallback((file: ThumbnailFile) => {
-    window.open(file.previewUrl || '#', '_blank', 'noopener,noreferrer');
-  }, []);
-
-  const handleReplaceFile = useCallback((file: ThumbnailFile) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.pdf,.png,.jpg,.xlsx,.docx';
-    input.onchange = (e) => {
-      const selected = (e.target as HTMLInputElement).files?.[0];
-      if (!selected) return;
-      setUploadedFiles((prev) =>
-        prev.map((f) =>
-          f.id === file.id
-            ? { ...f, name: selected.name, size: selected.size, type: selected.type, previewUrl: selected.type.startsWith('image/') ? URL.createObjectURL(selected) : undefined }
-            : f
-        )
-      );
-    };
-    input.click();
-  }, []);
-
-  const handleRemoveFile = useCallback((fileId: string) => {
-    setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
-  }, []);
-
-  const handleReorderFiles = useCallback((fileIds: string[]) => {
-    setUploadedFiles((prev) => fileIds.map((id) => prev.find((f) => f.id === id)!).filter(Boolean));
-  }, []);
-
-  const rowRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
-
-  const updateFiltersAndUrl = useCallback(
-    (newState: DistributionFilterState) => {
-      setFilterState(newState);
-
-      const params: Record<string, string> = {};
-      if (newState.searchQuery) params.search = newState.searchQuery;
-      if (newState.dateRange !== 'all') params.date = newState.dateRange;
-      if (newState.issuer !== 'all' && newState.issuer !== 'All Issuers') params.issuer = newState.issuer;
-      if (newState.region !== 'all' && newState.region !== 'All Regions') params.region = newState.region;
-      if (newState.status !== 'all' && newState.status !== 'All Statuses') params.status = newState.status;
-      if (newState.segmentBy !== 'none') params.segment = newState.segmentBy;
-      if (newState.compareMode) params.compare = 'true';
-      if (selectedPayoutId) params.payoutId = selectedPayoutId;
-
-      setSearchParams(params);
+  const handleRetry = useCallback(
+    (id: string, uploader: Uploader) => {
+      retryFile(id, uploader);
     },
-    [selectedPayoutId, setSearchParams]
+    [retryFile],
   );
 
   const handleResetFilters = useCallback(() => {
@@ -256,8 +232,23 @@ export const DistributionDashboard: React.FC = () => {
     return filteredPayouts.reduce((sum, p) => sum + p.retries.filter((r) => r.status === 'failed').length, 0);
   }, [filteredPayouts]);
 
+  const handlePreopenOptIn = useCallback(() => {
+    console.log('User opted in for redemption window reminder');
+  }, []);
+
+  const handlePreopenDismiss = useCallback(() => {
+    setBannerDismissed(true);
+  }, []);
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
+      {!bannerDismissed && (
+        <PreOpenBanner
+          targetDate={preopenTargetDate}
+          onOptIn={handlePreopenOptIn}
+          onDismiss={handlePreopenDismiss}
+        />
+      )}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -331,6 +322,18 @@ export const DistributionDashboard: React.FC = () => {
         />
       </div>
 
+      {/* Governance Section */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Governance</h2>
+        <a
+          href="/startup/governance/proposals/create"
+          className="payout-btn-primary"
+          style={{ fontSize: '0.875rem', padding: '0.5rem 1rem' }}
+        >
+          + Create Proposal
+        </a>
+      </div>
+
       {/* Governance Proposal Detail */}
       <section aria-label="Governance proposal detail">
         <GovernanceProposalDetail
@@ -354,11 +357,23 @@ export const DistributionDashboard: React.FC = () => {
         />
       </section>
 
-      <GovernanceResults
-        results={{ for: 2500000, against: 450000, abstain: 50000 }}
-        participation={{ turnout: 68.4, uniqueVoters: 142, delegates: 12 }}
-        status="passed"
-      />
+      {/* Financial terms wizard step */}
+      <section aria-labelledby="financial-terms-heading">
+        <h2
+          id="financial-terms-heading"
+          style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-md)' }}
+        >
+          Configure Offering Terms
+        </h2>
+        <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
+          <FinancialTermsForm
+            onSubmit={(values: Record<FinancialTermsField, number>) => {
+              // Replace with real API call
+              console.log('Financial terms submitted:', values);
+            }}
+          />
+        </div>
+      </section>
 
       {/* Drill-down Panel */}
       <PayoutDrillDownPanel
@@ -368,6 +383,13 @@ export const DistributionDashboard: React.FC = () => {
         onClose={handleClosePanel}
         onRetryBatch={handleRetryBatch}
         onExportCsv={handleExportCsv}
+      />
+
+      <LockupClaimModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        unlockedAmount="$12,480.00"
+        gasEstimate={22}
       />
     </div>
   );

@@ -20,6 +20,8 @@ import { EmptyState } from '../components/designSystem/EmptyState';
 import { SaveFilterDialog } from '../components/AuditTrailFilters/SaveFilterDialog';
 import { PinnedSearchSidebar } from '../components/AuditTrailFilters/PinnedSearchSidebar';
 import { ExportHistoryTable } from '../components/ExportHistory/ExportHistoryTable';
+import { EventDiffViewer } from '../components/EventDiffViewer';
+import type { EventDiff } from '../components/EventDiffViewer';
 import {
   type AuditFilterState,
   type SavedFilter,
@@ -44,15 +46,98 @@ export interface AuditEntry {
   actor: string;
   action: string;
   details: string;
+  /** Optional structured diff — when present a "Show diff" toggle appears */
+  diff?: EventDiff;
 }
 
 export const MOCK_AUDIT_ENTRIES: AuditEntry[] = [
-  { id: 'a1', timestamp: '2026-07-25T09:14:00Z', actor: 'maria.chen', action: 'payout', details: 'Approved payout batch #4821 (USDC 12,400)' },
-  { id: 'a2', timestamp: '2026-07-25T08:02:00Z', actor: 'system', action: 'payout', details: 'Payout batch #4821 settled on Stellar' },
-  { id: 'a3', timestamp: '2026-07-24T16:45:00Z', actor: 'j.okafor', action: 'investment', details: 'Investment of USDC 5,000 in TechFlow AI' },
-  { id: 'a4', timestamp: '2026-07-24T11:20:00Z', actor: 'maria.chen', action: 'compliance', details: 'Placed compliance hold on Quantum Ledger offering' },
-  { id: 'a5', timestamp: '2026-07-23T14:08:00Z', actor: 'system', action: 'report', details: 'Monthly revenue report ingested for Nexus Pay' },
-  { id: 'a6', timestamp: '2026-07-22T10:30:00Z', actor: 'j.okafor', action: 'login', details: 'Signed in from new device (2FA verified)' },
+  {
+    id: 'a1',
+    timestamp: '2026-07-25T09:14:00Z',
+    actor: 'maria.chen',
+    action: 'payout',
+    details: 'Approved payout batch #4821 (USDC 12,400)',
+    diff: {
+      eventType: 'payout.approved',
+      fields: [
+        { label: 'Status', before: 'pending', after: 'approved' },
+        { label: 'Approved by', before: undefined, after: 'maria.chen' },
+        { label: 'Amount (USDC)', before: '12400', after: '12400' },
+        { label: 'Approval note', before: undefined, after: 'Reviewed and cleared per Q2 compliance checklist.' },
+      ],
+    },
+  },
+  {
+    id: 'a2',
+    timestamp: '2026-07-25T08:02:00Z',
+    actor: 'system',
+    action: 'payout',
+    details: 'Payout batch #4821 settled on Stellar',
+    diff: {
+      eventType: 'payout.settled',
+      fields: [
+        { label: 'Status', before: 'approved', after: 'settled' },
+        { label: 'Tx hash', before: undefined, after: '0xabc…def' },
+        { label: 'Network', before: undefined, after: 'Stellar mainnet' },
+      ],
+    },
+  },
+  {
+    id: 'a3',
+    timestamp: '2026-07-24T16:45:00Z',
+    actor: 'j.okafor',
+    action: 'investment',
+    details: 'Investment of USDC 5,000 in TechFlow AI',
+    diff: {
+      eventType: 'investment.created',
+      fields: [
+        { label: 'Amount (USDC)', before: undefined, after: '5000' },
+        { label: 'Offering', before: undefined, after: 'TechFlow AI — Seed Round' },
+        { label: 'Investor', before: undefined, after: 'j.okafor' },
+        { label: 'KYC status', before: 'pending', after: 'verified' },
+      ],
+    },
+  },
+  {
+    id: 'a4',
+    timestamp: '2026-07-24T11:20:00Z',
+    actor: 'maria.chen',
+    action: 'compliance',
+    details: 'Placed compliance hold on Quantum Ledger offering',
+    diff: {
+      eventType: 'offering.compliance_hold',
+      fields: [
+        { label: 'Offering status', before: 'listed', after: 'compliance_hold' },
+        { label: 'Hold reason', before: undefined, after: 'Missing audited financials for FY2025.' },
+        { label: 'Hold expiry', before: undefined, after: '2026-08-07' },
+        { label: 'Config (JSON)', before: '{"visible":true,"accepting_investments":true}', after: '{"visible":false,"accepting_investments":false}' },
+      ],
+    },
+  },
+  {
+    id: 'a5',
+    timestamp: '2026-07-23T14:08:00Z',
+    actor: 'system',
+    action: 'report',
+    details: 'Monthly revenue report ingested for Nexus Pay',
+    diff: {
+      eventType: 'revenue_report.ingested',
+      fields: [
+        { label: 'Report period', before: undefined, after: '2026-06' },
+        { label: 'Gross revenue (USD)', before: '0', after: '184320.50' },
+        { label: 'Submitted by', before: undefined, after: 'system (CSV import)' },
+        { label: 'Verification hash', before: undefined, after: '__redacted__' },
+      ],
+    },
+  },
+  {
+    id: 'a6',
+    timestamp: '2026-07-22T10:30:00Z',
+    actor: 'j.okafor',
+    action: 'login',
+    details: 'Signed in from new device (2FA verified)',
+    // No diff — not all event types produce a field-level diff
+  },
 ];
 
 export const ACTION_OPTIONS = ['payout', 'investment', 'compliance', 'report', 'login'] as const;
@@ -316,7 +401,17 @@ export const AuditTrail: React.FC<AuditTrailProps> = ({ entries = MOCK_AUDIT_ENT
                       <td>{new Date(entry.timestamp).toLocaleString()}</td>
                       <td>{entry.actor}</td>
                       <td>{entry.action}</td>
-                      <td>{entry.details}</td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+                          <span>{entry.details}</span>
+                          {entry.diff && (
+                            <EventDiffViewer
+                              diff={entry.diff}
+                              entryLabel={`${entry.actor} ${entry.action} at ${new Date(entry.timestamp).toLocaleString()}`}
+                            />
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

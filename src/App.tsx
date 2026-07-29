@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-rout
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
+import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
@@ -13,6 +14,7 @@ import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
+import { StartupDashboard } from "./pages/StartupDashboard";
 
 export function App() {
   return (
@@ -23,11 +25,12 @@ export function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/recover-2fa" element={<TwoFactorRecoveryPage />} />
 
           {/* Startup routes */}
           <Route
             path="/startup/dashboard"
-            element={<Placeholder title="Startup Dashboard" />}
+            element={<StartupDashboard />}
           />
           <Route
             path="/startup/report-revenue"
@@ -37,6 +40,11 @@ export function App() {
           <Route
             path="/startup/offering-registration"
             element={<OfferingRegistrationDemo />}
+          />
+          {/* Issue #247 – Governance proposal creation multi-step form */}
+          <Route
+            path="/startup/governance/proposals/create"
+            element={<GovernanceProposalCreatePage />}
           />
 
           {/* Investor routes */}
@@ -96,6 +104,9 @@ function Home() {
           <section className="home-section glass-card">
             <h2 className="home-section-title">Startup Dashboard</h2>
             <ul className="home-list">
+              <li>
+                • <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
+              </li>
               <li>• Configure RevenueShare offerings</li>
               <li>
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>

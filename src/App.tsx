@@ -13,6 +13,7 @@ import NotificationBell from "./components/Notifications/NotificationBell";
 import { notificationsMock } from "./components/Notifications/notificationsData";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
+import { StartupDashboard } from "./pages/StartupDashboard";
 
 export function App() {
   return (
@@ -27,7 +28,7 @@ export function App() {
           {/* Startup routes */}
           <Route
             path="/startup/dashboard"
-            element={<Placeholder title="Startup Dashboard" />}
+            element={<StartupDashboard />}
           />
           <Route
             path="/startup/report-revenue"
@@ -96,6 +97,9 @@ function Home() {
           <section className="home-section glass-card">
             <h2 className="home-section-title">Startup Dashboard</h2>
             <ul className="home-list">
+              <li>
+                • <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
+              </li>
               <li>• Configure RevenueShare offerings</li>
               <li>
                 • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>

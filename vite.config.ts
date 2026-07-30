@@ -45,6 +45,9 @@ export default defineConfig({
         'src/components/CommandPalette/CommandPalette.tsx',
         'src/components/CommandPalette/commandPaletteData.ts',
         'src/hooks/useCommandPalette.ts',
+        // Investor Statement
+        'src/components/InvestorStatement/InvestorStatement.tsx',
+        'src/components/InvestorStatement/usePrintStatement.ts',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {

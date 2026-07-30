@@ -14,7 +14,7 @@
 
 ### Phase 3: Testing
 - [x] 7. Create `src/components/InvestorStatement/InvestorStatement.test.tsx` - tests for accessibility, semantics, and rendering
-- [ ] 8. Update `vite.config.ts` - add coverage thresholds for new components
+- [x] 8. Update `vite.config.ts` - add coverage thresholds for new components
 
 ### Phase 4: Verification
 - [ ] 9. Run linting and fix any issues

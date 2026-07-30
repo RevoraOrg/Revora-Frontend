@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+
 import { AdminHero } from '../components/AdminHero';
 import type { AdminTileData, IncidentData } from '../components/AdminHero';
 import { Button } from '../components/Button';
@@ -202,7 +201,7 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-export const DistributionDashboard: React.FC = () => {
+
   const {
     queue,
     addFiles,
@@ -415,7 +414,7 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
+
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}

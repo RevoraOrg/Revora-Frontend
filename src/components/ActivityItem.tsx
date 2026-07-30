@@ -1,4 +1,5 @@
 import React from 'react';
+import { CheckCheck } from 'lucide-react';
 import payoutIcon from '../assets/icons/payout.svg';
 import offeringIcon from '../assets/icons/offering.svg';
 import blacklistIcon from '../assets/icons/blacklist.svg';
@@ -32,16 +33,23 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onMarkRead }) => 
   
   return (
     <div 
-      className={`activity-item glass-card-interactive ${!isRead ? 'unread' : ''}`} 
+      className={`activity-item glass-card-interactive ${!isRead ? 'unread' : 'read'}`} 
       role="article"
-      aria-current={!isRead ? 'true' : 'false'}
+      aria-current={!isRead ? 'true' : undefined}
+      aria-label={`${title}${!isRead ? ', unread' : ', read'}`}
     >
       <div className="activity-item-indicator" aria-hidden="true">
-        {!isRead && <span className="unread-dot" title="Unread" />}
+        {!isRead ? (
+          <span className="unread-dot" title="Unread" />
+        ) : (
+          <span className="read-indicator" title="Read" />
+        )}
       </div>
       <img src={Icon} alt="" aria-hidden="true" className="activity-icon" />
       <div className="activity-content">
-        <h3 className="activity-title text-primary">{title}</h3>
+        <h3 className={`activity-title ${!isRead ? 'activity-title-unread' : 'text-primary'}`}>
+          {title}
+        </h3>
         <p className="activity-description text-muted">{description}</p>
       </div>
       <div className="activity-meta">
@@ -50,10 +58,11 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onMarkRead }) => 
           <button 
             className="mark-read-btn" 
             onClick={() => onMarkRead(id)}
-            aria-label="Mark item as read"
+            aria-label={`Mark "${title}" as read`}
             title="Mark as read"
           >
-            Mark read
+            <CheckCheck size={12} aria-hidden="true" />
+            <span>Read</span>
           </button>
         )}
       </div>

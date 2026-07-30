@@ -7,10 +7,11 @@
   padding: var(--spacing-md, 1rem);
   align-items: flex-start;
   transition: background-color 0.2s, box-shadow 0.2s;
+  border-radius: var(--radius-sm, 6px);
 }
 
 .activity-item-indicator {
-  width: 12px;
+  width: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -18,40 +19,117 @@
   padding-top: 6px;
 }
 
+/* Unread dot - pulsing blue dot */
 .unread-dot {
   width: 8px;
   height: 8px;
   background-color: var(--primary, #3b82f6);
   border-radius: 50%;
   display: inline-block;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  animation: unreadPulse 2s ease-in-out infinite;
 }
 
+@keyframes unreadPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+  }
+}
+
+/* Read indicator - subtle empty circle */
+.read-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1.5px solid var(--text-muted, #64748b);
+  opacity: 0.4;
+}
+
+/* Background highlight for unread items */
 .activity-item.unread {
-  background-color: var(--glass-bg-accent, rgba(30, 41, 59, 0.5));
+  background-color: rgba(59, 130, 246, 0.04);
+  border-left: 3px solid var(--primary, #3b82f6);
+  border-radius: 0 var(--radius-sm, 6px) var(--radius-sm, 6px) 0;
+}
+
+.activity-item.unread:hover {
+  background-color: rgba(59, 130, 246, 0.07);
+}
+
+/* Read items get subtle hover */
+.activity-item.read:hover {
+  background-color: rgba(148, 163, 184, 0.04);
+}
+
+.activity-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-title {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  margin: 0 0 2px;
+  color: var(--text-main, #e5e7eb);
+}
+
+.activity-title-unread {
+  font-weight: var(--font-weight-bold, 700);
+  color: var(--text-main, #f1f5f9);
+}
+
+.activity-description {
+  font-size: var(--font-size-xs, 0.8125rem);
+  margin: 0;
+  color: var(--text-muted, #94a3b8);
+  line-height: 1.4;
 }
 
 .activity-meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: var(--spacing-xs, 0.5rem);
+  gap: var(--spacing-3xs, 0.25rem);
   margin-left: auto;
+  flex-shrink: 0;
+}
+
+.activity-time {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
 }
 
 .mark-read-btn {
   opacity: 0;
-  background: var(--primary, #3b82f6);
-  color: white;
-  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--primary, #3b82f6);
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: var(--radius-sm, 6px);
-  padding: var(--spacing-3xs, 0.25rem) var(--spacing-xs, 0.5rem);
-  font-size: var(--font-size-xs, 0.75rem);
+  padding: 2px var(--spacing-xs, 0.5rem);
+  font-size: var(--font-size-xs, 0.6875rem);
+  font-weight: var(--font-weight-medium, 500);
   cursor: pointer;
-  transition: opacity 0.2s, background-color 0.2s;
+  transition: opacity 0.2s, background-color 0.2s, border-color 0.2s;
 }
 
 .mark-read-btn:hover {
-  background: var(--primary-hover, #2563eb);
+  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
 }
 
 .mark-read-btn:focus-visible {
@@ -65,9 +143,49 @@
   opacity: 1;
 }
 
-/* Fallbacks for mobile devices - always show the button if unread */
+/* Fallbacks for touch devices - always show the button if unread */
 @media (hover: none) {
   .mark-read-btn {
     opacity: 1;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .unread-dot {
+    animation: none;
+  }
+
+  .activity-item {
+    transition: none;
+  }
+}
+
+/* High contrast mode / forced colors */
+@media (forced-colors: active) {
+  .unread-dot {
+    background-color: Highlight;
+    box-shadow: none;
+  }
+
+  .read-indicator {
+    border-color: GrayText;
+    opacity: 1;
+  }
+
+  .activity-item.unread {
+    border-left: 3px solid Highlight;
+    background-color: inherit;
+  }
+
+  .mark-read-btn {
+    border: 1px solid ButtonText;
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .mark-read-btn:hover {
+    background: Highlight;
+    color: HighlightText;
   }
 }

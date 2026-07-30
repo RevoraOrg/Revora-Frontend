@@ -5,22 +5,53 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md, 1rem);
+  flex-wrap: wrap;
+  gap: var(--spacing-xs, 0.5rem);
+}
+
+.activity-feed-title {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-main, #e5e7eb);
+  margin: 0;
+}
+
+.unread-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1;
+  color: #fff;
+  background-color: var(--primary, #3b82f6);
+  border-radius: 999px;
 }
 
 .mark-all-read-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-3xs, 0.25rem);
   background: transparent;
   color: var(--primary, #3b82f6);
   border: 1px solid var(--primary, #3b82f6);
   border-radius: var(--radius-sm, 6px);
-  padding: var(--spacing-xs, 0.5rem) var(--spacing-md, 1rem);
+  padding: var(--spacing-3xs, 0.25rem) var(--spacing-sm, 0.75rem);
   font-size: var(--font-size-sm, 0.875rem);
   font-weight: var(--font-weight-medium, 500);
   cursor: pointer;
-  transition: background-color 0.2s, color 0.2s;
+  transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
 }
 
 .mark-all-read-btn:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.3);
 }
 
 .mark-all-read-btn:focus-visible {
@@ -28,9 +59,14 @@
   outline-offset: 2px;
 }
 
+.mark-all-read-btn:active {
+  transform: scale(0.97);
+}
+
+/* Undo banner */
 .undo-banner {
-  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
-  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  background: var(--glass-bg, rgba(15, 23, 42, 0.92));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2));
   color: var(--text-main, #e5e7eb);
   padding: var(--spacing-sm, 0.75rem) var(--spacing-md, 1rem);
   border-radius: var(--radius-md, 8px);
@@ -38,8 +74,64 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md, 1rem);
-  box-shadow: var(--shadow-sm);
+  box-shadow: var(--shadow-md, 0 4px 6px -1px rgba(0, 0, 0, 0.3));
   animation: slideDown 0.3s ease-out forwards;
+  gap: var(--spacing-sm, 0.75rem);
+}
+
+.undo-message {
+  font-size: var(--font-size-sm, 0.875rem);
+  flex: 1;
+}
+
+.undo-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  flex-shrink: 0;
+}
+
+.undo-btn {
+  background: transparent;
+  color: var(--primary, #3b82f6);
+  border: 1px solid var(--primary, #3b82f6);
+  font-weight: var(--font-weight-semibold, 600);
+  font-size: var(--font-size-sm, 0.875rem);
+  cursor: pointer;
+  padding: var(--spacing-3xs, 0.25rem) var(--spacing-sm, 0.75rem);
+  border-radius: var(--radius-xs, 4px);
+  transition: background-color 0.2s;
+}
+
+.undo-btn:hover {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.undo-btn:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.undo-dismiss {
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  border: none;
+  cursor: pointer;
+  padding: var(--spacing-3xs, 0.25rem);
+  border-radius: var(--radius-xs, 4px);
+  font-size: var(--font-size-sm, 0.875rem);
+  line-height: 1;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.undo-dismiss:hover {
+  color: var(--text-main, #e5e7eb);
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.undo-dismiss:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
 }
 
 @keyframes slideDown {
@@ -53,26 +145,19 @@
   }
 }
 
-.undo-btn {
-  background: transparent;
-  color: var(--primary, #3b82f6);
-  border: none;
-  font-weight: var(--font-weight-semibold, 600);
-  cursor: pointer;
-  padding: var(--spacing-3xs, 0.25rem) var(--spacing-xs, 0.5rem);
-  border-radius: var(--radius-xs, 4px);
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .undo-banner {
+    animation: none;
+  }
+
+  .mark-all-read-btn:active {
+    transform: none;
+  }
 }
 
-.undo-btn:hover {
-  text-decoration: underline;
-}
-
-.undo-btn:focus-visible {
-  outline: 2px solid var(--primary, #3b82f6);
-  outline-offset: 2px;
-}
-
-.visually-hidden {
+/* Screen-reader only utility */
+.sr-only {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -82,4 +167,52 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* Loading state */
+.activity-feed-loading {
+  padding: var(--spacing-lg, 1.5rem);
+  text-align: center;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* High contrast mode / forced colors */
+@media (forced-colors: active) {
+  .unread-count-badge {
+    background-color: Highlight;
+    color: HighlightText;
+    border: 1px solid Highlight;
+  }
+
+  .mark-all-read-btn {
+    border: 1px solid ButtonText;
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .mark-all-read-btn:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .undo-banner {
+    border: 1px solid CanvasText;
+    background: Canvas;
+  }
+
+  .undo-btn {
+    border: 1px solid ButtonText;
+    color: ButtonText;
+    background: ButtonFace;
+  }
+
+  .undo-btn:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .undo-dismiss:hover {
+    background: Highlight;
+    color: HighlightText;
+  }
 }

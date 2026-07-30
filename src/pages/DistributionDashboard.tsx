@@ -1,193 +1,430 @@
-import React, { useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
-import { Upload, FileUp } from 'lucide-react';
-import { ThumbnailPreviewGrid } from '../components/ThumbnailPreviewGrid';
-import type { UploadedFile, FileCategory } from '../types/file';
-import { FILE_CATEGORY_MAP } from '../types/file';
+import React, { useState, useMemo, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { AdminHero } from '../components/AdminHero';
+import type { AdminTileData, IncidentData } from '../components/AdminHero';
+import { LockupClaimModal } from '../components/LockupClaimModal';
+import type { DistributionFilterState } from '../components/DistributionFilterToolbar/DistributionFilterToolbar.types';
+import type { PayoutDetail, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
+import { ErrorRateSparklineTile } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
+import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
+import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
+import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
+import { BlacklistBulkRemoveConfirm } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
 
-const DEMO_FILES: UploadedFile[] = [
+interface ExtendedPayoutDetail extends PayoutDetail {
+  region: string;
+}
+
+const MOCK_RECIPIENTS_BASE: RecipientItem[] = [
+  { id: 'r1', walletAddress: 'GA…abcd', name: 'Alice', tier: 'Gold', sharePercentage: 40, amount: 40000, status: 'success', gasAllocatedGwei: 18 },
+  { id: 'r2', walletAddress: 'GB…ef01', name: 'Bob', tier: 'Silver', sharePercentage: 30, amount: 30000, status: 'success', gasAllocatedGwei: 18 },
+  { id: 'r3', walletAddress: 'GC…2345', name: 'Carol', tier: 'Bronze', sharePercentage: 20, amount: 20000, status: 'success', gasAllocatedGwei: 18 },
+  { id: 'r4', walletAddress: 'GD…6789', name: 'Dave', tier: 'Bronze', sharePercentage: 10, amount: 10000, status: 'pending', gasAllocatedGwei: 18 },
+];
+
+const MOCK_RETRIES: RetryEvent[] = [
+  { id: 'ret-1', timestamp: '2026-07-20T10:00:00Z', attemptNumber: 1, status: 'failed', reason: 'Gas estimation underrun.', gasUsedGwei: 21 },
+  { id: 'ret-2', timestamp: '2026-07-21T14:30:00Z', attemptNumber: 2, status: 'success', reason: 'Retry with adjusted gas.', gasUsedGwei: 22 },
+];
+
+const MOCK_PAYOUTS: ExtendedPayoutDetail[] = [
   {
-    id: '1',
-    name: 'revenue-report-q4-2025.pdf',
-    size: 2_450_000,
-    type: 'application/pdf',
-    category: 'pdf',
-    uploadedAt: new Date('2025-12-15'),
-    status: 'complete',
+    id: 'PO-2026-004', payoutNumber: 'PO-2026-004', date: '2026-07-15', time: '14:30 UTC',
+    status: 'completed', grossAmount: 105000, netAmount: 100000, protocolFeeUsd: 5000,
+    currency: 'USDC', offeringName: 'Nexus Cloud Series A', offeringId: 'off-nexus-001',
+    gasFeeUsd: 42.50, gasFeeEth: 0.018, gasPriceGwei: 22, estimatedGasUsd: 45, estimatedGasPriceGwei: 24,
+    executionNetwork: 'Stellar', blockNumber: 8912345, contractAddress: '0x…789A', transactionHash: '0x…DEF0',
+    recipientsCount: 4, recipients: MOCK_RECIPIENTS_BASE, retries: [],
+    region: 'North America', nextPayoutDate: '2026-08-15', nextPayoutEstimateUsd: 105000, nextPayoutLink: '/startup/distributions?payoutId=PO-2026-005',
   },
   {
-    id: '2',
-    name: 'product-mockup-final.png',
-    size: 5_120_000,
-    type: 'image/png',
-    category: 'image',
-    previewUrl: 'https://picsum.photos/seed/mockup/400/300',
-    uploadedAt: new Date('2025-12-14'),
-    status: 'complete',
-  },
-  {
-    id: '3',
-    name: 'financial-projections-2026.xlsx',
-    size: 890_000,
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    category: 'spreadsheet',
-    uploadedAt: new Date('2025-12-13'),
-    status: 'complete',
-  },
-  {
-    id: '4',
-    name: 'pitch-deck-investors.pptx',
-    size: 12_300_000,
-    type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-    category: 'presentation',
-    uploadedAt: new Date('2025-12-12'),
-    status: 'complete',
-  },
-  {
-    id: '5',
-    name: 'team-photo-offsite.jpg',
-    size: 3_780_000,
-    type: 'image/jpeg',
-    category: 'image',
-    previewUrl: 'https://picsum.photos/seed/team/400/300',
-    uploadedAt: new Date('2025-12-11'),
-    status: 'complete',
-  },
-  {
-    id: '6',
-    name: 'source-code-archive.zip',
-    size: 45_600_000,
-    type: 'application/zip',
-    category: 'archive',
-    uploadedAt: new Date('2025-12-10'),
-    status: 'uploading',
-    progress: 67,
+    id: 'PO-2026-003', payoutNumber: 'PO-2026-003', date: '2026-07-10', time: '09:15 UTC',
+    status: 'failed', grossAmount: 82000, netAmount: 78000, protocolFeeUsd: 4000,
+    currency: 'USDC', offeringName: 'AeroDynamics Fund II', offeringId: 'off-aero-002',
+    gasFeeUsd: 38.20, gasFeeEth: 0.016, gasPriceGwei: 21, estimatedGasUsd: 40, estimatedGasPriceGwei: 23,
+    executionNetwork: 'Stellar', blockNumber: 8901234, contractAddress: '0x…456B', transactionHash: '0x…789C',
+    recipientsCount: 4, recipients: MOCK_RECIPIENTS_BASE, retries: MOCK_RETRIES,
+    region: 'Europe', nextPayoutDate: '2026-08-10', nextPayoutEstimateUsd: 85000, nextPayoutLink: '/startup/distributions?payoutId=PO-2026-005',
   },
 ];
 
-function getDemoCategory(type: string): FileCategory {
-  return FILE_CATEGORY_MAP[type] || 'other';
-}
+const MOCK_REVENUE_PAYOUT_DATA: RevenuePayoutDataPoint[] = [
+  { period: 'Jan', revenue: 95000, payout: 90000 },
+  { period: 'Feb', revenue: 110000, payout: 105000 },
+  { period: 'Mar', revenue: 105000, payout: 95000 },
+  { period: 'Apr', revenue: 125000, payout: 115000 },
+  { period: 'May', revenue: 140000, payout: 130000 },
+  { period: 'Jun', revenue: 135000, payout: 125000 },
+];
+
+const ERROR_RATE_BY_ISSUER: Array<{
+  id: string; title: string; value: string; rate: number; delta: number;
+  sparklineData: ErrorRateDataPoint[]; filterValue: string;
+}> = [
+  {
+    id: 'issuer-acme', title: 'ERROR RATE', value: '2.4%', rate: 2.4, delta: -0.8,
+    sparklineData: [
+      { label: 'W1', value: 3.2 }, { label: 'W2', value: 2.8 },
+      { label: 'W3', value: 3.5 }, { label: 'W4', value: 2.4 },
+    ],
+    filterValue: 'Nexus Cloud Series A',
+  },
+  {
+    id: 'issuer-nexus', title: 'ERROR RATE', value: '4.1%', rate: 4.1, delta: 1.2,
+    sparklineData: [
+      { label: 'W1', value: 2.9 }, { label: 'W2', value: 3.3 },
+      { label: 'W3', value: 3.8 }, { label: 'W4', value: 4.1 },
+    ],
+    filterValue: 'AeroDynamics Fund II',
+  },
+  {
+    id: 'issuer-aero', title: 'ERROR RATE', value: '1.2%', rate: 1.2, delta: -0.3,
+    sparklineData: [
+      { label: 'W1', value: 1.5 }, { label: 'W2', value: 1.8 },
+      { label: 'W3', value: 1.3 }, { label: 'W4', value: 1.2 },
+    ],
+    filterValue: 'StellarTech Ventures',
+  },
+  {
+    id: 'issuer-stellar', title: 'ERROR RATE', value: '3.7%', rate: 3.7, delta: 0.5,
+    sparklineData: [
+      { label: 'W1', value: 3.2 }, { label: 'W2', value: 3.4 },
+      { label: 'W3', value: 3.6 }, { label: 'W4', value: 3.7 },
+    ],
+    filterValue: 'Quantum Labs',
+  },
+];
+
+const ERROR_RATE_BY_REGION: Array<{
+  id: string; title: string; value: string; rate: number; delta: number;
+  sparklineData: ErrorRateDataPoint[]; filterValue: string;
+}> = [
+  {
+    id: 'region-na', title: 'ERROR RATE', value: '2.8%', rate: 2.8, delta: 0.4,
+    sparklineData: [
+      { label: 'W1', value: 2.4 }, { label: 'W2', value: 2.6 },
+      { label: 'W3', value: 2.7 }, { label: 'W4', value: 2.8 },
+    ],
+    filterValue: 'North America',
+  },
+  {
+    id: 'region-eu', title: 'ERROR RATE', value: '1.9%', rate: 1.9, delta: -0.6,
+    sparklineData: [
+      { label: 'W1', value: 2.5 }, { label: 'W2', value: 2.3 },
+      { label: 'W3', value: 2.0 }, { label: 'W4', value: 1.9 },
+    ],
+    filterValue: 'Europe',
+  },
+  {
+    id: 'region-apac', title: 'ERROR RATE', value: '3.5%', rate: 3.5, delta: 0.9,
+    sparklineData: [
+      { label: 'W1', value: 2.6 }, { label: 'W2', value: 2.9 },
+      { label: 'W3', value: 3.2 }, { label: 'W4', value: 3.5 },
+    ],
+    filterValue: 'Asia Pacific',
+  },
+  {
+    id: 'region-latam', title: 'ERROR RATE', value: '2.1%', rate: 2.1, delta: -0.2,
+    sparklineData: [
+      { label: 'W1', value: 2.3 }, { label: 'W2', value: 2.2 },
+      { label: 'W3', value: 2.2 }, { label: 'W4', value: 2.1 },
+    ],
+    filterValue: 'Latin America',
+  },
+];
+
+const SAMPLE_TILES: AdminTileData[] = [
+  {
+    id: 'api-latency',
+    label: 'API Latency',
+    value: '42ms',
+    status: 'healthy',
+    detail: 'Avg response time – p95 under 100ms',
+    href: '/admin/api-latency',
+  },
+  {
+    id: 'relay-health',
+    label: 'On-Chain Relay',
+    value: 'Connected',
+    status: 'healthy',
+    detail: 'Last confirmed block: 2s ago',
+    href: '/admin/relay-health',
+  },
+  {
+    id: 'open-alerts',
+    label: 'Open Alerts',
+    value: '3',
+    status: 'degraded',
+    detail: '2 medium, 1 low severity',
+    href: '/admin/alerts',
+  },
+  {
+    id: 'compliance-holds',
+    label: 'Compliance Holds',
+    value: '1',
+    status: 'outage',
+    detail: 'Identity reverification required for investor KYB-042',
+    href: '/admin/compliance',
+  },
+];
+
+const SAMPLE_INCIDENT: IncidentData | null = null;
 
 export const DistributionDashboard: React.FC = () => {
-  const [files, setFiles] = useState<UploadedFile[]>(DEMO_FILES);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
+  const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
+  const [payoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
 
-  const handleView = useCallback((fileId: string) => {
-    const file = files.find((f) => f.id === fileId);
-    if (file?.previewUrl) {
-      window.open(file.previewUrl, '_blank', 'noopener,noreferrer');
-    }
-    console.log('View file:', fileId);
-  }, [files]);
-
-  const handleReplace = useCallback((fileId: string) => {
-    console.log('Replace file:', fileId);
+  const preopenTargetDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 3);
+    d.setHours(9, 0, 0, 0);
+    return d;
   }, []);
 
-  const handleRemove = useCallback((fileId: string) => {
-    setFiles((prev) => prev.filter((f) => f.id !== fileId));
+  const [filterState, setFilterState] = useState<DistributionFilterState>({
+    searchQuery: searchParams.get('search') || '',
+    dateRange: (searchParams.get('date') as DistributionFilterState['dateRange']) || 'all',
+    issuer: searchParams.get('issuer') || 'all',
+    region: searchParams.get('region') || 'all',
+    status: searchParams.get('status') || 'all',
+    segmentBy: (searchParams.get('segment') as DistributionFilterState['segmentBy']) || 'none',
+    compareMode: searchParams.get('compare') === 'true',
+  });
+
+  const updateFiltersAndUrl = useCallback((newState: DistributionFilterState) => {
+    setFilterState(newState);
   }, []);
 
-  const handleReorder = useCallback((fromIndex: number, toIndex: number) => {
-    setFiles((prev) => {
-      const next = [...prev];
-      const [moved] = next.splice(fromIndex, 1);
-      next.splice(toIndex, 0, moved);
-      return next;
-    });
-  }, []);
+  const handleResetFilters = useCallback(() => {
+    const defaultState: DistributionFilterState = {
+      searchQuery: '',
+      dateRange: 'all',
+      issuer: 'all',
+      region: 'all',
+      status: 'all',
+      segmentBy: 'none',
+      compareMode: false,
+    };
+    updateFiltersAndUrl(defaultState);
+  }, [updateFiltersAndUrl]);
 
-  const handleUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selected = e.target.files;
-    if (!selected) return;
-
-    const newFiles: UploadedFile[] = Array.from(selected).map((f) => ({
-      id: crypto.randomUUID(),
-      name: f.name,
-      size: f.size,
-      type: f.type,
-      category: getDemoCategory(f.type),
-      previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
-      uploadedAt: new Date(),
-      status: 'complete' as const,
-    }));
-
-    setFiles((prev) => [...prev, ...newFiles]);
-    e.target.value = '';
+  const handleOpenPanel = (id: string) => {
+    setSelectedPayoutId(id);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('payoutId', id);
+    setSearchParams(newParams);
   };
 
-  const completedCount = files.filter((f) => f.status === 'complete').length;
-  const uploadingCount = files.filter((f) => f.status === 'uploading').length;
+  const handleClosePanel = () => {
+    setSelectedPayoutId(null);
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('payoutId');
+    setSearchParams(newParams);
+  };
+
+  const filteredPayouts = useMemo(() => {
+    return payoutsList.filter((p) => {
+      const search = filterState.searchQuery.toLowerCase();
+      if (
+        search &&
+        !p.id.toLowerCase().includes(search) &&
+        !p.offeringName.toLowerCase().includes(search) &&
+        !p.payoutNumber.toLowerCase().includes(search)
+      ) {
+        return false;
+      }
+      if (filterState.issuer !== 'all' && p.offeringName !== filterState.issuer) return false;
+      if (filterState.region !== 'all' && p.region !== filterState.region) return false;
+      if (filterState.status !== 'all' && p.status !== filterState.status) return false;
+      return true;
+    });
+  }, [payoutsList, filterState]);
+
+  const selectedPayoutData = useMemo(() => {
+    return payoutsList.find((p) => p.id === selectedPayoutId) || null;
+  }, [payoutsList, selectedPayoutId]);
+
+  const totalDistributed = useMemo(() => filteredPayouts.reduce((sum, p) => sum + p.netAmount, 0), [filteredPayouts]);
+  const totalGasSpent = useMemo(() => filteredPayouts.reduce((sum, p) => sum + p.gasFeeUsd, 0), [filteredPayouts]);
+  const activePayouts = useMemo(() => filteredPayouts.filter((p) => p.status === 'processing' || p.status === 'scheduled').length, [filteredPayouts]);
+  const pendingRetries = useMemo(() => filteredPayouts.reduce((sum, p) => sum + p.retries.filter((r) => r.status === 'failed').length, 0), [filteredPayouts]);
+
+  const handlePreopenOptIn = useCallback(() => {
+    console.log('User opted in for redemption window reminder');
+  }, []);
+
+  const handlePreopenDismiss = useCallback(() => {
+    setBannerDismissed(true);
+  }, []);
 
   return (
-    <div className="min-h-screen p-6 md:p-10 animate-fade-in">
-      <div className="max-w-[1100px] mx-auto">
-        <header className="mb-8">
-          <Link to="/" className="text-sm text-muted hover:text-main transition-colors mb-4 inline-block">
-            &larr; Back to Home
-          </Link>
-          <h1 className="text-3xl font-bold tracking-tight mb-2">Document Preview</h1>
-          <p className="text-muted text-sm">
-            Review uploaded files before distribution. Drag to reorder or use keyboard shortcuts.
+    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+      <AdminHero
+        tiles={SAMPLE_TILES}
+        incident={SAMPLE_INCIDENT}
+        onDismissIncident={(id) => {
+          console.log('Dismissed incident:', id);
+        }}
+      />
+
+      {!bannerDismissed && (
+        <div className="glass-card p-4 flex items-center justify-between">
+          <span className="text-sm text-muted">Pre-open redemption window opens in 3 days</span>
+          <button onClick={handlePreopenDismiss} className="text-xs text-primary hover:text-primary-hover">Dismiss</button>
+        </div>
+      )}
+
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Distribution Dashboard</h1>
+          <p className="text-muted text-sm mt-1">
+            Monitor and audit on-chain RevenueShare payout cycles across your portfolio.
           </p>
-        </header>
-
-        <div className="glass-card p-6 md:p-8 mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-            <div>
-              <h2 className="text-lg font-semibold">Uploaded Files</h2>
-              <p className="text-muted text-xs mt-1">
-                {completedCount} ready
-                {uploadingCount > 0 && <> &middot; {uploadingCount} uploading</>}
-                &middot; {files.length} total
-              </p>
-            </div>
-            <label className="btn-secondary cursor-pointer w-fit">
-              <FileUp size={16} />
-              Upload Files
-              <input
-                type="file"
-                multiple
-                className="sr-only"
-                onChange={handleUpload}
-                aria-label="Upload files"
-                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.mp4,.webm,.mp3,.wav,.txt,.html,.css,.js,.ts"
-              />
-            </label>
-          </div>
-
-          <ThumbnailPreviewGrid
-            files={files}
-            onView={handleView}
-            onReplace={handleReplace}
-            onRemove={handleRemove}
-            onReorder={handleReorder}
-          />
         </div>
 
-        <div className="glass-card p-6 md:p-8">
-          <h2 className="text-lg font-semibold mb-4">Keyboard Shortcuts</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-            <div className="flex items-center gap-3">
-              <kbd className="kbd">Enter</kbd>
-              <span className="text-muted">View file</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <kbd className="kbd">Delete</kbd>
-              <span className="text-muted">Remove file</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <kbd className="kbd">&larr;</kbd>
-              <kbd className="kbd">&rarr;</kbd>
-              <span className="text-muted">Reorder files</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <kbd className="kbd">Ctrl+R</kbd>
-              <span className="text-muted">Replace file</span>
-            </div>
+        <div className="flex flex-col sm:flex-row items-center gap-4 self-start md:self-auto">
+          <div className="glass-card px-4 py-2 flex flex-col items-end">
+            <span className="text-xs text-muted uppercase">Delegated Power</span>
+            <span className="text-sm font-bold text-white">0 VP</span>
+          </div>
+          <button
+            onClick={() => setIsBulkRemoveModalOpen(true)}
+            className="rounded px-4 py-2 text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
+          >
+            Bulk Remove Test
+          </button>
+          <a href="/startup/report-revenue" className="btn btn--primary" style={{ width: 'auto' }}>
+            + Report Monthly Revenue
+          </a>
+        </div>
+      </div>
+
+      <div
+        className="grid grid-cols-2 md:grid-cols-4 gap-4"
+        role="list"
+        aria-label="Distribution key metrics"
+      >
+        <div role="listitem" data-testid="kpi-total-distributed">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Total Distributed</span>
+            <span className="text-2xl font-bold tracking-tight">
+              ${totalDistributed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+        <div role="listitem" data-testid="kpi-active-payouts">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Active Payouts</span>
+            <span className="text-2xl font-bold tracking-tight">{activePayouts}</span>
+          </div>
+        </div>
+        <div role="listitem" data-testid="kpi-gas-spent">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Gas Spent</span>
+            <span className="text-2xl font-bold tracking-tight">
+              ${totalGasSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
+        </div>
+        <div role="listitem" data-testid="kpi-pending-retries">
+          <div className="glass-card p-5 flex flex-col gap-2">
+            <span className="text-muted text-xs font-medium uppercase tracking-wide">Pending Retries</span>
+            <span className="text-2xl font-bold tracking-tight">{pendingRetries}</span>
           </div>
         </div>
       </div>
+
+      <div className="mt-8">
+        <RevenuePayoutChart data={MOCK_REVENUE_PAYOUT_DATA} revenueCurrency="USD" payoutCurrency="USD" />
+      </div>
+
+      <section aria-labelledby="error-rate-heading" data-testid="error-rate-section">
+        <div className="flex items-center justify-between mb-4">
+          <h2 id="error-rate-heading" className="text-xl font-semibold">
+            Payout Error Rates
+          </h2>
+          <Link
+            to="/startup/distributions?status=failed"
+            className="text-xs text-primary hover:text-primary-hover transition-colors"
+            data-testid="error-rate-view-all"
+          >
+            View all failed →
+          </Link>
+        </div>
+
+        <div className="space-y-6">
+          <div data-testid="error-rate-by-issuer">
+            <h3 className="text-sm font-medium text-muted mb-3 uppercase tracking-wide">By Issuer</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="list" aria-label="Error rates by issuer">
+              {ERROR_RATE_BY_ISSUER.map((item) => (
+                <div role="listitem" key={item.id}>
+                  <ErrorRateSparklineTile
+                    id={item.id}
+                    title={item.title}
+                    value={item.value}
+                    rate={item.rate}
+                    delta={item.delta}
+                    sparklineData={item.sparklineData}
+                    groupBy="issuer"
+                    filterValue={item.filterValue}
+                    href={`/startup/distributions?issuer=${encodeURIComponent(item.filterValue)}&status=failed`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div data-testid="error-rate-by-region">
+            <h3 className="text-sm font-medium text-muted mb-3 uppercase tracking-wide">By Region</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4" role="list" aria-label="Error rates by region">
+              {ERROR_RATE_BY_REGION.map((item) => (
+                <div role="listitem" key={item.id}>
+                  <ErrorRateSparklineTile
+                    id={item.id}
+                    title={item.title}
+                    value={item.value}
+                    rate={item.rate}
+                    delta={item.delta}
+                    sparklineData={item.sparklineData}
+                    groupBy="region"
+                    filterValue={item.filterValue}
+                    href={`/startup/distributions?region=${encodeURIComponent(item.filterValue)}&status=failed`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="mt-8">
+        <GovernanceDelegation />
+      </div>
+
+      <LockupClaimModal
+        isOpen={isClaimModalOpen}
+        onClose={() => setIsClaimModalOpen(false)}
+        unlockedAmount="$12,480.00"
+        gasEstimate={22}
+      />
+
+      <BlacklistBulkRemoveConfirm
+        isOpen={isBulkRemoveModalOpen}
+        onClose={() => setIsBulkRemoveModalOpen(false)}
+        entries={[
+          { id: '1', value: '0x1234567890abcdef1234567890abcdef12345678', type: 'Wallet' },
+          { id: '2', value: '192.168.1.100', type: 'IP' },
+          { id: '3', value: 'bad-actor@example.com', type: 'Email' }
+        ]}
+        onConfirm={async (reason, initials) => {
+          console.log('Confirmed bulk remove:', { reason, initials });
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }}
+      />
     </div>
   );
 };

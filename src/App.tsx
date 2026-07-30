@@ -1,60 +1,148 @@
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { Login } from './pages/Login';
-import { Signup } from './pages/Signup';
-import { ForgotPassword } from './pages/ForgotPassword';
-import { DistributionDashboard } from './pages/DistributionDashboard';
+import type { MouseEvent } from "react";
+import { BrowserRouter as Router, Routes, Route, Link, Outlet } from "react-router-dom";
+import { Login } from "./pages/Login";
+import { Signup } from "./pages/Signup";
+import { ForgotPassword } from "./pages/ForgotPassword";
+import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
+import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
+import { InvestorDiscovery } from "./components/InvestorDiscovery";
+import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
+import { RevenueReportForm } from "./components/RevenueReportForm";
+import { LedgerDemoPage } from "./pages/LedgerDemoPage";
+import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
+import NotificationBell from "./components/Notifications/NotificationBell";
+import { notificationsMock } from "./components/Notifications/notificationsData";
+import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
+import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
+import { StartupDashboard } from "./pages/StartupDashboard";
+import { DistributionDashboard } from "./pages/DistributionDashboard";
+import { ThumbnailPreviewGridPage } from "./pages/ThumbnailPreviewGridPage";
 
 export function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/startup/dashboard" element={<DistributionDashboard />} />
-        <Route path="/investor/portal" element={<Placeholder title="Investor Portal" />} />
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/recover-2fa" element={<TwoFactorRecoveryPage />} />
+
+          {/* Startup routes */}
+          <Route
+            path="/startup/dashboard"
+            element={<StartupDashboard />}
+          />
+          <Route
+            path="/startup/report-revenue"
+            element={<RevenueReportForm />}
+          />
+          <Route
+            path="/startup/offering-registration"
+            element={<OfferingRegistrationDemo />}
+          />
+          <Route
+            path="/startup/governance/proposals/create"
+            element={<GovernanceProposalCreatePage />}
+          />
+
+          {/* Distribution routes */}
+          <Route path="/startup/distributions" element={<DistributionDashboard />} />
+          <Route path="/startup/distributions/documents" element={<ThumbnailPreviewGridPage />} />
+
+          {/* Investor routes */}
+          <Route path="/investor/portal" element={<InvestorDiscovery />} />
+          <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
+          <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+
+          {/* Admin routes */}
+          <Route path="/admin/alerts" element={<AdminAlertsInbox />} />
+          <Route path="/admin/scheduled-exports" element={<ScheduledExportsPage />} />
+        </Route>
       </Routes>
     </Router>
   );
 }
 
+function AppLayout() {
+  const handleSkipToContent = (event: MouseEvent<HTMLAnchorElement>) => {
+    const main = document.getElementById("main-content");
+    if (!main) return;
+    event.preventDefault();
+    main.focus();
+    main.scrollIntoView?.({ block: "start" });
+    window.location.hash = "main-content";
+  };
+
+  return (
+    <>
+      <a href="#main-content" className="skip-link" onClick={handleSkipToContent}>
+        Skip to main content
+      </a>
+      <main id="main-content" tabIndex={-1}>
+        <Outlet />
+      </main>
+    </>
+  );
+}
+
 function Home() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center animate-fade-in">
-      <div className="w-full max-w-[720px] glass-card p-10 md:p-12">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Stellar RevenueShare – Revora</h1>
-        <p className="text-muted text-lg mb-8 max-w-lg mx-auto">
-          Tokenized revenue-sharing infrastructure on Stellar. 
-          Bridge the gap between visionaries and supporters.
+    <div className="home-container animate-fade-in">
+      <div className="w-full flex justify-end mb-4">
+        <NotificationBell notifications={notificationsMock} />
+      </div>
+      <div className="home-card glass-card">
+        <h1 className="home-title">
+          Stellar RevenueShare – Revora
+        </h1>
+        <p className="home-description">
+          Tokenized revenue-sharing infrastructure on Stellar. Bridge the gap
+          between visionaries and supporters.
         </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          <section className="glass-card p-6 text-left border-[rgba(148,163,184,0.15)]">
-            <h2 className="text-xl font-semibold mb-3">Startup Dashboard</h2>
-            <ul className="text-muted text-sm space-y-2">
-              <li>• Configure revenue-share offerings</li>
-              <li>• Report monthly revenue</li>
-              <li>• Track on-chain payouts</li>
+
+        <div className="home-grid">
+          <section className="home-section glass-card">
+            <h2 className="home-section-title">Startup Dashboard</h2>
+            <ul className="home-list">
+              <li>
+                • <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
+              </li>
+              <li>• Configure RevenueShare offerings</li>
+              <li>
+                • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
+              </li>
+              <li>
+                • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
+              </li>
+              <li>• Track on-chain RevenueShare payouts</li>
             </ul>
           </section>
-          
-          <section className="glass-card p-6 text-left border-[rgba(148,163,184,0.15)]">
-            <h2 className="text-xl font-semibold mb-3">Investor Portal</h2>
-            <ul className="text-muted text-sm space-y-2">
+
+          <section className="home-section glass-card">
+            <h2 className="home-section-title">Investor Portal</h2>
+            <ul className="home-list">
               <li>• Discover high-potential offerings</li>
               <li>• Invest using USDC on Stellar</li>
-              <li>• See real-time dividends</li>
+              <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
+              <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
+              <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/signup" className="btn-primary sm:w-auto px-10">Get Started</Link>
-          <Link to="/login" className="btn-secondary sm:w-auto px-10">Sign In</Link>
+        <div className="home-actions">
+          <Link to="/signup" className="btn btn--primary">
+            Get Started
+          </Link>
+          <Link to="/login" className="btn btn--secondary">
+            Sign In
+          </Link>
         </div>
 
-        <div className="mt-12 text-xs text-muted">
+        <div className="home-footer">
           revora-frontend (React + Vite + TS) • Powered by Stellar
         </div>
       </div>
@@ -64,11 +152,15 @@ function Home() {
 
 function Placeholder({ title }: { title: string }) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-10">
-      <div className="glass-card p-20 text-center">
-        <h1 className="text-3xl font-bold mb-4">{title}</h1>
-        <p className="text-muted mb-8">This dashboard is currently under construction.</p>
-        <Link to="/" className="btn-secondary">Back to Home</Link>
+    <div className="placeholder-container">
+      <div className="placeholder-card glass-card">
+        <h1 className="placeholder-title">{title}</h1>
+        <p className="placeholder-text">
+          This dashboard is currently under construction.
+        </p>
+        <Link to="/" className="btn btn--secondary btn--md">
+          Back to Home
+        </Link>
       </div>
     </div>
   );

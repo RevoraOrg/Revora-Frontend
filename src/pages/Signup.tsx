@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
-import { Mail, Lock, User, Briefcase, TrendingUp } from 'lucide-react';
+import { PasswordStrength } from '../components/PasswordStrength';
+import { evaluatePasswordStrength } from '../utils/passwordStrength';
+import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 
 type Step = 'persona' | 'form' | 'success';
 
@@ -10,35 +13,60 @@ export const Signup: React.FC = () => {
   const [persona, setPersona] = useState<'startup' | 'investor' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
     setStep('form');
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Signup attempt:', { persona, email, password });
+    if (isSubmitting) return;
+    
+    const newErrors: Record<string, string> = {};
+    if (!name.trim()) newErrors.name = 'Full name is required';
+    if (!email.includes('@')) newErrors.email = 'Please enter a valid email address';
+    const pwStrength = evaluatePasswordStrength(password);
+    if (pwStrength.score < 5) newErrors.password = 'Password must meet all requirements below.';
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    setIsSubmitting(false);
+    setIsSuccess(true);
+
+    await new Promise(resolve => setTimeout(resolve, 600));
+
     setStep('success');
   };
 
   if (step === 'success') {
     return (
       <AuthLayout title="Check your inbox">
-        <div className="text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-full bg-[rgba(16,185,129,0.1)] flex items-center justify-center text-success border border-[rgba(16,185,129,0.2)]">
-              <Mail size={32} />
-            </div>
-          </div>
-          <p className="text-muted">
-            We've sent a verification link to <span className="text-main font-medium">{email}</span>. 
-            Please click the link to verify your account and get started.
-          </p>
-          <button onClick={() => setStep('persona')} className="btn-secondary w-full">
-            Back to persona selection
-          </button>
-        </div>
+        <ConfirmationNextSteps
+          email={email}
+          title="Check your inbox"
+          onResend={async (e) => {
+            // mock resend -- wire to API
+            console.log('Resend verification for:', e);
+            return new Promise<void>((res) => setTimeout(res, 600));
+          }}
+          onChangeEmail={() => setStep('form')}
+          primaryLabel="Back to persona selection"
+          onPrimary={() => setStep('persona')}
+          primaryTo={undefined}
+        />
       </AuthLayout>
     );
   }
@@ -47,6 +75,7 @@ export const Signup: React.FC = () => {
     <AuthLayout 
       title={step === 'persona' ? "Choose your account type" : "Create your account"}
       subtitle={step === 'persona' ? "Select how you'll be using Revora to tailor your experience." : `Setting up your ${persona} profile.`}
+      helperText={step === 'form' ? "Already have credentials? Return to Sign in to recover or access your account." : undefined}
     >
       {step === 'persona' ? (
         <div className="grid gap-4">
@@ -60,7 +89,7 @@ export const Signup: React.FC = () => {
             </div>
             <div>
               <div className="font-semibold text-main">Startup Founder</div>
-              <div className="text-xs text-muted">Create offerings and manage revenue sharing.</div>
+              <div className="text-xs text-muted">Create offerings and manage RevenueShare distributions.</div>
             </div>
           </button>
 
@@ -79,22 +108,38 @@ export const Signup: React.FC = () => {
           </button>
 
           <p className="mt-6 text-center text-sm text-muted">
-            Already have an account? <Link to="/login" style={{ color: 'var(--primary)', fontWeight: 500 }}>Sign in</Link>
+            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
           </p>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className={`space-y-4 ${Object.keys(errors).length > 0 ? 'animate-shake' : ''}`} noValidate>
+          {Object.keys(errors).length > 0 && (
+            <div 
+              className="p-3 mb-4 rounded-lg bg-[rgba(239,68,68,0.1)] border border-[rgba(239,68,68,0.2)] text-error text-sm flex items-start"
+              role="alert"
+            >
+              <AlertCircle size={16} className="mt-0.5 mr-2 flex-shrink-0" />
+              <span>Please fix the errors below to continue.</span>
+            </div>
+          )}
+
           <div className="input-group">
             <label className="input-label" htmlFor="name">Full Name</label>
             <div className="relative">
               <User className="absolute left-3 top-3 text-muted" size={18} />
               <input 
                 id="name"
-                className="input-field pl-10" 
-                placeholder="John Doe" 
-                required 
+                className={`input-field pl-10 ${errors.name ? 'input-error' : ''}`} 
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                aria-required="true"
+                aria-label="Full Name"
+                disabled={isSubmitting}
               />
             </div>
+            {errors.name && <p id="name-error" className="mt-1 text-xs text-error">{errors.name}</p>}
           </div>
 
           <div className="input-group">
@@ -104,13 +149,17 @@ export const Signup: React.FC = () => {
               <input 
                 id="email"
                 type="email" 
-                className="input-field pl-10" 
+                className={`input-field pl-10 ${errors.email ? 'input-error' : ''}`} 
                 placeholder="name@company.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                required 
+                required
+                aria-required="true"
+                aria-label="Email Address"
+                disabled={isSubmitting}
               />
             </div>
+            {errors.email && <p id="email-error" className="mt-1 text-xs text-error">{errors.email}</p>}
           </div>
 
           <div className="input-group">
@@ -119,26 +168,47 @@ export const Signup: React.FC = () => {
               <Lock className="absolute left-3 top-3 text-muted" size={18} />
               <input 
                 id="password"
-                type="password" 
-                className="input-field pl-10" 
+                type={showPassword ? "text" : "password"} 
+                className={`input-field pl-10 pr-10 ${errors.password ? 'input-error' : ''}`} 
                 placeholder="••••••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                required 
+                required
+                aria-required="true"
+                aria-label="Password"
+                aria-describedby="password-rules"
+                disabled={isSubmitting}
               />
+              <button
+                type="button"
+                className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                disabled={isSubmitting}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
-            <p className="mt-2 text-[0.7rem] text-muted">Must be at least 12 characters with special characters.</p>
+            <PasswordStrength password={password} inputId="password" />
+            {errors.password && <p id="password-error" className="mt-1 text-xs text-error">{errors.password}</p>}
           </div>
 
-          <button type="submit" className="btn-primary mt-4">Create Account</button>
+          <Button type="submit" loading={isSubmitting} success={isSuccess} className="mt-4">
+            Create Account
+          </Button>
           
           <button 
             type="button" 
             onClick={() => setStep('persona')}
             className="btn-secondary w-full"
+            disabled={isSubmitting}
           >
             Back
           </button>
+
+          <p className="text-center text-sm text-muted">
+            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
+          </p>
         </form>
       )}
     </AuthLayout>

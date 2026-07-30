@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Calendar, Moon, Bell } from 'lucide-react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Calendar, Moon, Bell, CheckCheck } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ActivityItem from './ActivityItem';
 import ActivityDateGroup from './ActivityDateGroup';
@@ -86,8 +86,7 @@ const ActivityFeed: React.FC = () => {
   const [showUndo, setShowUndo] = useState(false);
   const [announcement, setAnnouncement] = useState('');
   const previousActivitiesRef = useRef<Activity[]>([]);
-  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Simulate fetching data
   useEffect(() => {
     const fetchData = async () => {
@@ -132,11 +131,12 @@ const ActivityFeed: React.FC = () => {
 
   const loadMore = () => setPage(prev => prev + 1);
 
-  const hasUnread = activities.some(a => !a.isRead);
+  const unreadCount = activities.filter(a => !a.isRead).length;
+  const hasUnread = unreadCount > 0;
 
-  const handleMarkAllRead = () => {
-    previousActivitiesRef.current = activities;
-    setActivities(activities.map(a => ({ ...a, isRead: true })));
+  const handleMarkAllRead = useCallback(() => {
+    previousActivitiesRef.current = [...activities];
+    setActivities(prev => prev.map(a => ({ ...a, isRead: true })));
     setShowUndo(true);
     setAnnouncement('All activities marked as read.');
     
@@ -144,22 +144,22 @@ const ActivityFeed: React.FC = () => {
     undoTimeoutRef.current = setTimeout(() => {
       setShowUndo(false);
     }, 10000);
-  };
+  }, [activities]);
 
-  const handleUndo = () => {
+  const handleUndo = useCallback(() => {
     if (previousActivitiesRef.current.length > 0) {
       setActivities(previousActivitiesRef.current);
       setShowUndo(false);
       setAnnouncement('Mark all read undone.');
       if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
     }
-  };
+  }, []);
 
-  const handleMarkRead = (id: string) => {
-    setActivities(acts => acts.map(a => a.id === id ? { ...a, isRead: true } : a));
+  const handleMarkRead = useCallback((id: string) => {
+    setActivities(prev => prev.map(a => a.id === id ? { ...a, isRead: true } : a));
     setAnnouncement('Activity marked as read.');
     setShowUndo(false);
-  };
+  }, []);
 
   if (loading) {
     return <div className="activity-feed-loading" aria-live="polite">Loading activity feed…</div>;
@@ -182,7 +182,70 @@ const ActivityFeed: React.FC = () => {
 
   return (
     <section className="activity-feed" aria-label="In‑app activity feed">
-      <ul role="list" className="activity-list" style={{ listStyle: 'none', padding: 0 }}>
+      {/* Live region for screen-reader announcements */}
+      <div
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+        className="sr-only"
+      >
+        {announcement}
+      </div>
+
+      {/* Feed header with Mark all read button */}
+      <div className="activity-feed-header">
+        <h2 className="activity-feed-title">
+          Activity Feed
+          {unreadCount > 0 && (
+            <span
+              className="unread-count-badge"
+              role="status"
+              aria-label={`${unreadCount} unread ${unreadCount === 1 ? 'item' : 'items'}`}
+            >
+              {unreadCount}
+            </span>
+          )}
+        </h2>
+        {hasUnread && (
+          <button
+            className="mark-all-read-btn"
+            onClick={handleMarkAllRead}
+            aria-label={`Mark all ${unreadCount} unread ${unreadCount === 1 ? 'item' : 'items'} as read`}
+          >
+            <CheckCheck size={16} aria-hidden="true" />
+            <span>Mark all read</span>
+          </button>
+        )}
+      </div>
+
+      {/* Undo banner */}
+      {/* Undo banner - role="alert" implicitly maps to aria-live="assertive",
+          but we intentionally use "polite" here so the announcement doesn't
+          interrupt the user's current task. The explicit aria-live attribute
+          takes precedence over the implicit mapping per WAI-ARIA spec. */}
+      {showUndo && (
+        <div
+          className="undo-banner"
+          role="alert"
+          aria-live="polite"
+        >
+          <span className="undo-message">All activities marked as read.</span>
+          <div className="undo-actions">
+            <button className="undo-btn" onClick={handleUndo}>
+              Undo
+            </button>
+            <button
+              className="undo-dismiss"
+              onClick={() => setShowUndo(false)}
+              aria-label="Dismiss"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ul role="list" className="activity-list">
         {dates.map((date, index) => {
           let emptyState = null;
           if (index < dates.length - 1) {
@@ -208,7 +271,10 @@ const ActivityFeed: React.FC = () => {
               <ActivityDateGroup date={date} />
               {grouped[date].map(item => (
                 <li role="listitem" key={item.id}>
-                  <ActivityItem activity={item} />
+                  <ActivityItem
+                    activity={item}
+                    onMarkRead={!item.isRead ? handleMarkRead : undefined}
+                  />
                 </li>
               ))}
               {emptyState && (
@@ -221,7 +287,9 @@ const ActivityFeed: React.FC = () => {
         })}
       </ul>
       {page * PAGE_SIZE < activities.length && (
-        <button className="btn btn-primary load-more" onClick={loadMore} style={{ marginTop: 'var(--spacing-md)' }}>Load more</button>
+        <button className="btn btn-primary load-more" onClick={loadMore} style={{ marginTop: 'var(--spacing-md)' }}>
+          Load more
+        </button>
       )}
     </section>
   );

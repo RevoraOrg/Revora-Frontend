@@ -1,0 +1,164 @@
+/**
+ * VersionHistoryDropdown styles — Issue #449
+ *
+ * Uses design tokens from src/index.css.
+ * RTL: logical properties throughout.
+ * Reduced-motion: no animations defined.
+ * Forced-colors: explicit borders added.
+ */
+
+/* ─── Root ─────────────────────────────────────────────────────── */
+
+.vhd-root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+/* ─── Header row ──────────────────────────────────────────────── */
+
+.vhd-header {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.vhd-header-icon {
+  color: var(--text-muted);
+  flex: 0 0 auto;
+}
+
+.vhd-label {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+  flex: 1 1 auto;
+}
+
+.vhd-active-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--spacing-xs);
+  border-radius: var(--radius-full);
+  background: rgba(16, 185, 129, 0.14);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  font-size: 0.625rem;
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex: 0 0 auto;
+}
+
+/* ─── Select ──────────────────────────────────────────────────── */
+
+.vhd-select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--glass-bg-accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right var(--spacing-sm) center;
+  background-size: 12px 12px;
+  border: 1px solid var(--glass-border-bright);
+  border-radius: var(--radius-md);
+  color: var(--text-main);
+  font-family: inherit;
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm) calc(var(--spacing-xl) + var(--spacing-xs)) var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  line-height: var(--line-height-normal);
+}
+
+.vhd-select:hover {
+  border-color: var(--primary);
+}
+
+.vhd-select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-color: var(--primary);
+}
+
+.vhd-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Help text ───────────────────────────────────────────────── */
+
+.vhd-help {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  line-height: var(--line-height-normal);
+}
+
+/* ─── Metadata list ───────────────────────────────────────────── */
+
+.vhd-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-xs) var(--spacing-md);
+  padding: var(--spacing-md);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-md);
+  margin: 0;
+}
+
+@media (min-width: 480px) {
+  .vhd-meta {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.vhd-meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.vhd-meta-item--hash {
+  grid-column: 1 / -1;
+}
+
+.vhd-meta-item dt {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: var(--font-weight-semibold);
+}
+
+.vhd-meta-item dd {
+  margin: 0;
+  font-size: var(--font-size-xs);
+  color: var(--text-main);
+  font-weight: var(--font-weight-medium);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.vhd-hash {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ─── Forced colors ───────────────────────────────────────────── */
+
+@media (forced-colors: active) {
+  .vhd-select,
+  .vhd-meta {
+    border: 1px solid ButtonText;
+  }
+
+  .vhd-select:focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .vhd-active-badge {
+    border: 1px solid Highlight;
+  }
+}

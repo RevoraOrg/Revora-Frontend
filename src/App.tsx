@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Signup } from './pages/Signup';
 import { ForgotPassword } from './pages/ForgotPassword';
+import { DistributionDashboard } from './pages/DistributionDashboard';
 
 export function App() {
   return (
@@ -11,7 +12,7 @@ export function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/startup/dashboard" element={<Placeholder title="Startup Dashboard" />} />
+        <Route path="/startup/dashboard" element={<DistributionDashboard />} />
         <Route path="/investor/portal" element={<Placeholder title="Investor Portal" />} />
       </Routes>
     </Router>

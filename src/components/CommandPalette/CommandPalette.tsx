@@ -281,7 +281,7 @@ export function CommandPalette({
 
     dialog.addEventListener('keydown', handleKeyDown);
     return () => dialog.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, flatItems, activeIndex]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, onClose, flatItems, activeIndex]);
 
   // Scroll active item into view
   useEffect(() => {

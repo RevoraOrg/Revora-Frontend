@@ -15,7 +15,6 @@ import { PayoutStatusPill, PAYOUT_STATUS_ORDER } from '../components/PayoutStatu
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { CalendarExportDialog } from '../components/CalendarExportDialog';
 import { Button } from '../components/Button';
-import { PayoutStatusPill, PAYOUT_STATUS_ORDER } from '../components/PayoutStatusPill';
 
 export interface Payout {
   id: string;
@@ -44,8 +43,6 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts = DEMO_P
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [showGantt, setShowGantt] = useState(false); // default to table for backward compatibility
   const [zoom, setZoom] = useState<ZoomLevel>('month');
-
-  const payouts = payoutsProp ?? DEMO_PAYOUTS;
 
   /* ─── Group by issuer for Gantt lanes ─── */
   const lanes = useMemo(() => {
@@ -130,52 +127,9 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts = DEMO_P
         </Button>
       </div>
 
-      {empty ? (
-        <EmptyState
-          variant="payout-schedule"
-          title="No payouts scheduled"
-          description="Payouts will appear here once revenue is reported and the distribution cycle begins."
-          primaryAction={{
-            label: 'Report Revenue',
-            href: '/startup/report-revenue',
-          }}
-          secondaryAction={{
-            label: 'Learn How It Works',
-            href: '/',
-          }}
-        />
-      ) : (
-        <>
-          <div data-testid="payout-status-legend" className="flex flex-wrap gap-2">
-            {PAYOUT_STATUS_ORDER.map((status) => (
-              <PayoutStatusPill key={status} status={status} variant="full" />
-            ))}
-          </div>
-
-          <table data-testid="payout-schedule-table" className="w-full">
-            <thead>
-              <tr>
-                <th className="text-left text-muted text-xs font-medium uppercase tracking-wide pb-3">Recipient</th>
-                <th className="text-left text-muted text-xs font-medium uppercase tracking-wide pb-3">Amount</th>
-                <th className="text-left text-muted text-xs font-medium uppercase tracking-wide pb-3">Date</th>
-                <th className="text-left text-muted text-xs font-medium uppercase tracking-wide pb-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {payouts.map((payout) => (
-                <tr key={payout.id} data-testid={`payout-row-${payout.id}`} className="border-t border-border">
-                  <td className="py-3 text-sm">{payout.recipient}</td>
-                  <td className="py-3 text-sm">{payout.amount}</td>
-                  <td className="py-3 text-sm">{payout.scheduledFor}</td>
-                  <td className="py-3">
-                    <PayoutStatusPill status={payout.status} />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
+      {showGantt && (
+        <div className="rounded-xl border border-[rgba(148,163,184,0.15)] bg-[rgba(15,23,42,0.35)] p-4 flex flex-col gap-4">
+          <div className="flex flex-col">
 
             {/* Gantt lanes */}
             {lanes.map((lane) => (

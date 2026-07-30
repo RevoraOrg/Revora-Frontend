@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 export interface Tab {
   id: string;
@@ -11,11 +11,52 @@ interface TabsProps {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   className?: string;
+  'aria-label'?: string;
 }
 
-const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '' }) => {
+const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '', 'aria-label': ariaLabel = 'Activity feed filters' }) => {
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [showScrollFade, setShowScrollFade] = useState({ left: false, right: false });
+  const scrollRef = useRef<HTMLDivElement>(null);
   const activeIndex = tabs.findIndex(tab => tab.id === activeTab);
+
+  const checkOverflow = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const hasOverflow = el.scrollWidth > el.clientWidth;
+    setShowScrollFade({
+      left: hasOverflow && el.scrollLeft > 4,
+      right: hasOverflow && el.scrollLeft < el.scrollWidth - el.clientWidth - 4,
+    });
+  }, []);
+
+  useEffect(() => {
+    checkOverflow();
+    const el = scrollRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', checkOverflow, { passive: true });
+    const ro = new ResizeObserver(checkOverflow);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', checkOverflow);
+      ro.disconnect();
+    };
+  }, [checkOverflow, tabs]);
+
+  useEffect(() => {
+    if (activeIndex >= 0) {
+      setFocusedIndex(activeIndex);
+      const tabEl = document.getElementById(`tab-${tabs[activeIndex].id}`);
+      tabEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+  }, [activeIndex, tabs]);
+
+  const activateTab = (index: number) => {
+    onTabChange(tabs[index].id);
+    setFocusedIndex(index);
+    const tabEl = document.getElementById(`tab-${tabs[index].id}`);
+    tabEl?.focus();
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
     let newIndex = index;
@@ -40,59 +81,57 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '
       case 'Enter':
       case ' ':
         e.preventDefault();
-        onTabChange(tabs[index].id);
+        activateTab(index);
         return;
       default:
         return;
     }
 
-    onTabChange(tabs[newIndex].id);
-    setFocusedIndex(newIndex);
+    activateTab(newIndex);
   };
 
-  useEffect(() => {
-    if (activeIndex >= 0) {
-      setFocusedIndex(activeIndex);
-    }
-  }, [activeIndex]);
-
   return (
-    <div className={`tabs-container ${className} overflow-x-auto`} role="tablist" aria-label="Activity feed filters">
-      <div className="flex gap-2 min-w-max sm:flex-wrap">
-        {tabs.map((tab, index) => {
-          const isActive = tab.id === activeTab;
-          const isFocused = index === focusedIndex;
+    <div className={`tabs-wrapper ${className}`}>
+      {showScrollFade.left && <div className="tab-scroll-fade tab-scroll-fade--left" aria-hidden="true" />}
+      <div
+        ref={scrollRef}
+        className="tabs-scroll-container"
+        role="tablist"
+        aria-label={ariaLabel}
+        aria-orientation="horizontal"
+      >
+        <div className="tabs-inner">
+          {tabs.map((tab, index) => {
+            const isActive = tab.id === activeTab;
+            const isFocused = index === focusedIndex;
 
-          return (
-            <button
-              key={tab.id}
-              onClick={() => onTabChange(tab.id)}
-              onKeyDown={(e) => handleKeyDown(e, index)}
-              className={`tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap focus-visible\:ring-2 focus-visible\:ring-primary focus-visible\:outline-none ${isActive
-                  ? 'bg-primary text-white border border-primary/20'
-                  : 'bg-glass-bg border border-glass-border text-muted hover:bg-glass-border/50 hover:text-text-main'}
-                } ${isFocused ? 'ring-2 ring-primary ring-offset-2 ring-offset-bg-color' : ''}
-                }`}
-              role="tab"
-              aria-selected={isActive}
-              aria-controls={`tabpanel-${tab.id}`}
-              id={`tab-${tab.id}`}
-              tabIndex={isActive ? 0 : -1}
-            >
-              <span className={`tab-label ${isActive ? 'text-white' : 'text-muted'}`}>{tab.label}</span>
-              {tab.count !== undefined && (
-                <span className={`tab-badge px-2 py-0.5 rounded-full text-xs font-semibold ${isActive
-                    ? 'bg-white/20 text-white'
-                    : 'bg-glass-border/50 text-muted'
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              )}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={tab.id}
+                onClick={() => activateTab(index)}
+                onKeyDown={(e) => handleKeyDown(e, index)}
+                className={`tab-btn${isActive ? ' tab-btn--active' : ''}${isFocused ? ' tab-btn--focused' : ''}`}
+                role="tab"
+                aria-selected={isActive}
+                aria-controls={`tabpanel-${tab.id}`}
+                id={`tab-${tab.id}`}
+                tabIndex={isActive ? 0 : -1}
+              >
+                <span className="tab-label">{tab.label}</span>
+                {tab.count !== undefined && (
+                  <span className={`tab-badge${isActive ? ' tab-badge--active' : ''}`}
+                    aria-label={`${tab.count} ${tab.label.toLowerCase()}`}
+                  >
+                    {tab.count > 99 ? '99+' : tab.count}
+                  </span>
+                )}
+                {isActive && <span className="tab-active-indicator" aria-hidden="true" />}
+              </button>
+            );
+          })}
+        </div>
       </div>
+      {showScrollFade.right && <div className="tab-scroll-fade tab-scroll-fade--right" aria-hidden="true" />}
     </div>
   );
 };

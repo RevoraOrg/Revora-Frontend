@@ -9,6 +9,13 @@
   transition: background-color 0.2s, box-shadow 0.2s;
 }
 
+.activity-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  color: var(--primary, #3b82f6);
+}
+
 .activity-item-indicator {
   width: 12px;
   display: flex;

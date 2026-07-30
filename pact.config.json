@@ -1,0 +1,5 @@
+{
+  "pactBrokerUrl": "${PACT_BROKER_URL}",
+  "consumer": "revora-frontend",
+  "provider": "notifications-service"
+}

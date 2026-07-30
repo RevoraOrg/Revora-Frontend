@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ComplianceHoldBanner, ComplianceHold, ComplianceSeverity } from "../components/ComplianceHoldBanner";
 import { RemediationChecklist, RemediationStep } from "../components/RemediationChecklist";
 import { KycRejectionPanel } from "../components/KycRejectionPanel";
-import type { KycRejectionReason, KycStepId, ResolvedKycRejection } from "../components/KycRejectionPanel";
+import type { KycStepId, ResolvedKycRejection } from "../components/KycRejectionPanel";
 
 const ComplianceHoldDemo: React.FC = () => {
   const [holds, setHolds] = useState<ComplianceHold[]>([
@@ -124,7 +124,7 @@ const ComplianceHoldDemo: React.FC = () => {
           Compliance Hold Components Demo
         </h1>
         <p className="text-[#cbd5e1] mb-8">
-          Interactive demonstration of the ComplianceHoldBanner and RemediationChecklist components
+          Interactive demonstration of compliance components: ComplianceHoldBanner, RemediationChecklist, and KYC Rejection Reasons Panel
         </p>
 
         <div className="flex gap-4 mb-8">

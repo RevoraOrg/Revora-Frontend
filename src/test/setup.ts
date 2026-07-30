@@ -17,3 +17,15 @@ global.ResizeObserver = class ResizeObserver {
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = function () {};
 }
+
+if (typeof window !== 'undefined' && !window.localStorage) {
+  Object.defineProperty(window, 'localStorage', {
+    value: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+      clear: () => {},
+    },
+    configurable: true,
+  });
+}

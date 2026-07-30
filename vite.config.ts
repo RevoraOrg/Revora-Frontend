@@ -41,6 +41,9 @@ export default defineConfig({
         'src/hooks/useDensity.ts',
         // Issue #199 – Inline document uploader
         'src/components/DocumentUploader/DocumentUploader.tsx',
+        // Issue #449 – Document replacement flow with version diff
+        'src/components/DocumentReplacementFlow.tsx',
+        'src/components/DocumentReplacementFlow/VersionHistoryDropdown.tsx',
         // Command Palette
         'src/components/CommandPalette/CommandPalette.tsx',
         'src/components/CommandPalette/commandPaletteData.ts',
@@ -63,6 +66,12 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/DocumentUploader/DocumentUploader.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/DocumentReplacementFlow.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/DocumentReplacementFlow/VersionHistoryDropdown.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/DensityProvider/DensityProvider.tsx': {

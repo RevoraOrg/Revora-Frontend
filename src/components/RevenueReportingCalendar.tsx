@@ -20,6 +20,7 @@ import React, {
   useCallback,
   useRef,
   useEffect,
+  useId,
   KeyboardEvent,
   MouseEvent,
 } from "react";
@@ -54,6 +55,7 @@ import { Button } from "./Button";
 import {
   RevenueReportingCalendarProps,
   DayCellData,
+  RevenueReport,
   ReportStatus,
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
@@ -64,6 +66,13 @@ import {
   getOverdueSeverity,
 } from './RevenueReportingCalendar.types';
 import RevenueCalendarCsvImport from './RevenueCalendarCsvImport';
+import {
+  getPayoutStatusDefinition,
+  normalizePayoutStatus,
+  type PayoutStatus,
+  type PayoutStatusTone,
+} from './PayoutStatusPill/payoutStatuses';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import './RevenueReportingCalendar.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────── */
@@ -252,136 +261,284 @@ function OverdueBadge({ dueDate }: { dueDate: string }) {
   );
 }
 
-/* ─── Preview Hook ─────────────────────────────────────────────────── */
-
-/** Returns true if user prefers reduced motion */
-function usePrefersReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  });
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-  return reduced;
-}
+/* ─── Day Cell Hover / Focus Preview ───────────────────────────────── */
 
 /**
- * Manages show/hide timing for the cell hover preview.
- * - Opens after 300ms hover/focus (instant if reduced-motion)
- * - Closes after 120ms blur/mouseleave (instant if reduced-motion)
+ * Timing is deliberately short but not instant for a pointer hover so users
+ * can move across the grid without a preview flashing for every date. Focus
+ * opens immediately: a keyboard user should not need to wait for the same
+ * information. Blur/mouse leave keeps the card available briefly to prevent
+ * an accidental close while navigating adjacent cells.
  */
+const PREVIEW_HOVER_OPEN_DELAY = 300;
+const PREVIEW_CLOSE_DELAY = 150;
+const PREVIEW_GUTTER = 8;
+const PREVIEW_WIDTH = 240;
+const PREVIEW_ESTIMATED_HEIGHT = 132;
+
 function usePreviewTimer(reducedMotion: boolean) {
   const [visible, setVisible] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const open = useCallback(() => {
-    if (closeTimer.current) clearTimeout(closeTimer.current);
-    if (visible) return;
-    if (reducedMotion) {
+  const clearOpenTimer = useCallback(() => {
+    if (openTimer.current) {
+      clearTimeout(openTimer.current);
+      openTimer.current = null;
+    }
+  }, []);
+
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimer.current) {
+      clearTimeout(closeTimer.current);
+      closeTimer.current = null;
+    }
+  }, []);
+
+  const open = useCallback((immediately = false) => {
+    clearCloseTimer();
+    if (dismissed) return;
+
+    clearOpenTimer();
+    if (reducedMotion || immediately) {
       setVisible(true);
       return;
     }
-    openTimer.current = setTimeout(() => setVisible(true), 300);
-  }, [visible, reducedMotion]);
+
+    openTimer.current = setTimeout(() => {
+      openTimer.current = null;
+      setVisible(true);
+    }, PREVIEW_HOVER_OPEN_DELAY);
+  }, [clearCloseTimer, clearOpenTimer, dismissed, reducedMotion]);
 
   const close = useCallback(() => {
-    if (openTimer.current) clearTimeout(openTimer.current);
+    clearOpenTimer();
+    clearCloseTimer();
     if (reducedMotion) {
       setVisible(false);
       return;
     }
-    closeTimer.current = setTimeout(() => setVisible(false), 120);
-  }, [reducedMotion]);
+
+    closeTimer.current = setTimeout(() => {
+      closeTimer.current = null;
+      setVisible(false);
+    }, PREVIEW_CLOSE_DELAY);
+  }, [clearCloseTimer, clearOpenTimer, reducedMotion]);
+
+  const dismiss = useCallback(() => {
+    clearOpenTimer();
+    clearCloseTimer();
+    setDismissed(true);
+    setVisible(false);
+  }, [clearCloseTimer, clearOpenTimer]);
+
+  /** ESC dismissal applies only to this hover/focus session. */
+  const resetDismissal = useCallback(() => {
+    setDismissed(false);
+  }, []);
 
   const closeImmediate = useCallback(() => {
-    if (openTimer.current) clearTimeout(openTimer.current);
-    if (closeTimer.current) clearTimeout(closeTimer.current);
+    clearOpenTimer();
+    clearCloseTimer();
     setVisible(false);
-  }, []);
+  }, [clearCloseTimer, clearOpenTimer]);
 
-  useEffect(() => {
-    return () => {
-      if (openTimer.current) clearTimeout(openTimer.current);
-      if (closeTimer.current) clearTimeout(closeTimer.current);
-    };
-  }, []);
+  useEffect(() => () => {
+    clearOpenTimer();
+    clearCloseTimer();
+  }, [clearCloseTimer, clearOpenTimer]);
 
-  return { visible, open, close, closeImmediate };
+  return {
+    visible,
+    open,
+    close,
+    dismiss,
+    resetDismissal,
+    closeImmediate,
+  };
 }
 
 /* ─── Preview Position ─────────────────────────────────────────────── */
 
-type PreviewPlacement = 'top' | 'bottom' | 'top-start' | 'bottom-start';
+type PreviewPlacement =
+  | 'top'
+  | 'bottom'
+  | 'top-start'
+  | 'bottom-start'
+  | 'top-end'
+  | 'bottom-end';
 
-/** Computes placement to keep preview inside viewport */
+/**
+ * Chooses a side with enough vertical space first, then changes the horizontal
+ * anchor only when a centred card would cross a viewport gutter. `start`
+ * anchors the card to the cell's left edge, while `end` anchors it to the
+ * right edge. CSS mirrors those logical placement names in RTL.
+ */
 function getPreviewPlacement(
   anchorEl: HTMLElement | null,
-  previewWidth = 220,
-  previewHeight = 160,
+  previewWidth = PREVIEW_WIDTH,
+  previewHeight = PREVIEW_ESTIMATED_HEIGHT,
 ): PreviewPlacement {
-  if (!anchorEl) return 'top';
+  if (!anchorEl || typeof window === 'undefined') return 'top';
+
   const rect = anchorEl.getBoundingClientRect();
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+  const viewportHeight = window.innerHeight;
   const spaceAbove = rect.top;
-  const spaceBelow = vh - rect.bottom;
-  const spaceRight = vw - rect.left;
-  const vertical: 'top' | 'bottom' = spaceAbove >= previewHeight + 8 || spaceAbove > spaceBelow
+  const spaceBelow = viewportHeight - rect.bottom;
+  const vertical: 'top' | 'bottom' = spaceAbove >= previewHeight + PREVIEW_GUTTER
     ? 'top'
-    : 'bottom';
-  const horizontal = spaceRight >= previewWidth ? '' : '-start';
-  return `${vertical}${horizontal}` as PreviewPlacement;
+    : spaceBelow >= previewHeight + PREVIEW_GUTTER
+      ? 'bottom'
+      : spaceAbove > spaceBelow
+        ? 'top'
+        : 'bottom';
+
+  const centeredLeft = rect.left + (rect.width - previewWidth) / 2;
+  const centeredRight = centeredLeft + previewWidth;
+  if (centeredLeft < PREVIEW_GUTTER) return `${vertical}-start`;
+  if (centeredRight > viewportWidth - PREVIEW_GUTTER) return `${vertical}-end`;
+  return vertical;
 }
 
-/* ─── Variance Helper ──────────────────────────────────────────────── */
+/* ─── Preview Data ─────────────────────────────────────────────────── */
 
-/** Compute variance of current report vs prior-period report */
+type VarianceDirection = 'up' | 'down' | 'flat';
+
+interface RevenueVariance {
+  pct: number | null;
+  direction: VarianceDirection;
+  isNew: boolean;
+}
+
+/** Compute percentage variance only when both periods include reported revenue. */
 function getVariance(
   current: RevenueReport[],
   prior: RevenueReport[],
-): { pct: number | null; direction: 'up' | 'down' | 'flat' } {
-  const curRev = current.reduce((s, r) => s + (r.grossRevenue ?? 0), 0);
-  const priorRev = prior.reduce((s, r) => s + (r.grossRevenue ?? 0), 0);
-  if (priorRev === 0 && curRev === 0) return { pct: null, direction: 'flat' };
-  if (priorRev === 0) return { pct: null, direction: 'up' };
-  const pct = ((curRev - priorRev) / priorRev) * 100;
+): RevenueVariance {
+  const currentWithRevenue = current.filter((report) => report.grossRevenue !== undefined);
+  const priorWithRevenue = prior.filter((report) => report.grossRevenue !== undefined);
+
+  if (currentWithRevenue.length === 0 || priorWithRevenue.length === 0) {
+    return { pct: null, direction: 'flat', isNew: false };
+  }
+
+  const currentRevenue = currentWithRevenue.reduce(
+    (sum, report) => sum + (report.grossRevenue ?? 0),
+    0,
+  );
+  const priorRevenue = priorWithRevenue.reduce(
+    (sum, report) => sum + (report.grossRevenue ?? 0),
+    0,
+  );
+
+  if (priorRevenue === 0) {
+    return {
+      pct: null,
+      direction: currentRevenue > 0 ? 'up' : 'flat',
+      isNew: currentRevenue > 0,
+    };
+  }
+
+  const pct = ((currentRevenue - priorRevenue) / priorRevenue) * 100;
   return {
     pct,
     direction: pct > 0.5 ? 'up' : pct < -0.5 ? 'down' : 'flat',
+    isNew: false,
   };
+}
+
+interface PayoutSummary {
+  label: string;
+  description: string;
+  tone: PayoutStatusTone | 'unknown';
+}
+
+/**
+ * A period can contain more than one report. Preserve the explicit payout
+ * signal when all reports agree; otherwise clearly disclose that it is mixed
+ * instead of showing a potentially misleading single state.
+ */
+function getPayoutSummary(reports: RevenueReport[]): PayoutSummary {
+  const statuses = reports.flatMap((report) => (
+    report.payoutStatus ? [normalizePayoutStatus(report.payoutStatus)] : []
+  ));
+
+  if (statuses.length === 0) {
+    return {
+      label: 'Not available',
+      description: 'No payout status is available for this reporting period.',
+      tone: 'unknown',
+    };
+  }
+
+  const uniqueStatuses = [...new Set(statuses)];
+  if (uniqueStatuses.length > 1) {
+    return {
+      label: 'Mixed',
+      description: `Multiple payout statuses: ${uniqueStatuses
+        .map((status) => getPayoutStatusDefinition(status).label)
+        .join(', ')}.`,
+      tone: 'unknown',
+    };
+  }
+
+  const status: PayoutStatus = uniqueStatuses[0];
+  const definition = getPayoutStatusDefinition(status);
+  return {
+    label: definition.label,
+    description: definition.description,
+    tone: definition.tone,
+  };
+}
+
+/** Returns the five most recent date-level reported-revenue totals for the sparkline. */
+function getSparkTrendValues(reports: RevenueReport[], date: string): number[] {
+  const revenueByDate = new Map<string, number>();
+
+  reports.forEach((report) => {
+    if (report.date > date || report.grossRevenue === undefined) return;
+    revenueByDate.set(
+      report.date,
+      (revenueByDate.get(report.date) ?? 0) + report.grossRevenue,
+    );
+  });
+
+  return [...revenueByDate.entries()]
+    .sort(([firstDate], [secondDate]) => firstDate.localeCompare(secondDate))
+    .slice(-5)
+    .map(([, revenue]) => revenue);
 }
 
 /* ─── Spark Trend ──────────────────────────────────────────────────── */
 
-/** Mini 5-point sparkline using an inline SVG path */
+/** Mini sparkline. It is intentionally decorative: the KPI values provide the text equivalent. */
 function SparkTrend({ values }: { values: number[] }) {
   if (values.length < 2) return null;
-  const w = 48;
-  const h = 18;
+
+  const width = 48;
+  const height = 18;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
-  const pts = values.map((v, i) => {
-    const x = (i / (values.length - 1)) * w;
-    const y = h - ((v - min) / range) * (h - 4) - 2;
+  const points = values.map((value, index) => {
+    const x = (index / (values.length - 1)) * width;
+    const y = height - ((value - min) / range) * (height - 4) - 2;
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   });
+
   return (
     <svg
-      width={w}
-      height={h}
-      viewBox={`0 0 ${w} ${h}`}
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
       aria-hidden="true"
       className="rc-preview-spark"
       focusable="false"
     >
       <polyline
-        points={pts.join(' ')}
+        points={points.join(' ')}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.5"
@@ -397,6 +554,7 @@ function SparkTrend({ values }: { values: number[] }) {
 interface DayCellPreviewProps {
   cell: DayCellData;
   priorReports: RevenueReport[];
+  trendValues: number[];
   locale: string;
   placement: PreviewPlacement;
   id: string;
@@ -405,44 +563,40 @@ interface DayCellPreviewProps {
 const DayCellPreview: React.FC<DayCellPreviewProps> = ({
   cell,
   priorReports,
+  trendValues,
   locale,
   placement,
   id,
 }) => {
   const reports = cell.reports;
-  const totalRevenue = reports.reduce((s, r) => s + (r.grossRevenue ?? 0), 0);
-  const currency = reports[0]?.currency ?? 'USD';
+  const totalRevenue = reports.reduce((sum, report) => sum + (report.grossRevenue ?? 0), 0);
+  const currency = reports.find((report) => report.currency)?.currency ?? 'USD';
+  const hasRevenue = reports.some((report) => report.grossRevenue !== undefined);
   const variance = getVariance(reports, priorReports);
+  const payout = getPayoutSummary(reports);
   const primaryStatus = cell.primaryStatus;
   const statusColor = primaryStatus !== 'none' ? REPORT_STATUS_COLORS[primaryStatus] : undefined;
   const statusLabel = REPORT_STATUS_LABELS[primaryStatus];
 
-  // Spark values: revenue of each report in the cell (padded to 5 points with prior)
-  const sparkValues = [
-    ...priorReports.map((r) => r.grossRevenue ?? 0),
-    ...reports.map((r) => r.grossRevenue ?? 0),
-  ].slice(-5);
-
-  const hasRevenue = reports.some((r) => r.grossRevenue !== undefined);
-
-  const VarianceIcon =
-    variance.direction === 'up' ? TrendingUp
-    : variance.direction === 'down' ? TrendingDown
-    : Minus;
-
-  const varianceClass =
-    variance.direction === 'up' ? 'rc-preview-variance--up'
-    : variance.direction === 'down' ? 'rc-preview-variance--down'
-    : 'rc-preview-variance--flat';
+  const VarianceIcon = variance.direction === 'up'
+    ? TrendingUp
+    : variance.direction === 'down'
+      ? TrendingDown
+      : Minus;
+  const varianceClass = `rc-preview-variance--${variance.direction}`;
+  const varianceText = variance.isNew
+    ? 'New'
+    : variance.pct !== null
+      ? `${variance.pct > 0 ? '+' : ''}${variance.pct.toFixed(1)}%`
+      : '—';
 
   return (
     <div
       id={id}
       role="tooltip"
       className={`rc-day-preview rc-day-preview--${placement}`}
-      aria-live="polite"
+      data-testid="revenue-calendar-preview"
     >
-      {/* Header row: date + status pill */}
       <div className="rc-preview-header">
         <span className="rc-preview-date">
           {formatDate(cell.date, locale as SupportedLocale, {
@@ -460,11 +614,9 @@ const DayCellPreview: React.FC<DayCellPreviewProps> = ({
         )}
       </div>
 
-      {/* KPI row */}
       <div className="rc-preview-kpis">
-        {/* KPI 1: Revenue */}
         <div className="rc-preview-kpi">
-          <span className="rc-preview-kpi-label">Revenue</span>
+          <span className="rc-preview-kpi-label">Reported revenue</span>
           <span className="rc-preview-kpi-value">
             {hasRevenue
               ? formatCurrency(totalRevenue, currency, locale as SupportedLocale)
@@ -472,36 +624,144 @@ const DayCellPreview: React.FC<DayCellPreviewProps> = ({
           </span>
         </div>
 
-        {/* KPI 2: Payout status */}
-        <div className="rc-preview-kpi">
-          <span className="rc-preview-kpi-label">Reports</span>
-          <span className="rc-preview-kpi-value">
-            {reports.length > 0 ? reports.length : '0'}
+        <div className={`rc-preview-kpi rc-preview-payout rc-preview-payout--${payout.tone}`}>
+          <span className="rc-preview-kpi-label">Payout status</span>
+          <span className="rc-preview-kpi-value" title={payout.description}>
+            {payout.label}
           </span>
         </div>
 
-        {/* KPI 3: Variance vs prior period */}
         <div className={`rc-preview-kpi rc-preview-variance ${varianceClass}`}>
-          <span className="rc-preview-kpi-label">vs Prior</span>
+          <span className="rc-preview-kpi-label">vs prior period</span>
           <span className="rc-preview-kpi-value rc-preview-variance-value">
             <VarianceIcon size={11} aria-hidden="true" />
-            {variance.pct !== null
-              ? `${variance.pct > 0 ? '+' : ''}${variance.pct.toFixed(1)}%`
-              : '—'}
+            {varianceText}
           </span>
         </div>
       </div>
 
-      {/* Spark trend (hidden if only 1 data point or no revenue) */}
-      {sparkValues.length >= 2 && hasRevenue && (
+      {hasRevenue && trendValues.length >= 2 && (
         <div className="rc-preview-spark-row">
-          <SparkTrend values={sparkValues} />
-          <span className="rc-preview-spark-label">trend</span>
+          <SparkTrend values={trendValues} />
+          <span className="rc-preview-spark-label">Revenue trend</span>
         </div>
       )}
 
-      {/* Arrow caret */}
       <span className="rc-preview-arrow" aria-hidden="true" />
+    </div>
+  );
+};
+
+/* ─── Agenda View (Mobile) ─────────────────────────────────────────── */
+
+interface AgendaViewProps {
+  reports: RevenueReport[];
+  selectedDate: string | undefined;
+  locale: string;
+  onSelect: (date: string) => void;
+  onSubmitReport?: (date: string) => void;
+  viewMonth: string;
+}
+
+/**
+ * The agenda remains the touch-first equivalent of the compact hover preview:
+ * touch users select a row for the full details rather than relying on hover.
+ */
+const AgendaView: React.FC<AgendaViewProps> = ({
+  reports,
+  selectedDate,
+  locale,
+  onSelect,
+  onSubmitReport,
+  viewMonth,
+}) => {
+  const agendaReports = useMemo(() => reports
+    .filter((report) => report.date.startsWith(viewMonth))
+    .slice()
+    .sort((first, second) => first.date.localeCompare(second.date)), [reports, viewMonth]);
+
+  if (agendaReports.length === 0) {
+    return (
+      <div className="rc-agenda-view rc-agenda-empty" role="status">
+        <Calendar size={32} aria-hidden="true" />
+        <p className="rc-agenda-empty-text">No reports scheduled for this month.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rc-agenda-view">
+      <ul className="rc-agenda-list" role="list" aria-label="Revenue report agenda">
+        {agendaReports.map((report) => {
+          const effectiveStatus: ReportStatus = isOverdue(report) ? 'overdue' : report.status;
+          const isSelected = selectedDate === report.date;
+          const dateLabel = formatDate(report.date, locale as SupportedLocale, {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+          });
+          const rowLabel = [
+            dateLabel,
+            REPORT_STATUS_LABELS[effectiveStatus],
+            report.grossRevenue !== undefined
+              ? formatCurrency(report.grossRevenue, report.currency ?? 'USD', locale as SupportedLocale)
+              : '',
+            isSelected ? 'selected' : '',
+          ].filter(Boolean).join(', ');
+
+          return (
+            <li key={report.id} className="rc-agenda-listitem" role="listitem">
+              <button
+                type="button"
+                className={`rc-agenda-row rc-agenda-row--${effectiveStatus}${isSelected ? ' rc-agenda-row--selected' : ''}`}
+                onClick={() => onSelect(report.date)}
+                aria-label={rowLabel}
+                aria-pressed={isSelected}
+              >
+                <span className="rc-agenda-row-date" aria-hidden="true">
+                  <span className="rc-agenda-row-weekday">
+                    {formatDate(report.date, locale as SupportedLocale, { weekday: 'short' })}
+                  </span>
+                  <span className="rc-agenda-row-day">{parseISODate(report.date).day}</span>
+                </span>
+                <span className="rc-agenda-row-body">
+                  <span className="rc-agenda-row-header">
+                    <span className={`rc-status-pill rc-status-pill--${effectiveStatus}`}>
+                      {REPORT_STATUS_LABELS[effectiveStatus]}
+                    </span>
+                    {report.dueDate && (
+                      <span className="rc-agenda-row-duedate">
+                        <Clock size={12} aria-hidden="true" />
+                        Due {formatDate(report.dueDate, locale as SupportedLocale, {
+                          month: 'short', day: 'numeric', year: 'numeric',
+                        })}
+                      </span>
+                    )}
+                  </span>
+                  {report.grossRevenue !== undefined && (
+                    <span className="rc-agenda-row-revenue">
+                      {formatCurrency(report.grossRevenue, report.currency ?? 'USD', locale as SupportedLocale)}
+                    </span>
+                  )}
+                </span>
+                <ChevronRight className="rc-agenda-row-chevron" size={18} aria-hidden="true" />
+              </button>
+              {(effectiveStatus === 'due' || effectiveStatus === 'overdue') && onSubmitReport && (
+                <div className="rc-agenda-row-cta">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onSubmitReport(report.date)}
+                    aria-label={`Submit ${effectiveStatus} report for ${dateLabel}`}
+                  >
+                    {effectiveStatus === 'overdue' ? 'Submit Now' : 'Submit Report'}
+                  </Button>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 };
@@ -510,76 +770,110 @@ const DayCellPreview: React.FC<DayCellPreviewProps> = ({
 
 interface CalendarDayCellProps {
   cell: DayCellData;
-  isFocused: boolean;
-  weekStartsOn: number;
-  onSelect: (date: string, e: MouseEvent | KeyboardEvent) => void;
+  isTabbable: boolean;
+  onSelect: (date: string, event: MouseEvent | KeyboardEvent) => void;
   onFocus: (date: string) => void;
   locale: string;
-  /** Reports from the prior period (same day prev month) for variance KPI */
+  /** Reports from the same day in the preceding month, used for variance. */
   priorReports: RevenueReport[];
+  /** Recent date-level revenue totals, used to draw the decorative sparkline. */
+  trendValues: number[];
 }
 
 const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   cell,
-  isFocused,
-  weekStartsOn,
+  isTabbable,
   onSelect,
   onFocus,
   locale,
   priorReports,
+  trendValues,
 }) => {
-  const reducedMotion = usePrefersReducedMotion();
-  const { visible, open, close, closeImmediate } = usePreviewTimer(reducedMotion);
+  const reducedMotion = useReducedMotion();
+  const {
+    visible,
+    open,
+    close,
+    dismiss,
+    resetDismissal,
+    closeImmediate,
+  } = usePreviewTimer(reducedMotion);
   const anchorRef = useRef<HTMLDivElement>(null);
   const [placement, setPlacement] = useState<PreviewPlacement>('top');
+  const previewId = `rc-preview-${useId()}`;
 
-  const previewId = `rc-preview-${cell.date}`;
-
-  const handleOpen = useCallback(() => {
+  const updatePlacement = useCallback(() => {
     setPlacement(getPreviewPlacement(anchorRef.current));
-    open();
-  }, [open]);
+  }, []);
 
-  const handleClick = (e: MouseEvent<HTMLDivElement>) => {
-    closeImmediate();
-    onSelect(cell.date, e);
-  };
+  const handleHoverOpen = useCallback(() => {
+    updatePlacement();
+    open();
+  }, [open, updatePlacement]);
+
   const handleFocus = () => {
     onFocus(cell.date);
-    handleOpen();
+    updatePlacement();
+    open(true);
   };
-  const handleBlur = () => close();
-  const handleMouseEnter = () => handleOpen();
-  const handleMouseLeave = () => close();
 
-  // Dismiss on Escape
-  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key === 'Escape') {
-      closeImmediate();
+  const handleBlur = () => {
+    close();
+    resetDismissal();
+  };
+
+  const handleMouseLeave = () => {
+    close();
+    resetDismissal();
+  };
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const handleViewportChange = () => updatePlacement();
+    window.addEventListener('resize', handleViewportChange);
+    // Capture catches scrolling containers as well as document scrolling.
+    window.addEventListener('scroll', handleViewportChange, true);
+    return () => {
+      window.removeEventListener('resize', handleViewportChange);
+      window.removeEventListener('scroll', handleViewportChange, true);
+    };
+  }, [updatePlacement, visible]);
+
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    closeImmediate();
+    onSelect(cell.date, event);
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key === 'Escape') {
+      // Keep focus on the cell and suppress the card until focus/hover clears.
+      event.preventDefault();
+      event.stopPropagation();
+      dismiss();
       return;
     }
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
+
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
       closeImmediate();
-      onSelect(cell.date, e);
+      onSelect(cell.date, event);
     }
   };
 
   const statusLabel = REPORT_STATUS_LABELS[cell.primaryStatus];
   const dateFormatted = formatDate(cell.date, locale as SupportedLocale, {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
-
   const overdueReport = cell.primaryStatus === 'overdue'
-    ? cell.reports.find((r) => r.status === 'overdue')
+    ? cell.reports.find((report) => report.status === 'overdue')
     : undefined;
   const overdueDays = overdueReport ? getOverdueDays(overdueReport.dueDate) : 0;
   const overdueSeverity = overdueReport ? getOverdueSeverity(overdueDays) : null;
   const severityLabel = overdueSeverity ? OVERDUE_SEVERITY_LABELS[overdueSeverity] : '';
-
   const ariaLabel = [
     `${dateFormatted}.`,
     cell.primaryStatus === 'overdue'
@@ -587,40 +881,34 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
       : `${statusLabel}.`,
     cell.reports.length > 1 ? `${cell.reports.length} reports.` : '',
     cell.isSelected ? 'Selected.' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-
+  ].filter(Boolean).join(' ');
   const cellClass = [
-    "rc-day-cell",
-    !cell.inMonth && "rc-day-cell--outside",
-    cell.isToday && "rc-day-cell--today",
-    cell.isSelected && "rc-day-cell--selected",
-    cell.isRangeStart && "rc-day-cell--range-start",
-    cell.isRangeEnd && "rc-day-cell--range-end",
-    cell.isInRange && "rc-day-cell--in-range",
-    cell.primaryStatus !== "none" && `rc-day-cell--${cell.primaryStatus}`,
-  ]
-    .filter(Boolean)
-    .join(" ");
+    'rc-day-cell',
+    !cell.inMonth && 'rc-day-cell--outside',
+    cell.isToday && 'rc-day-cell--today',
+    cell.isSelected && 'rc-day-cell--selected',
+    cell.isRangeStart && 'rc-day-cell--range-start',
+    cell.isRangeEnd && 'rc-day-cell--range-end',
+    cell.isInRange && 'rc-day-cell--in-range',
+    cell.primaryStatus !== 'none' && `rc-day-cell--${cell.primaryStatus}`,
+  ].filter(Boolean).join(' ');
 
   return (
     <div
       ref={anchorRef}
       role="gridcell"
       className={cellClass}
-      tabIndex={isFocused ? 0 : -1}
+      tabIndex={isTabbable ? 0 : -1}
       aria-selected={cell.isSelected}
       aria-label={ariaLabel}
       aria-describedby={visible && cell.reports.length > 0 ? previewId : undefined}
       onClick={handleClick}
       onFocus={handleFocus}
       onBlur={handleBlur}
-      onMouseEnter={handleMouseEnter}
+      onMouseEnter={handleHoverOpen}
       onMouseLeave={handleMouseLeave}
       onKeyDown={handleKeyDown}
       data-date={cell.date}
-      style={{ position: 'relative' }}
     >
       <span className="rc-day-number">{cell.day}</span>
       <StatusDot status={cell.primaryStatus} />
@@ -633,12 +921,12 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
         </span>
       )}
 
-      {/* Hover / focus preview — only rendered when there are reports */}
       {visible && cell.reports.length > 0 && (
         <DayCellPreview
           id={previewId}
           cell={cell}
           priorReports={priorReports}
+          trendValues={trendValues}
           locale={locale}
           placement={placement}
         />
@@ -697,14 +985,12 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
     return result;
   }, [days]);
 
-  // Roving tabindex: only the focused/selected day is tabbable
-  const getTabIndex = useCallback(
-    (cell: DayCellData) => {
-      if (cell.date === focusedDate || selectedDates.includes(cell.date)) return 0;
-      return -1;
-    },
-    [focusedDate, selectedDates],
-  );
+  // Roving tabindex: a single cell is reachable with Tab. Focus then moves
+  // within the grid using arrow keys.
+  const activeDate = focusedDate
+    ?? selectedDates[0]
+    ?? days.find((cell) => cell.inMonth)?.date
+    ?? days[0]?.date;
 
   // Focus the active cell when focusedDate changes
   useEffect(() => {
@@ -826,7 +1112,6 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
             key={i}
             className="rc-grid-header-cell"
             role="columnheader"
-            aria-hidden="true"
           >
             {name}
           </div>
@@ -847,12 +1132,12 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
               <CalendarDayCell
                 key={cell.date}
                 cell={cell}
-                isFocused={cell.date === focusedDate}
-                weekStartsOn={weekStartsOn}
+                isTabbable={cell.date === activeDate}
                 onSelect={onDateSelect}
                 onFocus={onFocusDate}
                 locale={locale}
                 priorReports={priorReports}
+                trendValues={getSparkTrendValues(allReports, cell.date)}
               />
             );
           })}
@@ -1201,9 +1486,11 @@ export const RevenueReportingCalendar: React.FC<
   onReportAction,
   className = "",
 }) => {
-  // Determine current month from reports or use today
+  // Start at the first supplied reporting month; fall back to the current month
+  // only when no reporting data is available.
   const today = new Date();
-  const defaultMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const todayMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+  const defaultMonth = reports[0]?.date.slice(0, 7) || todayMonth;
 
   const [internalViewMonth, setInternalViewMonth] = useState(defaultMonth);
   

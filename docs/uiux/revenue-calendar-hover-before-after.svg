@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="390" viewBox="0 0 920 390" role="img" aria-labelledby="title desc">
+  <title id="title">Revenue calendar hover preview before and after</title>
+  <desc id="desc">The before state shows a calendar cell with only a date and status dot. The after state shows a compact tooltip with reported revenue, payout status, prior-period variance, and a sparkline.</desc>
+  <rect width="920" height="390" rx="24" fill="#020617"/>
+  <text x="54" y="58" fill="#e5e7eb" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">Before</text>
+  <text x="496" y="58" fill="#e5e7eb" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="700">After — hover or keyboard focus</text>
+  <rect x="54" y="88" width="350" height="240" rx="16" fill="#0f172a" stroke="#334155"/>
+  <text x="78" y="124" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="14">APRIL 2026</text>
+  <g transform="translate(90 160)">
+    <rect width="96" height="92" rx="10" fill="#102238" stroke="#38bdf8" stroke-width="2"/>
+    <text x="48" y="43" text-anchor="middle" fill="#f1f5f9" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="700">08</text>
+    <circle cx="48" cy="70" r="4" fill="#10b981"/>
+  </g>
+  <text x="78" y="292" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="14">Date + status dot; details require selection.</text>
+  <path d="M430 208h40" stroke="#60a5fa" stroke-width="3" stroke-linecap="round"/>
+  <path d="M458 196l14 12-14 12" fill="none" stroke="#60a5fa" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="496" y="88" width="370" height="240" rx="16" fill="#0f172a" stroke="#475569"/>
+  <text x="522" y="122" fill="#cbd5e1" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700">APR 8</text>
+  <rect x="774" y="104" width="68" height="24" rx="12" fill="#052e24" stroke="#10b981"/>
+  <text x="808" y="121" text-anchor="middle" fill="#6ee7b7" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="700">ACCEPTED</text>
+  <line x1="522" y1="145" x2="840" y2="145" stroke="#334155"/>
+  <text x="522" y="170" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="700">REPORTED REVENUE</text>
+  <text x="522" y="193" fill="#f1f5f9" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">$1,250</text>
+  <text x="646" y="170" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="700">PAYOUT STATUS</text>
+  <text x="646" y="193" fill="#6ee7b7" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">Confirmed</text>
+  <text x="766" y="170" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="10" font-weight="700">VS PRIOR</text>
+  <text x="766" y="193" fill="#6ee7b7" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700">↑ +25.0%</text>
+  <line x1="522" y1="218" x2="840" y2="218" stroke="#334155"/>
+  <polyline points="524,268 564,251 604,258 644,232 684,240" fill="none" stroke="#93c5fd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="704" y="257" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="700">REVENUE TREND</text>
+  <text x="496" y="362" fill="#94a3b8" font-family="Inter, Arial, sans-serif" font-size="13">Design reference generated from the implementation; not a runtime browser capture.</text>
+</svg>

@@ -7,6 +7,8 @@
 
 /* ─── Report Status ─────────────────────────────────────────────────── */
 
+import type { PayoutStatus } from './PayoutStatusPill/payoutStatuses';
+
 export type ReportStatus = 'due' | 'submitted' | 'accepted' | 'overdue' | 'none';
 
 export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
@@ -73,6 +75,11 @@ export interface RevenueReport {
   grossRevenue?: number;
   /** Currency code (e.g. USD, EUR) */
   currency?: string;
+  /**
+   * Lifecycle state of the related investor payout. This is intentionally
+   * separate from `status`, which describes the revenue report itself.
+   */
+  payoutStatus?: PayoutStatus;
   /** Locale for formatting */
   locale?: string;
   /** Optional notes */

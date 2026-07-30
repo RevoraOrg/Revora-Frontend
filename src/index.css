@@ -1,4 +1,3 @@
-<<<<<<< Updated upstream
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
@@ -1182,8 +1181,6 @@ input:focus-visible,
   border-radius: var(--radius-md);
   width: auto;
 }
-=======
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
   --bg-color: #020617;
@@ -1524,4 +1521,3 @@ input:focus-visible,
     transition: none;
   }
 }
->>>>>>> Stashed changes

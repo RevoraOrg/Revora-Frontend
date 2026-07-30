@@ -17,6 +17,7 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
+import { RedemptionPostCloseBanner } from '../components/RedemptionPostCloseBanner';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -202,7 +203,6 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-export const DistributionDashboard: React.FC = () => {
   const {
     queue,
     addFiles,

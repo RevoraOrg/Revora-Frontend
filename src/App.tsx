@@ -17,6 +17,8 @@ import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
 import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
+import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
+import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 
 export function App() {
   return (

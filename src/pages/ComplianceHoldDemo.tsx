@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { ComplianceHoldBanner, ComplianceHold, ComplianceSeverity } from "../components/ComplianceHoldBanner";
 import { RemediationChecklist, RemediationStep } from "../components/RemediationChecklist";
+import { KycRejectionPanel } from "../components/KycRejectionPanel";
+import type { KycStepId, ResolvedKycRejection } from "../components/KycRejectionPanel";
 
 const ComplianceHoldDemo: React.FC = () => {
   const [holds, setHolds] = useState<ComplianceHold[]>([
@@ -122,7 +124,7 @@ const ComplianceHoldDemo: React.FC = () => {
           Compliance Hold Components Demo
         </h1>
         <p className="text-[#cbd5e1] mb-8">
-          Interactive demonstration of the ComplianceHoldBanner and RemediationChecklist components
+          Interactive demonstration of compliance components: ComplianceHoldBanner, RemediationChecklist, and KYC Rejection Reasons Panel
         </p>
 
         <div className="flex gap-4 mb-8">
@@ -159,6 +161,23 @@ const ComplianceHoldDemo: React.FC = () => {
                 ...step,
                 onAction: handleStepAction,
               }))}
+            />
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold mb-4 text-[#e5e7eb]">
+              KYC Rejection Reasons Panel
+            </h2>
+            <KycRejectionPanel
+              reasons={[
+                { id: "r1", code: "ID_BLURRY" },
+                { id: "r2", code: "ADDRESS_EXPIRED", detail: "Document dated January 2025." },
+                { id: "r3", code: "LIVENESS_FAILED" },
+                { id: "r4", code: "UNKNOWN_VENDOR_X" },
+              ]}
+              onNavigateToStep={(stepId: KycStepId, reason: ResolvedKycRejection) => {
+                console.log(`Navigate to ${stepId} for ${reason.chipLabel}`);
+              }}
             />
           </section>
 

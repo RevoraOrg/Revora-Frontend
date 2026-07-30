@@ -4,6 +4,33 @@ import { vi } from 'vitest';
 import { Ledger } from './Ledger';
 import '@testing-library/jest-dom';
 
+/**
+ * Helper: gets the FIRST expand/collapse button matching a name regex.
+ * Uses querySelector for reliability since the desktop table uses `hidden`
+ * (display:none) which ByRole queries may exclude.
+ */
+function getExpandButton(entryId: string, count: number): HTMLElement {
+  const suffix = count !== 1 ? 's' : '';
+  const label = `Expand ${count} sub-event${suffix} for ${entryId}`;
+  const btn = document.querySelector(`button[aria-label="${label}"]`);
+  if (!btn) throw new Error(`Button not found: ${label}`);
+  return btn as HTMLElement;
+}
+
+function getCollapseButton(entryId: string): HTMLElement {
+  const label = `Collapse sub-events for ${entryId}`;
+  const btn = document.querySelector(`button[aria-label="${label}"]`);
+  if (!btn) throw new Error(`Button not found: ${label}`);
+  return btn as HTMLElement;
+}
+
+function getDisabledButton(entryId: string): HTMLElement {
+  const label = `No related events for ${entryId}`;
+  const btn = document.querySelector(`button[aria-label="${label}"]`);
+  if (!btn) throw new Error(`Button not found: ${label}`);
+  return btn as HTMLElement;
+}
+
 describe('Ledger Component', () => {
   let originalClipboard: any;
 

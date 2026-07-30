@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { AlertTriangle, ChevronRight, Info, Sparkles, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, ChevronRight, Info, Sparkles, X, Loader2 } from 'lucide-react';
 import { Button } from './Button';
 
 interface LockupClaimModalProps {
@@ -21,7 +21,7 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
   const titleId = useId();
   const descriptionId = useId();
   const [autoClaim, setAutoClaim] = useState(initialAutoClaim);
-  const [claimState, setClaimState] = useState<'idle' | 'success' | 'later' | 'warning' | 'error'>('idle');
+  const [claimState, setClaimState] = useState<'idle' | 'loading' | 'success' | 'later' | 'warning' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState('');
   const [showAutoClaimInfo, setShowAutoClaimInfo] = useState(false);
 
@@ -30,6 +30,7 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
       setAutoClaim(initialAutoClaim);
       setClaimState('idle');
       setStatusMessage('');
+      setShowAutoClaimInfo(false);
       return;
     }
 
@@ -66,22 +67,32 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
       return;
     }
 
-    if (gasEstimate >= 80) {
+    if (gasEstimate >= 80 && claimState !== 'warning') {
       setClaimState('warning');
       setStatusMessage('High gas fees may reduce your expected proceeds. Consider waiting or using auto-claim.');
       return;
     }
 
-    setClaimState('success');
-    setStatusMessage('Claim request queued. We will keep you updated as it confirms.');
+    setClaimState('loading');
+    setStatusMessage('Claim request queued. Submitting claim transaction to the network...');
+
+    setTimeout(() => {
+      setClaimState('success');
+      setStatusMessage('Claim successful! Tokens claimed successfully.');
+    }, 1500);
   };
 
   const handleClaimLater = () => {
     setClaimState('later');
     setStatusMessage('We will remind you again at a better time to claim this unlock.');
+    setTimeout(() => {
+      onClose();
+    }, 1500);
   };
 
   const gasLabel = gasEstimate >= 80 ? 'High' : gasEstimate >= 50 ? 'Moderate' : 'Low';
+  const isZeroUnlocked = !unlockedAmount || unlockedAmount === '$0.00';
+  const isInteractionDisabled = claimState === 'loading' || claimState === 'success' || claimState === 'later';
 
   return (
     <div
@@ -112,6 +123,7 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
             onClick={onClose}
             className="rounded-full p-2 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800"
             aria-label="Close claim modal"
+            disabled={isInteractionDisabled}
           >
             <X size={18} aria-hidden="true" />
           </button>
@@ -121,6 +133,7 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
           Your lockup has unlocked partially. Choose how you want to receive the available balance.
         </p>
 
+        {/* Unlocked Amount Section */}
         <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/70">
           <div className="flex items-center justify-between">
             <div>
@@ -132,32 +145,37 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
             </div>
           </div>
 
+          {/* Gas Estimate Section */}
           <div className="mt-4 flex items-center justify-between rounded-xl border border-slate-200 bg-white px-3 py-3 text-sm dark:border-slate-700 dark:bg-slate-900/80">
             <div>
               <p className="font-medium text-slate-700 dark:text-slate-200">Estimated gas</p>
               <p className="text-slate-500 dark:text-slate-400">{gasLabel.toLowerCase()} network fee estimate</p>
             </div>
             <div className="text-right">
-              <p className="font-semibold text-slate-900 dark:text-white">{gasEstimate}%</p>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">~${Math.max(8, Math.round(gasEstimate * 1.2)).toFixed(0)} fee</p>
+              <p className="font-semibold text-slate-900 dark:text-white">
+                ≈ {gasEstimate >= 80 ? '0.00095 XLM' : '0.00015 XLM'}
+              </p>
+              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">~{gasEstimate}% network congestion</p>
             </div>
           </div>
         </div>
 
+        {/* Auto-Claim Toggle Section */}
         <div className="mt-6 rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
           <div className="flex items-start gap-3">
             <div className="rounded-full bg-slate-100 p-2 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
               <Info size={16} aria-hidden="true" />
             </div>
             <div className="flex-1">
-              <div className="flex items-start justify-between gap-2">
-                <label htmlFor="auto-claim-toggle" className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              <div className="flex items-center justify-between gap-2">
+                <label htmlFor="auto-claim-toggle" className="flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200 cursor-pointer">
                   <input
                     id="auto-claim-toggle"
                     type="checkbox"
                     checked={autoClaim}
+                    disabled={isInteractionDisabled}
                     onChange={(event) => setAutoClaim(event.target.checked)}
-                    className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer disabled:opacity-50"
                   />
                   Auto-claim on next unlock
                 </label>
@@ -168,26 +186,43 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
                   aria-expanded={showAutoClaimInfo}
                   aria-controls="auto-claim-info"
                   aria-label="Learn more about auto-claim"
+                  disabled={isInteractionDisabled}
                 >
                   <Info size={16} aria-hidden="true" />
                 </button>
               </div>
               <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                We will claim automatically the next time this lockup unlocks, so you do not need to revisit this screen.
+                When enabled, future unlocked tokens will be claimed automatically the next time an unlock event occurs, reducing the need for manual claims.
               </p>
               {showAutoClaimInfo && (
                 <div id="auto-claim-info" role="tooltip" className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-600 dark:border-slate-700 dark:bg-slate-800/80 dark:text-slate-300">
-                  Auto-claim keeps the process hands-off, but you can still change your preference later from the account settings.
+                  Auto-claim automatically executes when the next unlock event occurs. Note that standard network/gas fees still apply to each automatic claim. You can disable this preference anytime in your Account Settings.
                 </div>
               )}
             </div>
           </div>
         </div>
 
+        {/* High Gas Warning (Static upfront alert) */}
+        {gasEstimate >= 80 && claimState !== 'warning' && (
+          <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
+            <span>High gas warning: Network gas fees are currently high. Waiting for a less congested period or enabling auto-claim may reduce transaction costs.</span>
+          </div>
+        )}
+
         {claimState === 'warning' && (
           <div role="alert" className="mt-4 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
             <AlertTriangle size={16} className="mt-0.5 shrink-0" aria-hidden="true" />
-            <span>High gas fees may reduce your expected proceeds. Review the estimate before continuing.</span>
+            <span>{statusMessage}</span>
+          </div>
+        )}
+
+        {/* Success, Loading, Error feedback states */}
+        {claimState === 'loading' && (
+          <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-700 animate-pulse">
+            <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+            <span>{statusMessage}</span>
           </div>
         )}
 
@@ -197,17 +232,30 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
           </div>
         )}
 
-        {claimState !== 'idle' && claimState !== 'warning' && claimState !== 'error' && (
-          <div role="status" className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
-            {statusMessage}
+        {(claimState === 'success' || claimState === 'later') && (
+          <div role="status" className="mt-4 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+            <CheckCircle2 size={16} aria-hidden="true" />
+            <span>{statusMessage}</span>
           </div>
         )}
 
+        {/* Footer Actions */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <Button type="button" variant="secondary" onClick={handleClaimLater} className="w-full sm:w-auto">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleClaimLater}
+            disabled={isInteractionDisabled}
+            className="w-full sm:w-auto"
+          >
             Claim later
           </Button>
-          <Button type="button" onClick={handleClaimNow} className="w-full sm:w-auto">
+          <Button
+            type="button"
+            onClick={handleClaimNow}
+            disabled={isInteractionDisabled || isZeroUnlocked}
+            className="w-full sm:w-auto"
+          >
             Claim now
             <ChevronRight size={16} className="ml-2 inline" aria-hidden="true" />
           </Button>

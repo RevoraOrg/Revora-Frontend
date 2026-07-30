@@ -3,7 +3,19 @@ import { TOKEN_GROUPS, type TokenGroup, type Token } from "./tokens";
 import { contrastRatio, wcagGrade, LIGHT_SURFACE, DARK_SURFACE } from "./contrast";
 import { DevicePreview } from "./DevicePreview";
 import { ChartPaletteGuidelines } from "./ChartPaletteGuidelines";
+import { TokenDiffExport } from "./TokenDiffExport";
 import "./DesignTokensPage.css";
+
+// Mock previous tokens for demonstration
+const MOCK_PREVIOUS_TOKENS: TokenGroup[] = JSON.parse(JSON.stringify(TOKEN_GROUPS));
+const _colorGroup = MOCK_PREVIOUS_TOKENS.find((g) => g.id === "colors");
+if (_colorGroup) {
+  const primary = _colorGroup.tokens.find((t) => t.variable === "--primary");
+  if (primary) primary.value = "#1d4ed8"; // changed value
+  _colorGroup.tokens = _colorGroup.tokens.filter((t) => t.variable !== "--glass-border-bright"); // removed token
+  _colorGroup.tokens.push({ name: "Brand Accent", variable: "--brand-accent", value: "#f43f5e", description: "Added token" }); // added token
+}
+
 
 // ─── Copy hook ────────────────────────────────────────────────────────────────
 function useCopy() {
@@ -266,6 +278,7 @@ function TokenSection({
 export function DesignTokensPage() {
   const [search, setSearch] = useState("");
   const [surface, setSurface] = useState<"dark" | "light">("dark");
+  const [isDiffModalOpen, setIsDiffModalOpen] = useState(false);
   const { copy, copied } = useCopy();
 
   const surfaceHex = surface === "dark" ? DARK_SURFACE : LIGHT_SURFACE;
@@ -308,7 +321,10 @@ export function DesignTokensPage() {
           </div>
 
           {/* Export buttons */}
-          <button className="dt-export-btn" onClick={exportJSON}>
+          <button className="dt-export-btn" onClick={() => setIsDiffModalOpen(true)}>
+            View Changes & Export
+          </button>
+          <button className="dt-export-btn dt-export-btn--secondary" onClick={exportJSON}>
             ↓ Export JSON
           </button>
           <button
@@ -370,6 +386,14 @@ export function DesignTokensPage() {
             <p>No tokens match "<strong>{search}</strong>"</p>
           </div>
         )}
+
+      {/* Diff Modal */}
+      <TokenDiffExport
+        isOpen={isDiffModalOpen}
+        onClose={() => setIsDiffModalOpen(false)}
+        previousTokens={MOCK_PREVIOUS_TOKENS}
+        currentTokens={TOKEN_GROUPS}
+      />
     </div>
   );
 }

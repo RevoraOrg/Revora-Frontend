@@ -1,0 +1,300 @@
+.tde-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--spacing-lg);
+}
+
+.tde-modal-content {
+  background: var(--bg-color);
+  border: 1px solid var(--glass-border-bright);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 960px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+}
+
+.tde-header {
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--glass-bg);
+}
+
+.tde-title {
+  margin: 0;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-main);
+}
+
+.tde-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: var(--spacing-2xs);
+  border-radius: var(--radius-xs);
+  transition: all var(--transition-fast);
+}
+
+.tde-close-btn:hover {
+  background: var(--glass-bg-accent);
+  color: var(--text-main);
+}
+
+.tde-close-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.tde-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .tde-body {
+    flex-direction: column;
+  }
+}
+
+/* ─── Diff View ──────────────────────────────────────────────────────────── */
+
+.tde-diff-panel {
+  flex: 2;
+  overflow-y: auto;
+  border-right: 1px solid var(--glass-border);
+}
+
+[dir="rtl"] .tde-diff-panel {
+  border-right: none;
+  border-left: 1px solid var(--glass-border);
+}
+
+@media (max-width: 768px) {
+  .tde-diff-panel {
+    border-right: none;
+    border-bottom: 1px solid var(--glass-border);
+  }
+}
+
+.tde-diff-header {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.5fr) 1fr 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--glass-bg-accent);
+  border-bottom: 1px solid var(--glass-border);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.tde-diff-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.5fr) 1fr 1fr;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--glass-border);
+  align-items: center;
+  font-size: var(--font-size-sm);
+}
+
+.tde-diff-row:last-child {
+  border-bottom: none;
+}
+
+.tde-diff-row--added {
+  background: rgba(16, 185, 129, 0.05);
+}
+.tde-diff-row--removed {
+  background: rgba(239, 68, 68, 0.05);
+}
+.tde-diff-row--changed {
+  background: rgba(251, 191, 36, 0.05);
+}
+
+.tde-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tde-cell-name {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.tde-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: var(--radius-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  display: inline-block;
+}
+
+.tde-badge--added {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.tde-badge--removed {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--error);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.tde-badge--changed {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.tde-cell-value {
+  font-family: monospace;
+  color: var(--text-muted);
+}
+
+.tde-cell-value--old {
+  text-decoration: line-through;
+  opacity: 0.7;
+}
+
+.tde-cell-value--new {
+  color: var(--text-main);
+  font-weight: var(--font-weight-medium);
+}
+
+.tde-cell-value--none {
+  opacity: 0.5;
+  font-style: italic;
+}
+
+.tde-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-4xl);
+  color: var(--text-muted);
+  text-align: center;
+  height: 100%;
+}
+
+.tde-empty svg {
+  margin-bottom: var(--spacing-sm);
+  opacity: 0.5;
+}
+
+/* ─── Export Panel ───────────────────────────────────────────────────────── */
+
+.tde-export-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--glass-bg);
+  min-width: 320px;
+}
+
+.tde-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--glass-border);
+  padding: 0 var(--spacing-sm);
+}
+
+.tde-tab-btn {
+  background: none;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-muted);
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all var(--transition-fast);
+}
+
+.tde-tab-btn:hover {
+  color: var(--text-main);
+}
+
+.tde-tab-btn--active {
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.tde-tab-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  border-radius: var(--radius-xs);
+}
+
+.tde-code-wrap {
+  flex: 1;
+  padding: var(--spacing-md);
+  overflow-y: auto;
+  position: relative;
+}
+
+.tde-code {
+  margin: 0;
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+  color: var(--text-main);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.tde-footer {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--glass-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tde-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.tde-copy-btn:hover {
+  background: var(--primary-hover);
+}
+
+.tde-copy-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}

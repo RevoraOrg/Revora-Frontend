@@ -202,6 +202,8 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const [reminderOptIn, setReminderOptIn] = useState(false);
+
 export const DistributionDashboard: React.FC = () => {
   const {
     queue,
@@ -399,6 +401,7 @@ export const DistributionDashboard: React.FC = () => {
   }, [filteredPayouts]);
 
   const handlePreopenOptIn = useCallback(() => {
+    setReminderOptIn(true);
     console.log('User opted in for redemption window reminder');
   }, []);
 

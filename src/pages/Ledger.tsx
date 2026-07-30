@@ -105,6 +105,9 @@ export const Ledger: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [liveMessage, setLiveMessage] = useState('');
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [lastSelectedRow, setLastSelectedRow] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const pageSize = 10;
 
   // Refs for focus management
@@ -114,6 +117,124 @@ export const Ledger: React.FC = () => {
   const pageData = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return MOCK_ENTRIES.slice(start, start + pageSize);
+  }, [currentPage]);
+
+  const showToast = useCallback((msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 3000);
+  }, []);
+
+  const handleCopy = useCallback(() => {
+    const rowsToCopy = pageData.filter(r => selectedRows.has(r.id));
+    if (rowsToCopy.length === 0) return;
+
+    const headers = ['Date', 'Type', 'Amount', 'Asset', 'Status', 'Reference'].join('\t');
+    const rowStrings = rowsToCopy.map(row => 
+      [row.date, row.type, row.amount.toFixed(2), row.asset, row.status, row.reference].join('\t')
+    );
+    
+    const tsv = [headers, ...rowStrings].join('\n');
+    navigator.clipboard.writeText(tsv).then(() => {
+      showToast(`Copied ${rowsToCopy.length} row${rowsToCopy.length !== 1 ? 's' : ''} to clipboard`);
+    }).catch(err => {
+      console.error('Failed to copy', err);
+      showToast('Failed to copy to clipboard');
+    });
+  }, [pageData, selectedRows, showToast]);
+
+  const handleContainerKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'a') {
+      e.preventDefault();
+      const currentPageIds = pageData.map(r => r.id);
+      setSelectedRows(new Set(currentPageIds));
+      setLastSelectedRow(currentPageIds[0] ?? null);
+      return;
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'c') {
+      if (selectedRows.size > 0) {
+        e.preventDefault();
+        handleCopy();
+      }
+      return;
+    }
+  }, [pageData, selectedRows, handleCopy]);
+
+  const handleRowKeyDown = (e: React.KeyboardEvent<HTMLTableRowElement>, index: number) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const nextIndex = e.key === 'ArrowDown' ? index + 1 : index - 1;
+      if (nextIndex >= 0 && nextIndex < pageData.length) {
+        const nextRow = document.getElementById(`row-${pageData[nextIndex].id}`);
+        if (nextRow) nextRow.focus();
+
+        if (e.shiftKey) {
+          const startIdx = pageData.findIndex(r => r.id === lastSelectedRow);
+          const fromIdx = startIdx === -1 ? index : startIdx;
+          const minIdx = Math.min(fromIdx, nextIndex);
+          const maxIdx = Math.max(fromIdx, nextIndex);
+          
+          const newSelection = new Set<string>();
+          for (let i = minIdx; i <= maxIdx; i++) {
+            newSelection.add(pageData[i].id);
+          }
+          setSelectedRows(newSelection);
+        } else {
+          setSelectedRows(new Set([pageData[nextIndex].id]));
+          setLastSelectedRow(pageData[nextIndex].id);
+        }
+      }
+    }
+    
+    if (e.key === ' ' && !e.shiftKey) {
+      e.preventDefault();
+      const id = pageData[index].id;
+      setSelectedRows(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      setLastSelectedRow(id);
+    }
+  };
+
+  const handleRowClick = (e: React.MouseEvent, index: number) => {
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) return;
+
+    const id = pageData[index].id;
+    if (e.shiftKey && lastSelectedRow) {
+      const startIdx = pageData.findIndex(r => r.id === lastSelectedRow);
+      if (startIdx !== -1) {
+        const minIdx = Math.min(startIdx, index);
+        const maxIdx = Math.max(startIdx, index);
+        const newSelection = new Set<string>();
+        for (let i = minIdx; i <= maxIdx; i++) {
+          newSelection.add(pageData[i].id);
+        }
+        setSelectedRows(newSelection);
+        return;
+      }
+    }
+    
+    if (e.metaKey || e.ctrlKey) {
+      setSelectedRows(prev => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+      setLastSelectedRow(id);
+    } else {
+      setSelectedRows(new Set([id]));
+      setLastSelectedRow(id);
+    }
+  };
+
+  // Clear selection on page change
+  React.useEffect(() => {
+    setSelectedRows(new Set());
+    setLastSelectedRow(null);
   }, [currentPage]);
 
   const toggleRow = useCallback(
@@ -171,7 +292,11 @@ export const Ledger: React.FC = () => {
       </div>
 
       {/* Table container */}
-      <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
+      <div 
+        className="bg-white rounded-lg shadow overflow-hidden border border-gray-200 focus:outline-none" 
+        onKeyDown={handleContainerKeyDown}
+        tabIndex={-1}
+      >
         {/* Desktop table */}
         <table
           className="min-w-full divide-y divide-gray-200 hidden sm:table"
@@ -222,8 +347,9 @@ export const Ledger: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {pageData.map((row) => {
+            {pageData.map((row, index) => {
               const isExpanded = expandedRows.has(row.id);
+              const isSelected = selectedRows.has(row.id);
               const hasSubEvents =
                 row.subEvents !== undefined && row.subEvents.length > 0;
               const hasEmptySubEvents =
@@ -234,11 +360,18 @@ export const Ledger: React.FC = () => {
                 <React.Fragment key={row.id}>
                   {/* Parent row */}
                   <tr
-                    className={`hover:bg-gray-50 transition-colors duration-150 ${
-                      isExpanded
+                    id={`row-${row.id}`}
+                    tabIndex={0}
+                    onClick={(e) => handleRowClick(e, index)}
+                    onKeyDown={(e) => handleRowKeyDown(e, index)}
+                    className={`transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 cursor-pointer ${
+                      isSelected
+                        ? 'bg-blue-100/60'
+                        : isExpanded
                         ? 'bg-blue-50/40 border-l-4 border-l-blue-400'
-                        : ''
+                        : 'hover:bg-gray-50'
                     }`}
+                    aria-selected={isSelected}
                     aria-expanded={
                       hasSubEvents || hasEmptySubEvents
                         ? isExpanded
@@ -732,6 +865,21 @@ export const Ledger: React.FC = () => {
             </div>
           </div>
         </div>
+        
+        {/* Copy Toast Notification */}
+        {toastMessage && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-3 rounded-lg shadow-lg z-50 animate-fade-in flex items-center gap-2"
+            data-testid="ledger-toast"
+          >
+            <svg className="w-5 h-5 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            {toastMessage}
+          </div>
+        )}
       </div>
     </div>
   );

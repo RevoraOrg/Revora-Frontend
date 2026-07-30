@@ -1,10 +1,13 @@
-// Browser API stubs — runs before the vitest framework is injected.
-// Do NOT import anything from 'vitest' here.
-import '@testing-library/jest-dom';
+// Test setup — runs in the jsdom environment before each test file.
+// Uses globalThis.expect injected by vitest (globals: true) to extend matchers.
+import * as jestDomMatchers from '@testing-library/jest-dom/matchers';
 import { toHaveNoViolations } from 'jest-axe';
-import { expect } from 'vitest';
 
-expect.extend(toHaveNoViolations);
+// globalThis.expect is injected by vitest when globals: true is set.
+// We cannot import { expect } from 'vitest' here because setupFiles runs
+// before the vitest runner is fully initialised in vitest 4.x.
+(globalThis as any).expect?.extend(jestDomMatchers);
+(globalThis as any).expect?.extend(toHaveNoViolations);
 
 // ResizeObserver stub — jsdom does not implement it.
 global.ResizeObserver = class ResizeObserver {

@@ -217,6 +217,122 @@ describe('LedgerTable', () => {
     expect(screen.queryByTestId('detail-content')).not.toBeInTheDocument();
   });
 
+  describe('Keyboard row selection and range-copy (#243)', () => {
+    it('renders grid with aria-multiselectable', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      expect(screen.getByRole('grid')).toHaveAttribute('aria-multiselectable', 'true');
+    });
+
+    it('shows selection count badge when rows are selected via click', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'ArrowDown' });
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      expect(screen.getByText(/selected/)).toBeInTheDocument();
+    });
+
+    it('Ctrl+A selects all rows and shows count', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      expect(screen.getByText('3 selected')).toBeInTheDocument();
+    });
+
+    it('Escape clears selection', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      expect(screen.getByText('3 selected')).toBeInTheDocument();
+      fireEvent.keyDown(grid, { key: 'Escape' });
+      expect(screen.queryByText(/selected/)).not.toBeInTheDocument();
+    });
+
+    it('clear selection button removes selection badge', async () => {
+      const user = userEvent.setup();
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      const clearBtn = screen.getByLabelText('Clear selection');
+      await user.click(clearBtn);
+      expect(screen.queryByText(/selected/)).not.toBeInTheDocument();
+    });
+
+    it('Shift+ArrowDown extends selection', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'ArrowDown' }); // focus row 0
+      fireEvent.keyDown(grid, { key: 'ArrowDown', shiftKey: true }); // extend to row 1
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+    });
+
+    it('Shift+ArrowUp extends selection upward', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'ArrowDown' }); // row 0
+      fireEvent.keyDown(grid, { key: 'ArrowDown' }); // row 1
+      fireEvent.keyDown(grid, { key: 'ArrowDown' }); // row 2
+      fireEvent.keyDown(grid, { key: 'ArrowUp', shiftKey: true }); // extend up to row 1
+      expect(screen.getByText(/selected/)).toBeInTheDocument();
+    });
+
+    it('Ctrl+C triggers copy toast', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      fireEvent.keyDown(grid, { key: 'c', ctrlKey: true });
+      expect(screen.getByTestId('copy-toast')).toBeInTheDocument();
+    });
+
+    it('row click with shiftKey extends selection', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const alphaCell = screen.getByText('Alpha');
+      fireEvent.click(alphaCell); // select row 0
+      const gammaCell = screen.getByText('Gamma');
+      fireEvent.click(gammaCell, { shiftKey: true }); // shift-click row 2
+      expect(screen.getByText('3 selected')).toBeInTheDocument();
+    });
+
+    it('selected rows have lt-row--range-selected class', () => {
+      const { container } = render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      const selectedRows = container.querySelectorAll('.lt-row--range-selected');
+      expect(selectedRows.length).toBe(3);
+    });
+
+    it('selected rows have aria-selected=true', () => {
+      render(
+        <LedgerTable data={data} columns={columns} rowKey={(r) => r.id} />,
+      );
+      const grid = screen.getByRole('grid');
+      fireEvent.keyDown(grid, { key: 'a', ctrlKey: true });
+      const rows = screen.getAllByRole('row');
+      // data rows (not header)
+      const dataRows = rows.filter(r => r.getAttribute('aria-rowindex'));
+      dataRows.forEach(r => expect(r).toHaveAttribute('aria-selected', 'true'));
+    });
+  });
+
   describe('Virtualized Cell Focus Outlines', () => {
     it('renders floating focus ring overlay on row navigation', () => {
       render(

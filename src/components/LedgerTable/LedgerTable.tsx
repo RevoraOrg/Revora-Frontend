@@ -7,6 +7,8 @@ import {
   ChevronDown,
   ExternalLink,
 } from 'lucide-react';
+import { useLedgerSelection } from '../../hooks/useLedgerSelection';
+import { CopyToast } from './CopyToast';
 import './LedgerTable.css';
 
 // Global density modes (matches DensityProvider)
@@ -74,6 +76,7 @@ function LedgerTable<T>({
   const [showDensityMenu, setShowDensityMenu] = useState(false);
   const [selectedRow, setSelectedRow] = useState<string | number | null>(null);
   const [detailRow, setDetailRow] = useState<string | number | null>(null);
+  const [copyToastCount, setCopyToastCount] = useState<number | null>(null);
   
   const [groupBy, setGroupBy] = useState<keyof T | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
@@ -139,6 +142,27 @@ function LedgerTable<T>({
 
   const [selectedRowIndex, setSelectedRowIndex] = useState(-1);
   const [focusedColumnIndex, setFocusedColumnIndex] = useState<number>(-1);
+
+  const getRowCells = useCallback((pageIndex: number): string[] => {
+    const item = pageData[pageIndex];
+    if (!item || item.isGroup) return [];
+    return filteredColumns.map(col => {
+      const rendered = col.render(item.row);
+      return typeof rendered === 'string' || typeof rendered === 'number'
+        ? String(rendered)
+        : '';
+    });
+  }, [pageData, filteredColumns]);
+
+  const selection = useLedgerSelection({
+    rowCount: pageData.filter(r => !r.isGroup).length,
+    headers: filteredColumns.map(c => c.label),
+    getRowCells,
+    onCopy: (_tsv, count) => {
+      navigator.clipboard?.writeText(_tsv).catch(() => {});
+      setCopyToastCount(count);
+    },
+  });
   const [focusBounds, setFocusBounds] = useState<{ left: number; width: number } | null>(null);
   const focusedRowRef = useRef<HTMLDivElement | null>(null);
 
@@ -250,6 +274,20 @@ function LedgerTable<T>({
         ? getComputedStyle(scrollRef.current).direction === 'rtl' || document.dir === 'rtl'
         : false;
 
+      // Delegate Ctrl/Cmd+A, Ctrl/Cmd+C, Shift+Arrow to selection hook
+      const mod = e.ctrlKey || e.metaKey;
+      if ((mod && (e.key === 'a' || e.key === 'c')) ||
+          (e.shiftKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))) {
+        selection.handleKeyDown(e, selectedRowIndex, maxIndex);
+        // For Shift+Arrow also advance the focused row
+        if (e.shiftKey && e.key === 'ArrowDown') {
+          setSelectedRowIndex(prev => Math.min(prev + 1, maxIndex));
+        } else if (e.shiftKey && e.key === 'ArrowUp') {
+          setSelectedRowIndex(prev => Math.max(prev - 1, 0));
+        }
+        return;
+      }
+
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
@@ -328,11 +366,15 @@ function LedgerTable<T>({
           }
           break;
         case 'Escape':
-          setDetailRow(null);
+          if (selection.selectedIds.size > 0) {
+            selection.clearSelection();
+          } else {
+            setDetailRow(null);
+          }
           break;
       }
     },
-    [pageData, selectedRowIndex, totalCols, rowKey, rowDetail, handleRowClick, toggleGroup],
+    [pageData, selectedRowIndex, totalCols, rowKey, rowDetail, handleRowClick, toggleGroup, selection],
   );
 
   if (columns.length === 0) {
@@ -350,6 +392,19 @@ function LedgerTable<T>({
           <span className="lt-row-count">
             {data.length} row{data.length !== 1 ? 's' : ''}
           </span>
+          {selection.selectedIds.size > 0 && (
+            <span className="lt-selection-count" aria-live="polite" aria-atomic="true">
+              {selection.selectedIds.size} selected
+              <button
+                type="button"
+                className="lt-selection-clear"
+                onClick={selection.clearSelection}
+                aria-label="Clear selection"
+              >
+                <X size={12} aria-hidden="true" />
+              </button>
+            </span>
+          )}
           {totalPages > 1 && (
             <span className="lt-page-info">
               Page {currentPage + 1} of {totalPages}
@@ -454,12 +509,15 @@ function LedgerTable<T>({
         </div>
       )}
 
+      <CopyToast rowCount={copyToastCount} onDismiss={() => setCopyToastCount(null)} />
+
       <div
         ref={scrollRef}
         className={`lt-table-wrap ${DENSITY_CLASS[density]}`}
         tabIndex={0}
         role="grid"
         aria-label={ariaLabel}
+        aria-multiselectable="true"
         onKeyDown={handleKeyDown}
         onScroll={(e) => setScrollTop((e.target as HTMLDivElement).scrollTop)}
         aria-rowcount={pageData.length}
@@ -546,15 +604,16 @@ function LedgerTable<T>({
             const key = rowKey(row);
             const isSelected = selectedRow === key;
             const isDetailOpen = detailRow === key;
+            const isRangeSelected = selection.isSelected(globalIndex);
             
             return (
               <React.Fragment key={key}>
                 <div
                   ref={isRowFocused ? focusedRowRef : undefined}
-                  className={`lt-row ${isSelected ? 'lt-row--selected' : ''} ${isRowFocused ? 'lt-row--focused' : ''}`}
+                  className={`lt-row ${isSelected ? 'lt-row--selected' : ''} ${isRowFocused ? 'lt-row--focused' : ''} ${isRangeSelected ? 'lt-row--range-selected' : ''}`}
                   role="row"
                   aria-rowindex={globalIndex + 1}
-                  aria-selected={isSelected}
+                  aria-selected={isRangeSelected || isSelected}
                   style={{
                     position: 'absolute',
                     top: globalIndex * rowHeight,
@@ -562,7 +621,10 @@ function LedgerTable<T>({
                     right: 0,
                     height: rowHeight,
                   }}
-                  onClick={() => handleRowClick(row, globalIndex)}
+                  onClick={(e) => {
+                    handleRowClick(row, globalIndex);
+                    selection.handleRowSelect(globalIndex, e.shiftKey);
+                  }}
                   tabIndex={-1}
                 >
                   {rowDetail && (

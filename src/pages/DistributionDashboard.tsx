@@ -2,17 +2,26 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AdminHero } from '../components/AdminHero';
 import type { AdminTileData, IncidentData } from '../components/AdminHero';
-import { Button } from '../components/Button';
 import { LockupClaimModal } from '../components/LockupClaimModal';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
 import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 import type { DistributionFilterState } from '../components/DistributionFilterToolbar/DistributionFilterToolbar.types';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel';
 import type { PayoutDetail, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
 import { ErrorRateSparklineTile } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
 import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
+import { RevenuePayoutChart, type RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
+import { BlacklistBulkRemoveConfirm } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
+import { FinancialTermsForm } from '../components/FinancialTermsForm/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
+import { SaveAsDraft } from '../components/designSystem/SaveAsDraft';
+import { EmptyState } from '../components/designSystem/EmptyState';
+import { GovernanceResults } from '../components/designSystem/GovernanceResults';
+import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
@@ -218,7 +227,7 @@ const mockUploader: Uploader = (file, onProgress) => {
 };
 
 export const DistributionDashboard: React.FC = () => {
-  const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
+  const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -252,7 +261,7 @@ export const DistributionDashboard: React.FC = () => {
     (id: string, uploader: Uploader) => {
       retryFile(id, uploader);
     },
-    [retryFile],
+    [searchParams, setSearchParams]
   );
 
   const handleResetFilters = useCallback(() => {
@@ -267,13 +276,6 @@ export const DistributionDashboard: React.FC = () => {
     };
     updateFiltersAndUrl(defaultState);
   }, [updateFiltersAndUrl]);
-
-  const handleOpenPanel = (id: string) => {
-    setSelectedPayoutId(id);
-    const newParams = new URLSearchParams(searchParams);
-    newParams.set('payoutId', id);
-    setSearchParams(newParams);
-  };
 
   const handleClosePanel = () => {
     setSelectedPayoutId(null);
@@ -369,38 +371,6 @@ export const DistributionDashboard: React.FC = () => {
     });
   }, [payoutsList, filterState]);
 
-  const segmentedData = useMemo(() => {
-    const effectiveSegment =
-      filterState.segmentBy !== 'none'
-        ? filterState.segmentBy
-        : filterState.compareMode
-        ? 'region'
-        : 'none';
-
-    if (effectiveSegment === 'none') return null;
-
-    const groups: {
-      [key: string]: { count: number; totalDistributed: number; payouts: ExtendedPayoutDetail[] };
-    } = {};
-
-    filteredPayouts.forEach((p) => {
-      let key = 'Other';
-      if (effectiveSegment === 'region') key = p.region || 'Other';
-      if (effectiveSegment === 'offering') key = p.offeringName;
-      if (effectiveSegment === 'status') key = p.status.toUpperCase();
-      if (effectiveSegment === 'tier') key = p.tier || 'Standard';
-
-      if (!groups[key]) {
-        groups[key] = { count: 0, totalDistributed: 0, payouts: [] };
-      }
-      groups[key].count += 1;
-      groups[key].totalDistributed += p.netAmount;
-      groups[key].payouts.push(p);
-    });
-
-    return groups;
-  }, [filteredPayouts, filterState.segmentBy, filterState.compareMode]);
-
   const selectedPayoutData = useMemo(() => {
     return payoutsList.find((p) => p.id === selectedPayoutId) || null;
   }, [payoutsList, selectedPayoutId]);
@@ -411,10 +381,6 @@ export const DistributionDashboard: React.FC = () => {
 
   const totalGasSpent = useMemo(() => {
     return filteredPayouts.reduce((sum, p) => sum + p.gasFeeUsd, 0);
-  }, [filteredPayouts]);
-
-  const failedCount = useMemo(() => {
-    return filteredPayouts.filter((p) => p.status === 'failed').length;
   }, [filteredPayouts]);
 
   const activePayouts = useMemo(() => {
@@ -434,7 +400,7 @@ export const DistributionDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       <AdminHero
         tiles={SAMPLE_TILES}
         incident={SAMPLE_INCIDENT}
@@ -442,7 +408,7 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
+
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}
@@ -450,6 +416,7 @@ export const DistributionDashboard: React.FC = () => {
           onDismiss={handlePreopenDismiss}
         />
       )}
+
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -475,6 +442,22 @@ export const DistributionDashboard: React.FC = () => {
           </a>
         </div>
       </div>
+
+      {/* Recent Uploads Queue */}
+      <section aria-labelledby="uploads-queue-heading" className="space-y-4">
+        <h2 id="uploads-queue-heading" className="text-xl font-semibold">Recent Uploads Queue</h2>
+        <div className="space-y-3">
+          <DocumentUploadStatus
+            fileName="Q3_Revenue_Report.pdf"
+            status="clean"
+          />
+          <DocumentUploadStatus
+            fileName="malicious_payload.exe"
+            status="quarantined"
+            auditNote="Flagged by security scan."
+          />
+        </div>
+      </section>
 
       {/* Filter Toolbar */}
       <DistributionFilterToolbar
@@ -568,12 +551,12 @@ export const DistributionDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* ── Revenue vs Payouts Chart ── */}
+      {/* Revenue vs Payouts Chart */}
       <div className="mt-8">
         <RevenuePayoutChart data={MOCK_REVENUE_PAYOUT_DATA} revenueCurrency="USD" payoutCurrency="USD" />
       </div>
 
-      {/* ── Payout Error Rate Sparkline Tiles ── */}
+      {/* Payout Error Rate Sparkline Tiles */}
       <section aria-labelledby="error-rate-heading" data-testid="error-rate-section">
         <div className="flex items-center justify-between mb-4">
           <h2 id="error-rate-heading" className="text-xl font-semibold">
@@ -647,6 +630,13 @@ export const DistributionDashboard: React.FC = () => {
         </div>
       </section>
 
+      {/* Governance Results */}
+      <GovernanceResults
+        results={{ for: 120000, against: 30000, abstain: 5000 }}
+        participation={{ turnout: 68.4, uniqueVoters: 142, delegates: 12 }}
+        status="passed"
+      />
+
       {/* Governance Delegation */}
       <div className="mt-8">
         <GovernanceDelegation />
@@ -662,7 +652,7 @@ export const DistributionDashboard: React.FC = () => {
       </div>
 
       {/* Financial terms wizard step */}
-      <section aria-labelledby="financial-terms-heading">
+      <section aria-labelledby="financial-terms-heading" className="space-y-4">
         <h2
           id="financial-terms-heading"
           style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-md)' }}
@@ -672,12 +662,26 @@ export const DistributionDashboard: React.FC = () => {
         <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
           <FinancialTermsForm
             onSubmit={(values: Record<FinancialTermsField, number>) => {
-              // Replace with real API call
               console.log('Financial terms submitted:', values);
             }}
           />
         </div>
       </section>
+
+      {filteredPayouts.length === 0 && (
+        <EmptyState
+          title="No distributions yet"
+          description="There are no payout cycles matching your selected filters."
+        />
+      )}
+
+      {/* Footer Navigation with Save-as-Draft affordance */}
+      <footer className="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-700">
+        <Link to="/investor/portal" className="text-sm text-primary hover:underline">
+          Back to Discovery
+        </Link>
+        <SaveAsDraft onSave={async () => new Promise((res) => setTimeout(res, 300))} />
+      </footer>
 
       {/* Drill-down Panel */}
       <PayoutDrillDownPanel
@@ -706,7 +710,6 @@ export const DistributionDashboard: React.FC = () => {
         ]}
         onConfirm={async (reason, initials) => {
           console.log('Confirmed bulk remove:', { reason, initials });
-          // Mock API call
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }}
       />

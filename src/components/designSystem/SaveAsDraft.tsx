@@ -34,6 +34,16 @@ export const SaveAsDraft: React.FC<SaveAsDraftProps> = ({ onSave, className = ''
     }
   };
 
+  // Auto-hide success message after 3s and transition to idle (showing lastSaved timestamp)
+  useEffect(() => {
+    if (status === 'success') {
+      const timer = setTimeout(() => {
+        setStatus('idle');
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [status]);
+
   // Focus management on error for accessibility
   useEffect(() => {
     if (status === 'error' && statusRef.current) {

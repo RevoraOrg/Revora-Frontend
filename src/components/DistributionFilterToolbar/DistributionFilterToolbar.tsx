@@ -391,7 +391,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                 data-testid="filter-segment-select"
               >
                 <option value="none">None</option>
-                <option value="region">By Region</option>
+                <option value="region">By Geographic Region</option>
                 <option value="offering">By Issuer / Offering</option>
                 <option value="status">By Execution Status</option>
                 <option value="tier">By Investor Tier</option>
@@ -694,7 +694,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                 onChange={(e) => updateFilter('segmentBy', e.target.value as SegmentOption)}
               >
                 <option value="none">None</option>
-                <option value="region">By Region</option>
+                <option value="region">By Geographic Region</option>
                 <option value="offering">By Issuer / Offering</option>
                 <option value="status">By Execution Status</option>
                 <option value="tier">By Investor Tier</option>

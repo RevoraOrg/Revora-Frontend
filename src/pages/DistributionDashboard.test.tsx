@@ -178,6 +178,86 @@ describe('DistributionDashboard', () => {
     expect(backLink.closest('a')).toHaveAttribute('href', '/investor/portal');
   });
 
+  describe('cohort payout heatmap', () => {
+    it('renders cohort heatmap section', () => {
+      renderWithRouter();
+      expect(screen.getByTestId('cohort-heatmap-section')).toBeInTheDocument();
+    });
+
+    it('renders Cohort Payout Heatmap title', () => {
+      renderWithRouter();
+      expect(screen.getByText('Cohort Payout Heatmap')).toBeInTheDocument();
+    });
+
+    it('renders cohort names from mock data', () => {
+      renderWithRouter();
+      expect(screen.getByText('2024 Q1')).toBeInTheDocument();
+      expect(screen.getByText('2024 Q2')).toBeInTheDocument();
+      expect(screen.getByText('2024 Q3')).toBeInTheDocument();
+      expect(screen.getByText('2024 Q4')).toBeInTheDocument();
+      expect(screen.getByText('2025 Q1')).toBeInTheDocument();
+    });
+
+    it('renders cohort sizes', () => {
+      renderWithRouter();
+      expect(screen.getByText('(120)')).toBeInTheDocument();
+      expect(screen.getByText('(95)')).toBeInTheDocument();
+      expect(screen.getByText('(150)')).toBeInTheDocument();
+      expect(screen.getByText('(80)')).toBeInTheDocument();
+      expect(screen.getByText('(65)')).toBeInTheDocument();
+    });
+
+    it('renders month column headers', () => {
+      renderWithRouter();
+      expect(screen.getByLabelText('Month 1')).toBeInTheDocument();
+      expect(screen.getByLabelText('Month 12')).toBeInTheDocument();
+    });
+
+    it('renders color-blind safe toggle', () => {
+      renderWithRouter();
+      expect(screen.getByLabelText('Enable color-blind safe mode and patterns')).toBeInTheDocument();
+    });
+
+    it('renders heatmap legend', () => {
+      const { container } = renderWithRouter();
+      const legend = container.querySelector('.heatmap-legend');
+      expect(legend).toHaveTextContent('Less');
+      expect(legend).toHaveTextContent('More');
+    });
+
+    it('renders payout cells with correct aria-labels', () => {
+      renderWithRouter();
+      expect(screen.getByLabelText('2024 Q1 Month 1: $45,000 payout, 12.5%')).toBeInTheDocument();
+      expect(screen.getByLabelText('2025 Q1 Month 1: $8,000 payout, 2.4%')).toBeInTheDocument();
+    });
+
+    it('renders empty cells for missing months', () => {
+      renderWithRouter();
+      expect(screen.getByLabelText('2025 Q1 Month 2: No data')).toBeInTheDocument();
+      expect(screen.getByLabelText('2024 Q4 Month 3: No data')).toBeInTheDocument();
+    });
+
+    it('toggles color-blind safe mode via checkbox', () => {
+      renderWithRouter();
+      const container = screen.getByText('Cohort Payout Heatmap').closest('.cohort-heatmap-container');
+      expect(container).not.toHaveClass('heatmap-cb-safe');
+
+      const toggle = screen.getByLabelText('Enable color-blind safe mode and patterns');
+      fireEvent.click(toggle);
+
+      expect(container).toHaveClass('heatmap-cb-safe');
+    });
+
+    it('renders tooltip content in cells', () => {
+      renderWithRouter();
+      const cell = screen.getByLabelText('2024 Q1 Month 1: $45,000 payout, 12.5%');
+      const tooltip = cell.querySelector('.heatmap-tooltip');
+      expect(tooltip).toHaveTextContent('2024 Q1 - M1');
+      expect(tooltip).toHaveTextContent('Payout: $45,000');
+      expect(tooltip).toHaveTextContent('Rate: 12.5%');
+    });
+  });
+
   it('passes axe accessibility checks with 0 violations', async () => {
     const { container } = renderWithRouter();
     const results = await axe(container);

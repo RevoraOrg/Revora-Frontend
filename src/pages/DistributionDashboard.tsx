@@ -1,15 +1,10 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { AdminHero } from '../components/AdminHero';
-import type { AdminTileData, IncidentData } from '../components/AdminHero';
-import { Button } from '../components/Button';
-import { LockupClaimModal } from '../components/LockupClaimModal';
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { AdminHero } from '../components/AdminHero';
+import type { AdminTileData, IncidentData } from '../components/AdminHero';
+import { LockupClaimModal } from '../components/LockupClaimModal';
 import { EmptyState } from '../components/designSystem/EmptyState';
-import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
-import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 import type { DistributionFilterState } from '../components/DistributionFilterToolbar/DistributionFilterToolbar.types';
 import type { PayoutDetail, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
 import { ErrorRateSparklineTile } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
@@ -17,6 +12,15 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
+import { PreOpenBanner } from '../components/PreOpenBanner';
+import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { FinancialTermsForm } from '../components/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel';
+import { useUploadQueue } from '../hooks/useUploadQueue';
+import type { Uploader } from '../hooks/useUploadQueue';
+import { CohortHeatmap, CohortData } from '../components/CohortHeatmap';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -177,10 +181,68 @@ const SAMPLE_TILES: AdminTileData[] = [
 
 const SAMPLE_INCIDENT: IncidentData | null = null;
 
+const MOCK_COHORT_DATA: CohortData[] = [
+  {
+    cohortName: '2024 Q1',
+    cohortSize: 120,
+    payouts: [
+      { monthIndex: 0, payoutAmount: 45000, payoutPercentage: 12.5 },
+      { monthIndex: 1, payoutAmount: 52000, payoutPercentage: 14.2 },
+      { monthIndex: 2, payoutAmount: 38000, payoutPercentage: 10.1 },
+      { monthIndex: 3, payoutAmount: 61000, payoutPercentage: 16.8 },
+      { monthIndex: 4, payoutAmount: 48000, payoutPercentage: 13.0 },
+      { monthIndex: 5, payoutAmount: 72000, payoutPercentage: 19.5 },
+    ],
+  },
+  {
+    cohortName: '2024 Q2',
+    cohortSize: 95,
+    payouts: [
+      { monthIndex: 0, payoutAmount: 28000, payoutPercentage: 8.2 },
+      { monthIndex: 1, payoutAmount: 35000, payoutPercentage: 10.5 },
+      { monthIndex: 2, payoutAmount: 41000, payoutPercentage: 12.3 },
+      { monthIndex: 3, payoutAmount: 29000, payoutPercentage: 8.7 },
+    ],
+  },
+  {
+    cohortName: '2024 Q3',
+    cohortSize: 150,
+    payouts: [
+      { monthIndex: 0, payoutAmount: 55000, payoutPercentage: 15.0 },
+      { monthIndex: 1, payoutAmount: 68000, payoutPercentage: 18.6 },
+      { monthIndex: 2, payoutAmount: 44000, payoutPercentage: 12.0 },
+    ],
+  },
+  {
+    cohortName: '2024 Q4',
+    cohortSize: 80,
+    payouts: [
+      { monthIndex: 0, payoutAmount: 12000, payoutPercentage: 3.5 },
+      { monthIndex: 1, payoutAmount: 19000, payoutPercentage: 5.8 },
+    ],
+  },
+  {
+    cohortName: '2025 Q1',
+    cohortSize: 65,
+    payouts: [
+      { monthIndex: 0, payoutAmount: 8000, payoutPercentage: 2.4 },
+    ],
+  },
+];
+
+const mockUploader: Uploader = async (file, onProgress) => {
+  for (let pct = 0; pct <= 100; pct += 10) {
+    onProgress(pct);
+    await new Promise((r) => setTimeout(r, 200));
+  }
+};
+
 export const DistributionDashboard: React.FC = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const preopenTargetDate = useMemo(() => {
@@ -202,7 +264,19 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-export const DistributionDashboard: React.FC = () => {
+  const updateFiltersAndUrl = useCallback((newFilters: DistributionFilterState) => {
+    setFilterState(newFilters);
+    const params = new URLSearchParams();
+    if (newFilters.searchQuery) params.set('search', newFilters.searchQuery);
+    if (newFilters.dateRange !== 'all') params.set('date', newFilters.dateRange);
+    if (newFilters.issuer !== 'all') params.set('issuer', newFilters.issuer);
+    if (newFilters.region !== 'all') params.set('region', newFilters.region);
+    if (newFilters.status !== 'all') params.set('status', newFilters.status);
+    if (newFilters.segmentBy !== 'none') params.set('segment', newFilters.segmentBy);
+    if (newFilters.compareMode) params.set('compare', 'true');
+    setSearchParams(params, { replace: true });
+  }, [setSearchParams]);
+
   const {
     queue,
     addFiles,
@@ -407,7 +481,7 @@ export const DistributionDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       <AdminHero
         tiles={SAMPLE_TILES}
         incident={SAMPLE_INCIDENT}
@@ -415,7 +489,6 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}
@@ -501,6 +574,11 @@ export const DistributionDashboard: React.FC = () => {
       <div className="mt-8">
         <RevenuePayoutChart data={MOCK_REVENUE_PAYOUT_DATA} revenueCurrency="USD" payoutCurrency="USD" />
       </div>
+
+      {/* ── Cohort Payout Heatmap ── */}
+      <section aria-labelledby="cohort-heatmap-heading" data-testid="cohort-heatmap-section">
+        <CohortHeatmap data={MOCK_COHORT_DATA} maxMonths={12} />
+      </section>
 
       {/* ── Payout Error Rate Sparkline Tiles ── */}
       <section aria-labelledby="error-rate-heading" data-testid="error-rate-section">

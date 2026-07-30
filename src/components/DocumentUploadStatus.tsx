@@ -23,6 +23,12 @@ export const DocumentUploadStatus: React.FC<DocumentUploadStatusProps> = ({
   status,
   remediationUrl,
   auditNote,
+  uploadProgress,
+  fileSize,
+  onReplace,
+  onRemove,
+  isUploading,
+  errorMessage,
 }) => {
   const config = {
     scanning: {

@@ -17,6 +17,7 @@ import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
 import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
+import { PayoutSchedule } from "./pages/PayoutSchedule";
 
 export function App() {
   return (
@@ -60,6 +61,8 @@ export function App() {
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+          {/* Issue #442 – Gantt-style Payout Schedule */}
+          <Route path="/investor/payouts" element={<PayoutSchedule />} />
 
           {/* Admin routes */}
           <Route path="/admin/alerts" element={<AdminAlertsInbox />} />

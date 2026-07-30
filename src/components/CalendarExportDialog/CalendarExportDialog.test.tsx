@@ -82,17 +82,46 @@ describe('CalendarExportDialog', () => {
     expect(input.value).not.toBe(initialUrl);
   });
 
-  it('revokes URL', () => {
+  it('revokes URL after confirmation', () => {
     setup();
     const revokeBtn = screen.getByRole('button', { name: /revoke/i });
     fireEvent.click(revokeBtn);
     
+    const confirmBtn = screen.getByRole('button', { name: /confirm revoke/i });
+    expect(confirmBtn).toBeInTheDocument();
+    
+    fireEvent.click(confirmBtn);
+    
     const input = screen.getByLabelText(/subscription url/i) as HTMLInputElement;
     expect(input.value).toBe('URL Revoked');
     
-    // Revoke should disable copy and revoke buttons
     const copyBtn = screen.getByRole('button', { name: /copy url/i });
     expect(copyBtn).toBeDisabled();
-    expect(revokeBtn).toBeDisabled();
+    
+    const newRevokeBtn = screen.getByRole('button', { name: /revoke/i });
+    expect(newRevokeBtn).toBeDisabled();
+  });
+
+  it('cancels revoke URL', () => {
+    setup();
+    const input = screen.getByLabelText(/subscription url/i) as HTMLInputElement;
+    const initialUrl = input.value;
+    
+    const revokeBtn = screen.getByRole('button', { name: /revoke/i });
+    fireEvent.click(revokeBtn);
+    
+    const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+    fireEvent.click(cancelBtn);
+    
+    expect(screen.queryByRole('button', { name: /confirm revoke/i })).not.toBeInTheDocument();
+    expect(input.value).toBe(initialUrl);
+  });
+
+  it('changes client instructions tab', () => {
+    setup();
+    const appleTab = screen.getByRole('tab', { name: /apple/i });
+    fireEvent.click(appleTab);
+    expect(appleTab).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByText(/Open the Calendar app on your Mac/i)).toBeInTheDocument();
   });
 });

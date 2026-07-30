@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Copy, RefreshCw, Trash2, Check } from 'lucide-react';
+import { X, Copy, RefreshCw, Trash2, Check, AlertTriangle } from 'lucide-react';
 import { Button } from '../Button';
 import './CalendarExportDialog.css';
 
@@ -9,12 +9,16 @@ interface CalendarExportDialogProps {
 }
 
 type Scope = 'single' | 'issuer' | 'all';
+type ClientTab = 'google' | 'outlook' | 'apple';
 
 export const CalendarExportDialog: React.FC<CalendarExportDialogProps> = ({ isOpen, onClose }) => {
   const [scope, setScope] = useState<Scope>('all');
   const [token, setToken] = useState('a1b2c3d4e5f6g7h8');
   const [copied, setCopied] = useState(false);
-  const [lastUsed, setLastUsed] = useState<string | null>(null);
+  const [lastUsed, setLastUsed] = useState<string | null>('Today at 10:42 AM');
+  const [clientTab, setClientTab] = useState<ClientTab>('google');
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
+  
   const inputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
@@ -27,7 +31,6 @@ export const CalendarExportDialog: React.FC<CalendarExportDialogProps> = ({ isOp
         setTimeout(() => setCopied(false), 2000);
       });
     } else {
-      // Fallback for older browsers
       if (inputRef.current) {
         inputRef.current.select();
         try {
@@ -44,11 +47,13 @@ export const CalendarExportDialog: React.FC<CalendarExportDialogProps> = ({ isOp
   const handleRegenerate = () => {
     setToken(Math.random().toString(36).substring(2, 18));
     setLastUsed(null);
+    setShowRevokeConfirm(false);
   };
 
   const handleRevoke = () => {
     setToken('');
     setLastUsed(null);
+    setShowRevokeConfirm(false);
   };
 
   const preventAutoClose = (e: React.MouseEvent) => {
@@ -136,44 +141,120 @@ export const CalendarExportDialog: React.FC<CalendarExportDialogProps> = ({ isOp
               {copied ? 'Copied' : 'Copy'}
             </Button>
           </div>
-          {lastUsed && (
+          {lastUsed && token && (
             <p className="text-muted" style={{ fontSize: '0.75rem' }}>
               Last used: {lastUsed}
             </p>
           )}
         </div>
 
-        <div className="calendar-actions">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleRegenerate}
-            style={{ flex: 1 }}
-          >
-            <RefreshCw size={18} />
-            Regenerate
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={handleRevoke}
-            disabled={!token}
-            className="text-error"
-            style={{ flex: 1 }}
-          >
-            <Trash2 size={18} />
-            Revoke
-          </Button>
+        <div className="calendar-actions-group">
+          {!showRevokeConfirm ? (
+            <div className="calendar-actions">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={handleRegenerate}
+                style={{ flex: 1 }}
+              >
+                <RefreshCw size={18} />
+                Regenerate
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setShowRevokeConfirm(true)}
+                disabled={!token}
+                className="text-error"
+                style={{ flex: 1 }}
+              >
+                <Trash2 size={18} />
+                Revoke
+              </Button>
+            </div>
+          ) : (
+            <div className="calendar-revoke-confirm" role="alert">
+              <div className="calendar-revoke-confirm-msg">
+                <AlertTriangle size={16} className="text-error" />
+                <span className="text-sm font-medium">Are you sure? Existing calendar syncs will break.</span>
+              </div>
+              <div className="calendar-revoke-confirm-actions">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setShowRevokeConfirm(false)}
+                  style={{ flex: 1 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={handleRevoke}
+                  className="bg-error hover:bg-error/90 text-white border-error"
+                  style={{ flex: 1 }}
+                >
+                  Confirm Revoke
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="calendar-instructions">
-          <h3 className="calendar-instructions-title">Instructions</h3>
-          {/* Default to Google for now as an example, but list them all or simple instructions */}
-          <ul className="calendar-instructions-list">
-            <li><strong>Google Calendar:</strong> Settings &gt; Add calendar &gt; From URL</li>
-            <li><strong>Outlook:</strong> Add calendar &gt; Subscribe from web</li>
-            <li><strong>Apple Calendar:</strong> File &gt; New Calendar Subscription</li>
-          </ul>
+          <div className="calendar-instructions-header">
+            <h3 className="calendar-instructions-title" id="calendar-instructions-title">Instructions</h3>
+            <div className="calendar-instructions-tabs" role="tablist" aria-label="Calendar Client">
+              <button
+                role="tab"
+                aria-selected={clientTab === 'google'}
+                className={`calendar-client-tab ${clientTab === 'google' ? 'calendar-client-tab-active' : ''}`}
+                onClick={() => setClientTab('google')}
+              >
+                Google
+              </button>
+              <button
+                role="tab"
+                aria-selected={clientTab === 'outlook'}
+                className={`calendar-client-tab ${clientTab === 'outlook' ? 'calendar-client-tab-active' : ''}`}
+                onClick={() => setClientTab('outlook')}
+              >
+                Outlook
+              </button>
+              <button
+                role="tab"
+                aria-selected={clientTab === 'apple'}
+                className={`calendar-client-tab ${clientTab === 'apple' ? 'calendar-client-tab-active' : ''}`}
+                onClick={() => setClientTab('apple')}
+              >
+                Apple
+              </button>
+            </div>
+          </div>
+          
+          <div className="calendar-instructions-content" role="tabpanel" aria-labelledby="calendar-instructions-title">
+            {clientTab === 'google' && (
+              <ol className="calendar-instructions-list">
+                <li>Go to Google Calendar on the web.</li>
+                <li>Next to "Other calendars" on the left, click <strong>+</strong> &gt; <strong>From URL</strong>.</li>
+                <li>Paste the URL above and click <strong>Add calendar</strong>.</li>
+              </ol>
+            )}
+            {clientTab === 'outlook' && (
+              <ol className="calendar-instructions-list">
+                <li>Go to Outlook Calendar on the web.</li>
+                <li>Click <strong>Add calendar</strong> &gt; <strong>Subscribe from web</strong>.</li>
+                <li>Paste the URL above, name the calendar, and click <strong>Import</strong>.</li>
+              </ol>
+            )}
+            {clientTab === 'apple' && (
+              <ol className="calendar-instructions-list">
+                <li>Open the Calendar app on your Mac.</li>
+                <li>Choose <strong>File</strong> &gt; <strong>New Calendar Subscription</strong>.</li>
+                <li>Paste the URL above and click <strong>Subscribe</strong>.</li>
+              </ol>
+            )}
+          </div>
         </div>
       </div>
     </div>

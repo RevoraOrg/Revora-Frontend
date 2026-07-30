@@ -42,4 +42,12 @@ export const KEYBOARD_SHORTCUT_GROUPS: ShortcutGroup[] = [
       { label: 'Show/hide shortcuts', keys: ['?'] },
     ],
   },
+  {
+    title: 'Ledger',
+    shortcuts: [
+      { label: 'Select range of rows', keys: ['shift', 'ArrowUp', '/', 'ArrowDown'] },
+      { label: 'Select all visible rows', keys: ['mod', 'a'] },
+      { label: 'Copy selected rows', keys: ['mod', 'c'] },
+    ],
+  },
 ];

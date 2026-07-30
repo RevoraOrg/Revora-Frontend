@@ -621,4 +621,38 @@ describe('Ledger Component', () => {
       expect(screen.getByText('1 / 5')).toBeInTheDocument();
     });
   });
+  describe('Keyboard Row Selection and Range-Copy', () => {
+    it('supports selecting all visible rows with Ctrl+A', async () => {
+      render(<Ledger />);
+      const container = screen.getByRole('table').parentElement;
+      if (!container) throw new Error('Container not found');
+      
+      fireEvent.keyDown(container, { key: 'a', ctrlKey: true });
+      
+      // All 10 visible rows should be selected (bg-blue-50)
+      const selectedRows = container.querySelectorAll('tr.bg-blue-50');
+      expect(selectedRows.length).toBe(10);
+    });
+
+    it('copies selected rows to clipboard on Ctrl+C', async () => {
+      // Mock clipboard
+      const originalClipboard = navigator.clipboard;
+      const writeTextMock = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, {
+        clipboard: { writeText: writeTextMock }
+      });
+
+      render(<Ledger />);
+      const container = screen.getByRole('table').parentElement;
+      if (!container) throw new Error('Container not found');
+      
+      fireEvent.keyDown(container, { key: 'a', ctrlKey: true });
+      fireEvent.keyDown(container, { key: 'c', ctrlKey: true });
+      
+      expect(writeTextMock).toHaveBeenCalled();
+      
+      // Restore clipboard
+      Object.assign(navigator, { clipboard: originalClipboard });
+    });
+  });
 });

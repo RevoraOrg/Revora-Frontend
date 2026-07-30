@@ -1,10 +1,21 @@
 /* src/components/ActivityFeed.css */
 
+.activity-feed {
+  padding: var(--spacing-md, 1rem);
+}
+
 .activity-feed-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: var(--spacing-md, 1rem);
+}
+
+.activity-feed-title {
+  font-size: var(--font-size-xl, 1.25rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-main, #e5e7eb);
+  margin: 0;
 }
 
 .mark-all-read-btn {
@@ -17,6 +28,7 @@
   font-weight: var(--font-weight-medium, 500);
   cursor: pointer;
   transition: background-color 0.2s, color 0.2s;
+  white-space: nowrap;
 }
 
 .mark-all-read-btn:hover {
@@ -82,4 +94,248 @@
   clip: rect(0, 0, 0, 0);
   white-space: nowrap;
   border: 0;
+}
+
+/* ─── Tab Strip Styles ──────────────────────────────────────────── */
+
+.tabs-wrapper {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  margin-bottom: var(--spacing-lg, 1.25rem);
+}
+
+.tabs-scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+  flex: 1;
+}
+
+.tabs-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.tabs-inner {
+  display: flex;
+  gap: var(--spacing-xs, 0.5rem);
+  min-width: max-content;
+  padding: var(--spacing-3xs, 0.125rem) 0;
+  position: relative;
+}
+
+.tab-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  padding: var(--spacing-sm, 0.75rem) var(--spacing-md, 1rem);
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted, #cbd5e1);
+  min-height: 44px;
+}
+
+.tab-btn:hover {
+  background: var(--glass-bg-accent, rgba(30, 41, 59, 0.5));
+  color: var(--text-main, #e5e7eb);
+}
+
+.tab-btn:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.tab-btn--active {
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border-color: var(--glass-border-bright, rgba(148, 163, 184, 0.35));
+  color: var(--text-main, #e5e7eb);
+}
+
+.tab-btn--focused {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.tab-label {
+  line-height: 1.2;
+}
+
+.tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 var(--spacing-3xs, 0.25rem);
+  border-radius: var(--radius-full, 9999px);
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1;
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--text-muted, #cbd5e1);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.tab-badge--active {
+  background: var(--primary, #3b82f6);
+  color: #fff;
+}
+
+.tab-active-indicator {
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1.25rem;
+  height: 3px;
+  border-radius: var(--radius-full, 9999px);
+  background: var(--primary, #3b82f6);
+  animation: tabIndicatorIn 0.2s ease-out;
+}
+
+@keyframes tabIndicatorIn {
+  from {
+    opacity: 0;
+    width: 0;
+  }
+  to {
+    opacity: 1;
+    width: 1.25rem;
+  }
+}
+
+/* Scroll fade edges */
+.tab-scroll-fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1.5rem;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tab-scroll-fade--left {
+  left: 0;
+  background: linear-gradient(to right, var(--bg-color, #020617), transparent);
+}
+
+.tab-scroll-fade--right {
+  right: 0;
+  background: linear-gradient(to left, var(--bg-color, #020617), transparent);
+}
+
+/* RTL support */
+[dir="rtl"] .tab-scroll-fade--left {
+  left: 0;
+  right: auto;
+  background: linear-gradient(to left, var(--bg-color, #020617), transparent);
+}
+
+[dir="rtl"] .tab-scroll-fade--right {
+  right: 0;
+  left: auto;
+  background: linear-gradient(to right, var(--bg-color, #020617), transparent);
+}
+
+[dir="rtl"] .tabs-inner {
+  flex-direction: row-reverse;
+}
+
+/* ─── Loading State ──────────────────────────────────────────────── */
+
+.activity-feed-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl, 3rem);
+  color: var(--text-muted, #cbd5e1);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+/* ─── Empty Day Divider ──────────────────────────────────────────── */
+
+.empty-day-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md, 1rem);
+  margin: var(--spacing-lg, 1.25rem) 0;
+  color: var(--text-muted, #cbd5e1);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--glass-border, rgba(148, 163, 184, 0.15));
+}
+
+.divider-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  white-space: nowrap;
+}
+
+/* ─── Quiet Week Summary Card ───────────────────────────────────── */
+
+.quiet-week-card {
+  text-align: center;
+  padding: var(--spacing-2xl, 2rem);
+  margin: var(--spacing-lg, 1.25rem) 0;
+}
+
+.quiet-week-card .icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin: 0 auto var(--spacing-md, 1rem);
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--primary, #3b82f6);
+}
+
+.quiet-week-card h3 {
+  font-size: var(--font-size-lg, 1.125rem);
+  font-weight: var(--font-weight-semibold, 600);
+  margin-bottom: var(--spacing-xs, 0.5rem);
+  color: var(--text-main, #e5e7eb);
+}
+
+.quiet-week-card p {
+  color: var(--text-muted, #cbd5e1);
+  font-size: var(--font-size-sm, 0.875rem);
+  margin-bottom: var(--spacing-lg, 1.25rem);
+  max-width: 24rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ─── Activity Feed List ────────────────────────────────────────── */
+
+.activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity-date-group {
+  margin-top: var(--spacing-xl, 1.5rem);
+  margin-bottom: var(--spacing-xs, 0.5rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--primary, #3b82f6);
+}
+
+.load-more {
+  margin-top: var(--spacing-md, 1rem);
 }

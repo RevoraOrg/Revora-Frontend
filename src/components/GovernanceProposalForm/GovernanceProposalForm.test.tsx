@@ -391,4 +391,172 @@ describe('GovernanceProposalForm', () => {
       expect(screen.getByLabelText(/form navigation/i)).toBeInTheDocument();
     });
   });
+
+  /* ─── Issue #470 Additional Test Cases ────────────────────────────── */
+
+  describe('Issue #470 Enhancements', () => {
+    it('renders Category selection, Proposal ID, and interactive tags in Step 1', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn();
+      render(<GovernanceProposalForm onSubmit={onSubmit} />);
+
+      // Fill Step 1 title
+      const titleInput = screen.getByPlaceholderText(/e\.g\., Increase Protocol Treasury Allocation/i);
+      await user.type(titleInput, 'Advanced Protocol Upgrade');
+
+      // Check Proposal ID input
+      const idInput = screen.getByPlaceholderText(/e\.g\., GP-042/i);
+      await user.type(idInput, 'GP-999');
+
+      // Check Category option
+      const categorySelect = screen.getByLabelText(/Category/i);
+      await user.selectOptions(categorySelect, 'Protocol Upgrade');
+
+      // Check tags multi-input pill addition
+      const tagsInput = screen.getByPlaceholderText(/Type tag and press Enter/i);
+      await user.type(tagsInput, 'Upgrade{Enter}');
+      await user.type(tagsInput, 'Security,');
+
+      expect(screen.getByText('Upgrade')).toBeInTheDocument();
+      expect(screen.getByText('Security')).toBeInTheDocument();
+
+      // Go next, next, next and submit to verify fields are in onSubmit payload
+      await user.click(screen.getByRole('button', { name: /next/i }));
+      await user.type(screen.getByPlaceholderText(/Describe your proposal/i), 'Valid abstract long description.');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+
+      // Fill first action target to make Step 3 valid
+      await user.type(screen.getByLabelText(/Action 1 target address/i), '0x1234567890abcdef1234567890abcdef12345678');
+      await user.type(screen.getByLabelText(/Action 1 value/i), '500');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+
+      // Submit
+      await user.click(screen.getByRole('button', { name: /submit proposal/i }));
+
+      expect(onSubmit).toHaveBeenCalledTimes(1);
+      const draft = onSubmit.mock.calls[0][0];
+      expect(draft.proposalId).toBe('GP-999');
+      expect(draft.category).toBe('Protocol Upgrade');
+      expect(draft.tags).toContain('Upgrade');
+      expect(draft.tags).toContain('Security');
+    });
+
+    it('supports simulated rich-text insertion toolbar in Step 2 Description', async () => {
+      const user = userEvent.setup();
+      render(<GovernanceProposalForm onSubmit={noop} />);
+
+      // Complete step 1
+      await user.type(screen.getByPlaceholderText(/e\.g\., Increase Protocol Treasury Allocation/i), 'Advanced Protocol Upgrade');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+
+      const textarea = screen.getByPlaceholderText(/Describe your proposal/i);
+      await user.type(textarea, 'Initial text');
+
+      // Select format Bold
+      const boldBtn = screen.getByLabelText('Format Bold');
+      await user.click(boldBtn);
+
+      expect(textarea.value).toContain('**text**');
+    });
+
+    it('performs interactive referenced account lookup validation in Step 3', async () => {
+      const user = userEvent.setup();
+      render(<GovernanceProposalForm onSubmit={noop} />);
+
+      // Go to step 3
+      await user.type(screen.getByPlaceholderText(/e\.g\., Increase Protocol Treasury Allocation/i), 'Advanced Protocol Upgrade');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+      await user.type(screen.getByPlaceholderText(/Describe your proposal/i), 'Valid abstract long description.');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+
+      const targetInput = screen.getByLabelText(/Action 1 target address/i);
+
+      // 1. Malformed address check
+      await user.type(targetInput, '0xInvalidAddress');
+      expect(screen.getByText(/Malformed cryptographic hash address/i)).toBeInTheDocument();
+
+      // Clear and type whitelisted address
+      await user.clear(targetInput);
+      await user.type(targetInput, '0x1234567890abcdef1234567890abcdef12345678');
+      expect(screen.getByText(/Verified: Core Treasury DAO/i)).toBeInTheDocument();
+
+      // Clear and type pending lookup
+      await user.clear(targetInput);
+      await user.type(targetInput, '0x9999567890abcdef1234567890abcdef12345678');
+      expect(screen.getByText(/On-chain lookup pending/i)).toBeInTheDocument();
+
+      // Clear and type unavailable status
+      await user.clear(targetInput);
+      await user.type(targetInput, '0xfeed567890abcdef1234567890abcdef12345678');
+      expect(screen.getByText(/On-chain node skipped/i)).toBeInTheDocument();
+    });
+
+    it('allows duplicating and interactive reordering of actions in Step 3', async () => {
+      const user = userEvent.setup();
+      render(<GovernanceProposalForm onSubmit={noop} />);
+
+      // Go to step 3
+      await user.type(screen.getByPlaceholderText(/e\.g\., Increase Protocol Treasury Allocation/i), 'Advanced Protocol Upgrade');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+      await user.type(screen.getByPlaceholderText(/Describe your proposal/i), 'Valid abstract long description.');
+      await user.click(screen.getByRole('button', { name: /next/i }));
+
+      // Fill first action Target
+      await user.type(screen.getByLabelText(/Action 1 target address/i), '0x1234567890abcdef1234567890abcdef12345678');
+
+      // Click Duplicate
+      const duplicateBtn = screen.getByTitle('Duplicate');
+      await user.click(duplicateBtn);
+
+      expect(screen.getByText('Action #2')).toBeInTheDocument();
+
+      // Modify action 2 type to differentiate
+      const select2 = screen.getByLabelText(/Action 2 type/i);
+      await user.selectOptions(select2, 'parameter_change');
+
+      // Click move action 2 Up
+      const moveUpBtn = screen.getByLabelText(/Move action 2 up/i);
+      await user.click(moveUpBtn);
+
+      // Verify reordering swap
+      const select1Again = screen.getByLabelText(/Action 1 type/i);
+      expect(select1Again).toHaveValue('parameter_change');
+    });
+
+    it('toggles mobile live preview panel visibility', async () => {
+      const user = userEvent.setup();
+      render(<GovernanceProposalForm onSubmit={noop} />);
+
+      // Check that mobile toggle exists
+      const toggleBtn = screen.getByRole('button', { name: /Show Live Preview/i });
+      expect(toggleBtn).toBeInTheDocument();
+
+      // Click toggle
+      await user.click(toggleBtn);
+      expect(screen.getByRole('button', { name: /Hide Live Preview/i })).toBeInTheDocument();
+    });
+
+    it('triggers exit confirmation warning when Cancel is clicked with unsaved changes', async () => {
+      const user = userEvent.setup();
+      const onCancel = vi.fn();
+      render(<GovernanceProposalForm onSubmit={noop} onCancel={onCancel} />);
+
+      // Edit title to make it touched
+      const titleInput = screen.getByPlaceholderText(/e\.g\., Increase Protocol Treasury Allocation/i);
+      await user.type(titleInput, 'Advanced Protocol Upgrade');
+
+      // Click Cancel
+      const cancelBtn = screen.getByRole('button', { name: /cancel/i });
+      await user.click(cancelBtn);
+
+      // Exit Modal warning should be visible
+      expect(screen.getByText(/You have unsaved changes/i)).toBeInTheDocument();
+
+      // Discard changes
+      const discardBtn = screen.getByRole('button', { name: /Discard changes/i });
+      await user.click(discardBtn);
+
+      expect(onCancel).toHaveBeenCalledTimes(1);
+    });
+  });
 });

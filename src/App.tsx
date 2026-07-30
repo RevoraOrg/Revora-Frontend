@@ -5,7 +5,7 @@ import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
-import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { InvestorDiscovery } from "./components/InvestorDiscovery";
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
@@ -15,6 +15,8 @@ import { notificationsMock } from "./components/Notifications/notificationsData"
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
+import { DistributionDashboard } from "./pages/DistributionDashboard";
+import { ThumbnailPreviewGridPage } from "./pages/ThumbnailPreviewGridPage";
 
 export function App() {
   return (
@@ -36,21 +38,22 @@ export function App() {
             path="/startup/report-revenue"
             element={<RevenueReportForm />}
           />
-          {/* Issue #199 – Inline document uploader (Offering Registration wizard) */}
           <Route
             path="/startup/offering-registration"
             element={<OfferingRegistrationDemo />}
           />
-          {/* Issue #247 – Governance proposal creation multi-step form */}
           <Route
             path="/startup/governance/proposals/create"
             element={<GovernanceProposalCreatePage />}
           />
 
+          {/* Distribution routes */}
+          <Route path="/startup/distributions" element={<DistributionDashboard />} />
+          <Route path="/startup/distributions/documents" element={<ThumbnailPreviewGridPage />} />
+
           {/* Investor routes */}
           <Route path="/investor/portal" element={<InvestorDiscovery />} />
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
-          {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
 
           {/* Admin routes */}
@@ -87,7 +90,6 @@ function AppLayout() {
 function Home() {
   return (
     <div className="home-container animate-fade-in">
-      {/* Header bar with notification bell */}
       <div className="w-full flex justify-end mb-4">
         <NotificationBell notifications={notificationsMock} />
       </div>

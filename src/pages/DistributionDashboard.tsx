@@ -2,12 +2,9 @@ import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { AdminHero } from '../components/AdminHero';
 import type { AdminTileData, IncidentData } from '../components/AdminHero';
-import { Button } from '../components/Button';
 import { LockupClaimModal } from '../components/LockupClaimModal';
 import { EmptyState } from '../components/designSystem/EmptyState';
-import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
-import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 import type { DistributionFilterState } from '../components/DistributionFilterToolbar/DistributionFilterToolbar.types';
 import type { PayoutDetail, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
 import { ErrorRateSparklineTile } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
@@ -221,6 +218,8 @@ export const DistributionDashboard: React.FC = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
 
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const preopenTargetDate = useMemo(() => {
@@ -434,7 +433,7 @@ export const DistributionDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       <AdminHero
         tiles={SAMPLE_TILES}
         incident={SAMPLE_INCIDENT}
@@ -442,7 +441,6 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}
@@ -572,6 +570,11 @@ export const DistributionDashboard: React.FC = () => {
       <div className="mt-8">
         <RevenuePayoutChart data={MOCK_REVENUE_PAYOUT_DATA} revenueCurrency="USD" payoutCurrency="USD" />
       </div>
+
+      {/* ── Cohort Payout Heatmap ── */}
+      <section aria-labelledby="cohort-heatmap-heading" data-testid="cohort-heatmap-section">
+        <CohortHeatmap data={MOCK_COHORT_DATA} maxMonths={12} />
+      </section>
 
       {/* ── Payout Error Rate Sparkline Tiles ── */}
       <section aria-labelledby="error-rate-heading" data-testid="error-rate-section">

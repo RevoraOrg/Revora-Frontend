@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { AdminHero } from '../components/AdminHero';
 import type { AdminTileData, IncidentData } from '../components/AdminHero';
 import { LockupClaimModal } from '../components/LockupClaimModal';
@@ -12,15 +12,9 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
-import { PreOpenBanner } from '../components/PreOpenBanner';
-import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar';
-import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
-import { FinancialTermsForm } from '../components/FinancialTermsForm';
-import type { FinancialTermsField } from '../utils/financialTermsValidation';
-import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel';
-import { useUploadQueue } from '../hooks/useUploadQueue';
-import type { Uploader } from '../hooks/useUploadQueue';
-import { CohortHeatmap, CohortData } from '../components/CohortHeatmap';
+import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
+import { UploadQueue } from '../components/UploadQueue/UploadQueue';
+import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -181,60 +175,43 @@ const SAMPLE_TILES: AdminTileData[] = [
 
 const SAMPLE_INCIDENT: IncidentData | null = null;
 
-const MOCK_COHORT_DATA: CohortData[] = [
-  {
-    cohortName: '2024 Q1',
-    cohortSize: 120,
-    payouts: [
-      { monthIndex: 0, payoutAmount: 45000, payoutPercentage: 12.5 },
-      { monthIndex: 1, payoutAmount: 52000, payoutPercentage: 14.2 },
-      { monthIndex: 2, payoutAmount: 38000, payoutPercentage: 10.1 },
-      { monthIndex: 3, payoutAmount: 61000, payoutPercentage: 16.8 },
-      { monthIndex: 4, payoutAmount: 48000, payoutPercentage: 13.0 },
-      { monthIndex: 5, payoutAmount: 72000, payoutPercentage: 19.5 },
-    ],
-  },
-  {
-    cohortName: '2024 Q2',
-    cohortSize: 95,
-    payouts: [
-      { monthIndex: 0, payoutAmount: 28000, payoutPercentage: 8.2 },
-      { monthIndex: 1, payoutAmount: 35000, payoutPercentage: 10.5 },
-      { monthIndex: 2, payoutAmount: 41000, payoutPercentage: 12.3 },
-      { monthIndex: 3, payoutAmount: 29000, payoutPercentage: 8.7 },
-    ],
-  },
-  {
-    cohortName: '2024 Q3',
-    cohortSize: 150,
-    payouts: [
-      { monthIndex: 0, payoutAmount: 55000, payoutPercentage: 15.0 },
-      { monthIndex: 1, payoutAmount: 68000, payoutPercentage: 18.6 },
-      { monthIndex: 2, payoutAmount: 44000, payoutPercentage: 12.0 },
-    ],
-  },
-  {
-    cohortName: '2024 Q4',
-    cohortSize: 80,
-    payouts: [
-      { monthIndex: 0, payoutAmount: 12000, payoutPercentage: 3.5 },
-      { monthIndex: 1, payoutAmount: 19000, payoutPercentage: 5.8 },
-    ],
-  },
-  {
-    cohortName: '2025 Q1',
-    cohortSize: 65,
-    payouts: [
-      { monthIndex: 0, payoutAmount: 8000, payoutPercentage: 2.4 },
-    ],
-  },
-];
+const GOVERNANCE_PROPOSAL: ProposalData = {
+  id: 'prop-1',
+  title: 'Increase Developer Grant Fund',
+  description:
+    'A proposal to allocate an additional 500,000 tokens to the developer grant program to support ecosystem growth and accelerate protocol contributor onboarding.',
+  proposer: '0x1234...abcd',
+  status: 'active',
+  endTime: Date.now() + 86_400_000 * 3,
+  quorumRequired: 4_000_000,
+  quorumReached: 2_500_000,
+  results: { for: 2_000_000, against: 450_000, abstain: 50_000 },
+  participation: { turnout: 68.4, uniqueVoters: 142, delegates: 12 },
+  userVote: null,
+};
 
-const mockUploader: Uploader = async (file, onProgress) => {
-  for (let pct = 0; pct <= 100; pct += 10) {
-    onProgress(pct);
-    await new Promise((r) => setTimeout(r, 200));
-  }
+const mockUploader: Uploader = (file, onProgress) => {
+  return new Promise((resolve, reject) => {
+    const total = 100;
+    const tick = () => {
+      const next = Math.min(total, progress + 20);
+      progress = next;
+      onProgress(next);
+      if (next >= total) {
+        resolve();
+      } else {
+        window.setTimeout(tick, 120);
+      }
+    };
+
+    let progress = 0;
+    if (file.name.toLowerCase().includes('fail')) {
+      reject(new Error('Network unavailable'));
+      return;
+    }
+
+    window.setTimeout(tick, 120);
+  });
 };
 
 export const DistributionDashboard: React.FC = () => {
@@ -264,32 +241,7 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-  const updateFiltersAndUrl = useCallback((newFilters: DistributionFilterState) => {
-    setFilterState(newFilters);
-    const params = new URLSearchParams();
-    if (newFilters.searchQuery) params.set('search', newFilters.searchQuery);
-    if (newFilters.dateRange !== 'all') params.set('date', newFilters.dateRange);
-    if (newFilters.issuer !== 'all') params.set('issuer', newFilters.issuer);
-    if (newFilters.region !== 'all') params.set('region', newFilters.region);
-    if (newFilters.status !== 'all') params.set('status', newFilters.status);
-    if (newFilters.segmentBy !== 'none') params.set('segment', newFilters.segmentBy);
-    if (newFilters.compareMode) params.set('compare', 'true');
-    setSearchParams(params, { replace: true });
-  }, [setSearchParams]);
 
-  const {
-    queue,
-    addFiles,
-    removeFile,
-    retryFile,
-    uploadFiles,
-    clearComplete,
-    totalCount,
-    successCount,
-    errorCount,
-    uploadingCount,
-    overallProgress,
-  } = useUploadQueue();
 
   const handleUploadAll = useCallback(() => {
     uploadFiles(mockUploader);
@@ -529,6 +481,50 @@ export const DistributionDashboard: React.FC = () => {
         onResetFilters={handleResetFilters}
       />
 
+      <section aria-labelledby="governance-proposal-heading" className="glass-card p-6 md:p-8">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Governance</p>
+            <h2 id="governance-proposal-heading" className="text-xl font-semibold text-white">
+              Proposal Detail
+            </h2>
+          </div>
+          <p className="text-sm text-muted max-w-2xl">
+            Review quorum, support, and the latest vote distribution before casting your decision.
+          </p>
+        </div>
+        <GovernanceProposalDetail proposal={GOVERNANCE_PROPOSAL} />
+      </section>
+
+      <section aria-labelledby="upload-queue-heading" className="glass-card p-6 md:p-8">
+        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Documents</p>
+            <h2 id="upload-queue-heading" className="text-xl font-semibold text-white">
+              Batch Upload Queue
+            </h2>
+          </div>
+          <p className="text-sm text-muted max-w-2xl">
+            Track each document’s progress, retry failures, and remove completed or cancelled files.
+          </p>
+        </div>
+        <UploadQueue
+          queue={queue}
+          onAddFiles={addFiles}
+          onRemove={removeFile}
+          onRetry={handleRetry}
+          onUploadAll={handleUploadAll}
+          onClearComplete={clearComplete}
+          totalCount={totalCount}
+          successCount={successCount}
+          errorCount={errorCount}
+          uploadingCount={uploadingCount}
+          overallProgress={overallProgress}
+          uploader={undefined}
+          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+        />
+      </section>
+
       {/* Token Supply Configuration */}
       <div className="mt-8">
         <TokenSupplyBlock />
@@ -657,6 +653,15 @@ export const DistributionDashboard: React.FC = () => {
       {/* Governance Delegation */}
       <div className="mt-8">
         <GovernanceDelegation />
+      </div>
+
+      {/* Governance Results Breakdown */}
+      <div className="mt-12">
+        <GovernanceResults
+          results={{ for: 124, against: 58, abstain: 18 }}
+          participation={{ turnout: 63.5, uniqueVoters: 200, delegates: 12 }}
+          status="passed"
+        />
       </div>
 
       {/* Financial terms wizard step */}

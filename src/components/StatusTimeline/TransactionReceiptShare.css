@@ -1,84 +1,259 @@
+/**
+ * TransactionReceiptShare styles — Issue #481
+ *
+ * Tokens from src/index.css: --glass-*, --primary, --spacing-*, --radius-*, --font-*
+ * RTL: logical properties. Reduced-motion: no forced animations.
+ *
+ * Note: The receipt card itself uses hardcoded light-theme colors (#ffffff, #1e293b,
+ * #e2e8f0, etc.) intentionally — the card is rendered into a PNG image via html2canvas,
+ * so it must always appear as a clean white receipt regardless of the UI theme.
+ */
+
+/* ─── Container ─────────────────────────────────────────────── */
 .tx-receipt-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  max-width: 400px;
+  gap: var(--spacing-md);
+  max-width: 480px;
   margin: 0 auto;
-  font-family: var(--font-family-base, system-ui, sans-serif);
+  font-family: var(--font-family-base, 'Inter', system-ui, sans-serif);
+  position: relative;
 }
 
-.tx-receipt-actions {
+/* ─── Toast ─────────────────────────────────────────────────── */
+.tx-toast {
+  position: fixed;
+  bottom: var(--spacing-xl);
+  inset-inline-end: var(--spacing-xl);
+  z-index: 100;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 8px;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border-bright);
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: var(--glass-blur);
+  animation: tx-toast-in 0.25s ease-out;
+  max-width: 360px;
+}
+
+.tx-toast--success {
+  border-color: rgba(16, 185, 129, 0.4);
+}
+.tx-toast--success .tx-toast-content svg {
+  color: var(--success);
+  flex-shrink: 0;
+}
+.tx-toast--error {
+  border-color: rgba(239, 68, 68, 0.4);
+}
+.tx-toast--error .tx-toast-content svg {
+  color: var(--error);
+  flex-shrink: 0;
+}
+.tx-toast--info {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.tx-toast-content {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  font-size: var(--font-size-sm);
+  color: var(--text-main);
+  flex: 1;
+}
+
+.tx-toast-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.tx-toast-dismiss:hover {
+  color: var(--text-main);
+  background: rgba(148, 163, 184, 0.15);
+}
+.tx-toast-dismiss:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@keyframes tx-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Control bar ───────────────────────────────────────────── */
+.tx-receipt-controls {
+  display: flex;
   flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.tx-aspect-ratio-group {
+  display: flex;
+  gap: 4px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.tx-aspect-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  padding: 6px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-accent);
+  color: var(--text-muted);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.tx-aspect-btn:hover {
+  border-color: var(--glass-border-bright);
+  color: var(--text-main);
+}
+.tx-aspect-btn--active {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+.tx-aspect-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.tx-aspect-label {
+  display: none;
+}
+
+@media (min-width: 420px) {
+  .tx-aspect-label {
+    display: inline;
+  }
 }
 
 .tx-action-group {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
 }
 
 .tx-action-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #e2e8f0);
-  background: var(--bg-surface, #ffffff);
-  color: var(--text-primary, #1e293b);
-  font-size: 14px;
-  font-weight: 500;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border-bright);
+  background: var(--glass-bg-accent);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  font-family: inherit;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+  white-space: nowrap;
 }
-
 .tx-action-btn:hover:not(:disabled) {
-  background: var(--bg-hover, #f1f5f9);
+  background: rgba(148, 163, 184, 0.18);
 }
-
 .tx-action-btn:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
+.tx-action-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
 
-.tx-action-btn.primary {
-  background: var(--color-primary, #2563eb);
+.tx-action-btn--primary {
+  background: var(--primary);
   color: #ffffff;
-  border-color: var(--color-primary, #2563eb);
+  border-color: var(--primary);
+}
+.tx-action-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
-.tx-action-btn.primary:hover:not(:disabled) {
-  background: var(--color-primary-dark, #1d4ed8);
+/* Hide button text on narrow viewports */
+@media (max-width: 380px) {
+  .tx-action-text {
+    display: none;
+  }
 }
 
+/* ─── Receipt card ──────────────────────────────────────────── */
 .tx-receipt-card {
-  background: var(--bg-surface, #ffffff);
-  border: 1px solid var(--border-color, #e2e8f0);
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  color: var(--text-primary, #1e293b);
+  color: #1e293b;
   position: relative;
   overflow: hidden;
+  transition: border-radius 0.2s, box-shadow 0.2s;
 }
 
-.tx-receipt-card.is-capturing {
-  /* Temporary styles for better image capture */
+/* Aspect ratio variants */
+.tx-receipt-card--compact {
+  max-width: 400px;
+  aspect-ratio: auto;
+}
+
+.tx-receipt-card--square {
+  max-width: 400px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.tx-receipt-card--wide {
+  max-width: 560px;
+  aspect-ratio: 16 / 9;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Capturing state: flatten for clean image */
+.tx-receipt-card--capturing {
   border-radius: 0;
   box-shadow: none;
-  border: none;
+  border: 1px solid #e2e8f0;
 }
 
+/* ─── Header ────────────────────────────────────────────────── */
 .tx-receipt-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px dashed var(--border-color, #e2e8f0);
+  margin-bottom: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed #e2e8f0;
 }
 
 .tx-receipt-brand {
@@ -91,54 +266,76 @@
   width: 24px;
   height: 24px;
   border-radius: 4px;
+  object-fit: contain;
 }
 
 .tx-brand-name {
   font-weight: 600;
   font-size: 16px;
+  color: #1e293b;
 }
 
 .tx-verified-icon {
-  color: var(--color-success, #16a34a);
+  color: #16a34a;
+  flex-shrink: 0;
 }
 
+/* ─── Amount ────────────────────────────────────────────────── */
 .tx-receipt-amount-section {
   text-align: center;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .tx-receipt-label {
-  font-size: 14px;
-  color: var(--text-secondary, #64748b);
+  font-size: 12px;
+  color: #64748b;
   margin-bottom: 4px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  font-weight: 600;
 }
 
 .tx-receipt-amount {
   font-size: 32px;
   font-weight: 700;
-  color: var(--text-primary, #1e293b);
+  color: #1e293b;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .tx-amount-hidden {
-  letter-spacing: 4px;
+  letter-spacing: 6px;
+  user-select: none;
 }
 
+.tx-privacy-badge {
+  font-size: 10px;
+  font-weight: 500;
+  color: #94a3b8;
+  margin-top: 4px;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* ─── Detail rows ───────────────────────────────────────────── */
 .tx-receipt-details {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex: 1 1 auto;
 }
 
 .tx-detail-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 14px;
-  border-bottom: 1px solid var(--border-color-light, #f1f5f9);
+  font-size: 13px;
+  border-bottom: 1px solid #f1f5f9;
   padding-bottom: 8px;
+  gap: var(--spacing-sm);
 }
 
 .tx-detail-row:last-child {
@@ -146,72 +343,69 @@
 }
 
 .tx-detail-label {
-  color: var(--text-secondary, #64748b);
+  color: #64748b;
+  font-weight: 500;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tx-sensitive-icon {
+  display: inline-flex;
+  color: #16a34a;
+  opacity: 0.7;
 }
 
 .tx-detail-value {
   font-weight: 500;
-  color: var(--text-primary, #1e293b);
-  text-align: right;
+  color: #1e293b;
+  text-align: end;
   word-break: break-all;
   max-width: 60%;
 }
 
-.tx-detail-value.status-completed {
-  color: var(--color-success, #16a34a);
+.tx-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
 }
 
-.tx-detail-value.status-pending {
-  color: var(--color-warning, #eab308);
+/* Status colors */
+.tx-status-completed { color: #16a34a; }
+.tx-status-pending   { color: #eab308; }
+.tx-status-failed    { color: #ef4444; }
+
+/* Sensitive row — wallet fields */
+.tx-sensitive-row {
+  background: rgba(241, 245, 249, 0.6);
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin: 0 -6px;
 }
 
-.tx-detail-value.status-failed {
-  color: var(--color-danger, #ef4444);
-}
-
-/* User-select none for sensitive fields to prevent copying */
-.unselectable {
+/* Unselectable fields — prevents text-selection / copying */
+.tx-unselectable {
   user-select: none;
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
 }
 
+/* ─── Footer ────────────────────────────────────────────────── */
 .tx-receipt-footer {
   text-align: center;
-  font-size: 12px;
-  color: var(--text-secondary, #64748b);
-  margin-top: 24px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border-color, #e2e8f0);
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #e2e8f0;
+  flex-shrink: 0;
 }
-
-/* Responsive adjustments */
-@media (max-width: 480px) {
-  .tx-receipt-actions {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .tx-action-group {
-    display: flex;
-    justify-content: stretch;
-  }
-  
-  .tx-action-group .tx-action-btn {
-    flex: 1;
-    justify-content: center;
-  }
-}
-
-/* ===========================
-   Printable A4 Receipt Layout
-   =========================== */
 
 .tx-explorer-link,
 .tx-footer-hash {
   margin-top: 6px;
-  font-size: 11px;
+  font-size: 10px;
   word-break: break-all;
 }
 
@@ -220,19 +414,77 @@
   text-decoration: underline;
 }
 
-/* A4 Print Styles */
+/* ─── Screen-reader only ────────────────────────────────────── */
+.tx-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Responsive ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  .tx-receipt-container {
+    max-width: 100%;
+  }
+
+  .tx-receipt-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tx-aspect-ratio-group {
+    justify-content: center;
+  }
+
+  .tx-action-group {
+    justify-content: stretch;
+  }
+
+  .tx-action-group .tx-action-btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .tx-receipt-card {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .tx-receipt-card--square,
+  .tx-receipt-card--wide {
+    aspect-ratio: auto;
+    max-width: 100%;
+  }
+
+  .tx-receipt-amount {
+    font-size: 26px;
+  }
+
+  .tx-detail-value {
+    max-width: 55%;
+    font-size: 12px;
+  }
+}
+
+/* ─── Print styles ──────────────────────────────────────────── */
 @page {
   size: A4 portrait;
   margin: 16mm;
 }
 
 @media print {
-
   body {
     background: #ffffff !important;
   }
 
-  .tx-receipt-actions {
+  .tx-receipt-controls,
+  .tx-toast {
     display: none !important;
   }
 
@@ -251,6 +503,7 @@
     page-break-inside: avoid;
     break-inside: avoid;
     overflow: visible;
+    aspect-ratio: auto;
   }
 
   .tx-detail-row {
@@ -270,22 +523,86 @@
     color: #000;
     text-decoration: none;
   }
+
+  .tx-status-completed,
+  .tx-status-pending,
+  .tx-status-failed {
+    color: #000 !important;
+    font-weight: 700;
+  }
 }
 
-/* US Letter */
 @media print and (size: letter) {
   .tx-receipt-card {
     padding: 20mm;
   }
 }
 
-/* Monochrome printer support */
-@media print {
-
-  .status-completed,
-  .status-pending,
-  .status-failed {
-    color: #000 !important;
-    font-weight: 700;
+/* ─── Reduced motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .tx-toast {
+    animation: none;
   }
+
+  .tx-aspect-btn,
+  .tx-action-btn {
+    transition: none;
+  }
+}
+
+/* ─── Forced colors ─────────────────────────────────────────── */
+@media (forced-colors: active) {
+  .tx-receipt-card {
+    border: 1px solid ButtonText;
+  }
+
+  .tx-action-btn {
+    border: 1px solid ButtonText;
+  }
+
+  .tx-action-btn--primary {
+    background: Highlight;
+    color: HighlightText;
+  }
+
+  .tx-aspect-btn--active {
+    border: 2px solid Highlight;
+  }
+
+  .tx-aspect-btn:focus-visible,
+  .tx-action-btn:focus-visible,
+  .tx-toast-dismiss:focus-visible {
+    outline: 2px solid Highlight;
+  }
+
+  .tx-unselectable {
+    user-select: none;
+    -webkit-user-select: none;
+  }
+}
+
+/* ─── RTL ───────────────────────────────────────────────────── */
+[dir="rtl"] .tx-receipt-amount-section {
+  text-align: center; /* amounts stay centered */
+}
+
+[dir="rtl"] .tx-detail-value {
+  text-align: start;
+}
+
+[dir="rtl"] .tx-receipt-footer {
+  text-align: center;
+}
+
+[dir="rtl"] .tx-toast {
+  /* inset-inline-end already used — works with RTL */
+}
+
+[dir="rtl"] .tx-action-btn svg:not(:only-child),
+[dir="rtl"] .tx-aspect-btn svg:not(:only-child) {
+  /* Icons naturally flip for RTL */
+}
+
+[dir="rtl"] .tx-explorer-link a[target="_blank"]::after {
+  /* External-link icon handling if needed */
 }

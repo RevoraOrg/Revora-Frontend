@@ -235,4 +235,51 @@ describe("UndoBanner", () => {
     expect(onKeyboardUndo).toHaveBeenCalledWith("kb1");
     expect(onUndo).not.toHaveBeenCalled();
   });
+
+  it("provides accessible aria-labels for individual Undo and Undo all buttons", () => {
+    const banners = [
+      makeBanner({ id: "b1", message: "Deleted Project A", actionLabel: "Undo" }),
+      makeBanner({ id: "b2", message: "Archived Folder", actionLabel: "Undo" }),
+    ];
+    render(
+      <UndoBanner
+        banners={banners}
+        onUndo={vi.fn()}
+        onDismiss={vi.fn()}
+        onUndoAll={vi.fn()}
+        onDismissAll={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Undo: Deleted Project A" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Undo: Archived Folder" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Undo all 2 pending actions" })).toBeInTheDocument();
+  });
+
+  it("provides screen-reader accessible overflow announcement", () => {
+    const banners = Array.from({ length: 7 }, (_, i) =>
+      makeBanner({ id: `b${i}`, message: `Action ${i}` }),
+    );
+    render(<UndoBanner banners={banners} onUndo={vi.fn()} onDismiss={vi.fn()} />);
+
+    const overflow = screen.getByTestId("undo-overflow");
+    expect(overflow).toHaveAttribute("aria-label", "3 additional undoable actions");
+    expect(screen.getByText("3 additional undoable actions")).toHaveClass("sr-only");
+  });
+
+  it("passes axe checks when overflow and header are present", async () => {
+    const banners = Array.from({ length: 6 }, (_, i) =>
+      makeBanner({ id: `b${i}`, message: `Action ${i}` }),
+    );
+    const { container } = render(
+      <UndoBanner
+        banners={banners}
+        onUndo={vi.fn()}
+        onDismiss={vi.fn()}
+        onUndoAll={vi.fn()}
+        onDismissAll={vi.fn()}
+      />,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
 });

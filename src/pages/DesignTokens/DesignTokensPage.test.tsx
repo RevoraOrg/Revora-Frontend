@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { axe } from "jest-axe";
 import { DesignTokensPage } from "./DesignTokensPage";
 import { contrastRatio, wcagGrade } from "./contrast";
 import { TOKEN_GROUPS } from "./tokens";
@@ -74,13 +75,13 @@ describe("DesignTokensPage", () => {
 
   it("renders all section headings", () => {
     render(<DesignTokensPage />);
-    expect(screen.getByText("Colors")).toBeInTheDocument();
-    expect(screen.getByText("Chart Categorical Palette (Dark Mode)")).toBeInTheDocument();
-    expect(screen.getByText("Chart Categorical Palette (Light Mode)")).toBeInTheDocument();
-    expect(screen.getByText("Spacing")).toBeInTheDocument();
-    expect(screen.getByText("Border Radius")).toBeInTheDocument();
-    expect(screen.getByText("Typography")).toBeInTheDocument();
-    expect(screen.getByText("Shadows / Elevation")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^colors/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /chart categorical palette \(dark mode\)/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /chart categorical palette \(light mode\)/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^spacing/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^border radius/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /^typography/i, level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /shadows \/ elevation/i, level: 2 })).toBeInTheDocument();
   });
 
   it("renders Export JSON button", () => {
@@ -109,8 +110,8 @@ describe("DesignTokensPage", () => {
     render(<DesignTokensPage />);
     const input = screen.getByRole("searchbox");
     await userEvent.type(input, "primary");
-    expect(screen.getByText("Primary")).toBeInTheDocument();
-    expect(screen.queryByText("Spacing")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Primary").length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: /^spacing/i, level: 2 })).not.toBeInTheDocument();
   });
 
   it("shows empty state when no tokens match", async () => {
@@ -173,6 +174,22 @@ describe("DesignTokensPage", () => {
     const input = screen.getByRole("searchbox");
     await userEvent.type(input, "primary");
     await userEvent.clear(input);
-    expect(screen.getByText("Spacing")).toBeInTheDocument();
+    expect(screen.getAllByText("Spacing").length).toBeGreaterThan(0);
+  });
+
+  it("renders the token diff & export section", () => {
+    render(<DesignTokensPage />);
+    expect(
+      screen.getByRole("heading", { name: /token diff & export/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tablist", { name: /export format/i })).toBeInTheDocument();
+    expect(screen.getByLabelText("1 removed")).toBeInTheDocument();
+    expect(screen.getByLabelText("3 added")).toBeInTheDocument();
+  });
+
+  it("has no accessibility violations", async () => {
+    const { container } = render(<DesignTokensPage />);
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

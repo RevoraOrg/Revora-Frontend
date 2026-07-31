@@ -49,6 +49,9 @@ export default defineConfig({
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Issue #497 – Token diff and export UI
+        'src/pages/DesignTokens/TokenDiff.tsx',
+        'src/pages/DesignTokens/tokenDiff.ts',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -156,6 +159,12 @@ export default defineConfig({
           statements: 95,
         },
         'src/components/Notifications/NotificationBell.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/pages/DesignTokens/TokenDiff.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/pages/DesignTokens/tokenDiff.ts': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

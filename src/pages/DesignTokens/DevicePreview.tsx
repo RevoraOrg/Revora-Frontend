@@ -45,12 +45,12 @@ export function DevicePreview({ surface }: DevicePreviewProps) {
     <div className="dp-sample-page">
       <header className="dp-header glass-card">
         <h3 className="dp-title">Sample App</h3>
-        <nav className="dp-nav">
+        <div className="dp-nav">
           <span>Home</span>
           <span>Settings</span>
-        </nav>
+        </div>
       </header>
-      <main className="dp-main">
+      <div className="dp-main">
         <section className="dp-hero">
           <h1 style={{ fontSize: "var(--font-size-3xl)", fontWeight: "var(--font-weight-bold)" }}>
             Welcome Back
@@ -67,14 +67,14 @@ export function DevicePreview({ surface }: DevicePreviewProps) {
           {[1, 2, 3].map((i) => (
             <div key={i} className="dp-card glass-card">
               <div className="dp-card-icon" />
-              <h4 className="dp-card-title">Feature {i}</h4>
+              <h2 className="dp-card-title">Feature {i}</h2>
               <p className="dp-card-desc">
                 Responsive design tokens in action.
               </p>
             </div>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 

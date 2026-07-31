@@ -3,6 +3,8 @@ export interface Token {
   variable: string;
   value: string;
   description?: string;
+  /** True when the token payload is binary (e.g. icon/image assets) and cannot be shown as text. */
+  isBinary?: boolean;
 }
 
 export interface TokenGroup {

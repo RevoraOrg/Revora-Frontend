@@ -36,9 +36,10 @@ Use a confirmation dialog instead when an action is **irreversible** or
 - **Countdown ring** — depletes over the reversible window (default 5s, auto-scaled for bursts),
   signalling time-to-permanence. Decorative (`aria-hidden`).
 - **Message** — past-tense description of what happened (`Deleted "Q3 report"`).
-- **Undo CTA** — primary action; reverses the change and removes the banner.
-- **Dismiss (✕)** — commits the action immediately and removes the banner.
-- **Aggregate "Undo all" Header** — shown when multiple actions (`>1`) are pending; reverses all stacked actions in reverse chronological order.
+- **Undo CTA** — primary action; reverses the change and removes the banner (`aria-label="Undo: <message>"`).
+- **Dismiss (✕)** — commits the action immediately and removes the banner (`aria-label="Dismiss: <message>"`).
+- **Aggregate "Undo all" Header** — shown when multiple actions (`>1`) are pending; reverses all stacked actions in reverse chronological order (`aria-label="Undo all N pending actions"`).
+- **Overflow summary** — displayed when pending banners exceed `maxVisible` (default 4). Displays `+N more pending` visually and includes hidden screen-reader text `"N additional undoable actions"` with `role="status"` and `aria-label`.
 
 ## Action contract (for engineers)
 
@@ -92,9 +93,34 @@ pure render of the current stack.
   Beyond `maxVisible` (defaults to **4**) older banners collapse into a `+N more pending`
   summary rather than overflowing the viewport.
 - **Undo all affordance** — when 2 or more actions are active, an aggregate header appears offering
-  an **Undo all** button to bulk-revert all actions and a **Dismiss all (✕)** control to commit all.
+  an **Undo all** button to bulk-revert all actions and a **Dismiss all (✕)** control to commit all. It is hidden or absent when only a single action exists to reduce UI noise.
 - **Independent lifecycles** — each banner maintains its own timer; expiring or
   undoing one item preserves remaining items in the stack.
+
+## Stack limits & overflow behavior
+
+To prevent notification clutter and viewport overflow:
+- The stack displays up to **4 visible items** by default (`maxVisible = 4`).
+- Additional actions beyond 4 cause older banners to collapse into an overflow indicator showing `+N more pending` (e.g. `+3 more pending`).
+- Screen reader accessibility: The overflow element features `role="status"`, `aria-label="${hiddenCount} additional undoable actions"`, and visually-hidden text `<span className="sr-only">${hiddenCount} additional undoable actions</span>` so assistive technologies announce the overflow count without confusing screen reader users.
+
+## Undo All aggregate action rules & failure handling
+
+The aggregate **Undo all** action processes every active item currently in the stack:
+
+### Execution contract
+- Items are undone in **reverse chronological order** (newest to oldest).
+- All registered `onUndo` callbacks are invoked and their respective banners are immediately removed from the stack.
+
+### Expected behavior under edge cases:
+- **One undo fails (Network / API failure)**:
+  If an individual `onUndo` callback throws or fails (e.g., network timeout during server rollback), the frontend catches the error, retains or notifies the user via an error toast, and continues processing remaining items in the stack.
+- **Some actions already expired**:
+  Expired items auto-commit via their individual timers and leave the stack before `undoAll` is clicked. `undoAll` only operates on currently active items.
+- **Multiple action types exist**:
+  The stack seamlessly handles mixed actions (e.g., deleted draft, archived folder, removed member, renamed workspace). `undoAll` executes each action's specific `onUndo` handler in sequence.
+- **Partial undos**:
+  If a user manually undos 1 item and then clicks "Undo all", "Undo all" undoes the remaining active items in the stack.
 
 ## Auto-dismiss timing per stack size
 
@@ -108,13 +134,21 @@ To prevent rapid action bursts from overwhelming users before they can react, au
 | 4 items | 8.0s (8000ms) |
 | 5+ items | 9.0s - 10.0s max (10000ms cap) |
 
+### Timer reset & lifecycle behavior
+- **New item addition**: When a new item is added to an active stack, its timer starts with the scaled duration for that stack size. Existing timers continue uninterrupted, maintaining independent lifecycles.
+- **Timer expiry**: When an individual item's timer reaches 0, its `onCommit` callback runs, the banner disappears, and the stack smoothly shrinks.
+
 ## Responsive behaviour
 
-- Banners are `w-full max-w-md`: full width with side padding on small screens,
-  capped to a comfortable card width on larger screens.
+| Device | Stack Placement | Width & Spacing | Touch Target Sizing | Overflow Handling |
+| --- | --- | --- | --- | --- |
+| **Desktop** | Pinned bottom-center (`bottom-16`), `z-50` | `w-full max-w-md` | Standard button padding (`px-2.5 py-2`) | Max 4 visible items; `+N more pending` overflow |
+| **Tablet** | Pinned bottom-center (`bottom-16`), `z-50` | `w-full max-w-md` | Tap targets `min-h-[44px]` | Max 4 visible items; `+N more pending` overflow |
+| **Mobile** | Pinned bottom-center (`bottom-16`), `z-50` | `w-full max-w-md`, full-width inside `px-4` margin | Enforced `min-h-[44px]` & `min-w-[44px]` touch targets | Max 4 visible items; message text truncates (`truncate`) |
+
+- Banners use `w-full max-w-md`: full width with side padding on small screens, capped to a comfortable card width on larger screens.
 - Mobile stack caps at `maxVisible = 4` to prevent vertical viewport clipping on smaller devices while leaving interactive controls easily tapable.
-- The layout is a single flex row; the message truncates (`truncate`) so the
-  Undo and dismiss controls always remain reachable.
+- The layout is a single flex row; the message truncates (`truncate`) so the Undo and dismiss controls always remain reachable.
 
 ## Keyboard shortcut: Cmd/Ctrl+Z (Issue #279)
 
@@ -173,10 +207,16 @@ const [isModalOpen, setIsModalOpen] = useState(false);
 - **Polite live region** — the container is `role="status"` `aria-live="polite"`
   `aria-atomic="false"`, so newly added banners are announced without
   interrupting the user's current task.
+- **Screen reader announcement ordering** — Stack changes announce politely in order of arrival.
 - **Countdown is decorative** — the ring/seconds are `aria-hidden`. Screen-reader
   users are not pressured by a ticking timer; they act through the clearly
-  labelled **Undo** button. (Consider pairing with a longer `durationMs` for
-  flows where assistive-tech users need more time.)
+  labelled **Undo** button.
+- **Accessible button labels** — Buttons feature explicit descriptive labels:
+  - Individual Undo CTA: `aria-label="Undo: <message>"`
+  - Individual Dismiss CTA: `aria-label="Dismiss: <message>"`
+  - Aggregate Undo All CTA: `aria-label="Undo all N pending actions"`
+  - Overflow indicator: `aria-label="N additional undoable actions"`
+- **Touch targets** — Interactive buttons satisfy WCAG 2.1 AA Target Size (2.5.5 / 2.5.8) with `min-h-[44px]` tap target bounds on mobile/tablet viewports.
 - **Reduced motion** — when `prefers-reduced-motion: reduce` is set, the animated
   sweeping ring is replaced by a **static whole-second count** (no animation).
   See [reduced-motion-guidelines.md](./reduced-motion-guidelines.md).
@@ -185,26 +225,30 @@ const [isModalOpen, setIsModalOpen] = useState(false);
   **`Cmd/Ctrl+Z`** shortcut provides a power-user path to undo the newest
   banner without reaching for the mouse. After undo, focus returns to the
   element that initiated the action.
-- **Dismiss labelling** — the ✕ control has an explicit
-  `aria-label="Dismiss: <message>"` so its purpose is unambiguous out of context.
 
 ### axe notes
 
-`UndoBanner.test.tsx` runs `jest-axe` against single banners as well as full stacked layouts with "Undo all" headers and asserts
-**no violations**. Points verified during design:
+`UndoBanner.test.tsx` runs `jest-axe` against single banners as well as full stacked layouts with "Undo all" headers and overflow indicators, asserting **no violations**. Points verified during design:
 
-- Contrast: white text and the `#60a5fa` Undo CTA on the `#1f2937` banner
-  surface meet AA contrast for normal text.
-- Decorative SVG ring carries `aria-hidden="true"` and no role, so it is not
-  announced.
-- All interactive elements expose an accessible name (button text or
-  `aria-label`).
+- Contrast: white text and the `#60a5fa` Undo CTA on the `#1f2937` banner surface meet AA contrast for normal text.
+- Decorative SVG ring carries `aria-hidden="true"` and no role, so it is not announced.
+- All interactive elements expose explicit accessible names (button text and `aria-label`).
+
+## Edge Cases
+
+- **Extremely rapid action bursts**: When users perform 5-10 actions in a single second, the stack displays the 4 newest actions, while collapse summary updates to `+N more pending` with an accessible announcement. Duration auto-scales up to 10s.
+- **Mixed action types**: The stack smoothly mixes different action descriptions (e.g. deleted project, archived folder, removed member) and handles their independent undo handlers cleanly.
+- **Expired undo actions**: Each banner timer operates independently. Expired banners commit and auto-dismiss without affecting adjacent active banners.
+- **Stack shrinking as items expire**: When older items expire or are dismissed, lower items remain in position and overflow count decrements smoothly.
+- **Undo all after partial individual undos**: Reverses all currently remaining pending actions without error.
+- **Offline / network failures**: Errors thrown inside custom `onUndo` callbacks are caught gracefully, allowing remaining actions to complete and displaying a fallback toast if needed.
+- **Reduced motion preference**: Automatically replaces SVG ring animations with static whole-second text numbers.
 
 ## Test coverage
 
 - [`UndoBanner.test.tsx`](../../src/components/UndoBanner/UndoBanner.test.tsx) —
   rendering, Undo/dismiss callbacks, `onUndoAll`/`onDismissAll` aggregate actions, custom labels, newest-on-top stacking,
-  `+N more` overflow (max 4 default), decorative ring, reduced-motion fallback, keyboard shortcut integration, and axe assertions.
+  `+N more` overflow (max 4 default), decorative ring, reduced-motion fallback, keyboard shortcut integration, accessibility labels, overflow announcements, and axe assertions.
 - [`useUndoBanners.test.tsx`](../../src/hooks/useUndoBanners.test.tsx) —
   registration, countdown→commit, undo (with no late commit), dismiss→commit,
   `undoAll()`, `dismissAll()`, dynamic auto-dismiss scaling by stack size, and independent stacked lifecycles.
@@ -212,3 +256,4 @@ const [isModalOpen, setIsModalOpen] = useState(false);
   Cmd/Ctrl+Z triggers undo on newest banner, suppressed in editable elements,
   focus-return to origin element, no-op when no banners are visible, and
   cleanup on unmount.
+

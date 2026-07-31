@@ -156,8 +156,9 @@ export const UndoBanner: React.FC<UndoBannerProps> = ({
               <button
                 type="button"
                 onClick={onUndoAll}
+                aria-label={`Undo all ${banners.length} pending actions`}
                 data-testid="undo-all-button"
-                className="flex items-center gap-1 rounded px-2 py-1 font-semibold text-[#60a5fa] hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#60a5fa]"
+                className="flex min-h-[36px] items-center gap-1 rounded px-2.5 py-1 font-semibold text-[#60a5fa] hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#60a5fa]"
               >
                 <Undo2 size={14} aria-hidden="true" />
                 Undo all
@@ -169,7 +170,7 @@ export const UndoBanner: React.FC<UndoBannerProps> = ({
                 onClick={onDismissAll}
                 aria-label="Dismiss all pending actions"
                 data-testid="dismiss-all-button"
-                className="rounded p-1 text-white/70 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="flex min-h-[36px] min-w-[36px] items-center justify-center rounded p-1.5 text-white/70 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
               >
                 <X size={14} aria-hidden="true" />
               </button>
@@ -193,7 +194,8 @@ export const UndoBanner: React.FC<UndoBannerProps> = ({
           <button
             type="button"
             onClick={() => onUndo(banner.id)}
-            className="flex flex-shrink-0 items-center gap-1 rounded-md px-2 py-1 font-semibold text-[#60a5fa] hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#60a5fa]"
+            aria-label={`${banner.actionLabel}: ${banner.message}`}
+            className="flex min-h-[44px] flex-shrink-0 items-center gap-1 rounded-md px-2.5 py-2 font-semibold text-[#60a5fa] hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-[#60a5fa]"
           >
             <Undo2 size={16} aria-hidden="true" />
             {banner.actionLabel}
@@ -202,7 +204,7 @@ export const UndoBanner: React.FC<UndoBannerProps> = ({
             type="button"
             onClick={() => onDismiss(banner.id)}
             aria-label={`Dismiss: ${banner.message}`}
-            className="flex-shrink-0 rounded p-1 text-white/70 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="flex min-h-[44px] min-w-[44px] flex-shrink-0 items-center justify-center rounded p-2 text-white/70 hover:bg-white/10 hover:text-white focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             <X size={16} aria-hidden="true" />
           </button>
@@ -212,9 +214,12 @@ export const UndoBanner: React.FC<UndoBannerProps> = ({
       {hiddenCount > 0 && (
         <div
           data-testid="undo-overflow"
-          className="pointer-events-auto rounded-md bg-[#111827] px-3 py-1 text-xs text-white/70"
+          role="status"
+          aria-label={`${hiddenCount} additional undoable actions`}
+          className="pointer-events-auto rounded-md bg-[#111827] px-3 py-1.5 text-xs text-white/70"
         >
-          +{hiddenCount} more pending
+          <span aria-hidden="true">+{hiddenCount} more pending</span>
+          <span className="sr-only">{hiddenCount} additional undoable actions</span>
         </div>
       )}
     </div>

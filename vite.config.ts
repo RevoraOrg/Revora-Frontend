@@ -35,6 +35,8 @@ export default defineConfig({
         'src/components/AllocationWidget.tsx',
         'src/components/PerformanceTrendWidget.tsx',
         'src/pages/InvestorPortfolioSummary.tsx',
+        // Issue #464 – Ledger row grouping and collapse controls
+        'src/pages/Ledger.tsx',
         // Issue #174 – Density modes
         'src/components/DensityProvider/DensityProvider.tsx',
         'src/components/DensityToggle/DensityToggle.tsx',
@@ -112,6 +114,12 @@ export default defineConfig({
           statements: 95,
         },
         'src/pages/InvestorPortfolioSummary.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        'src/pages/Ledger.tsx': {
           branches: 95,
           functions: 95,
           lines: 95,

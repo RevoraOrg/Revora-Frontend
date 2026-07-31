@@ -43,12 +43,20 @@ export default defineConfig({
         'src/components/DocumentUploader/DocumentUploader.tsx',
         // Issue #472 – Governance vote receipt
         'src/components/GovernanceVoteReceipt/GovernanceVoteReceipt.tsx',
+        // Issue #481 – Transaction receipt share-as-image
+        'src/components/StatusTimeline/TransactionReceiptShare.tsx',
         // Command Palette
         'src/components/CommandPalette/CommandPalette.tsx',
         'src/components/CommandPalette/commandPaletteData.ts',
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Issue #469 – Governance delegation flow
+        'src/components/GovernanceDelegation/GovernanceDelegation.tsx',
+        'src/components/GovernanceDelegation/DelegateProfileCard.tsx',
+        'src/components/GovernanceDelegation/DelegateSearch.tsx',
+        'src/components/GovernanceDelegation/DelegationDialogs.tsx',
+        'src/components/GovernanceDelegation/DelegatedPowerHeader.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -156,6 +164,25 @@ export default defineConfig({
           statements: 95,
         },
         'src/components/Notifications/NotificationBell.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/StatusTimeline/TransactionReceiptShare.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        // Issue #469 – Governance delegation flow
+        'src/components/GovernanceDelegation/GovernanceDelegation.tsx': {
+          branches: 95, functions: 83, lines: 95, statements: 95,
+        },
+        'src/components/GovernanceDelegation/DelegateProfileCard.tsx': {
+          branches: 91, functions: 95, lines: 95, statements: 90,
+        },
+        'src/components/GovernanceDelegation/DelegateSearch.tsx': {
+          branches: 92, functions: 92, lines: 95, statements: 95,
+        },
+        'src/components/GovernanceDelegation/DelegationDialogs.tsx': {
+          branches: 85, functions: 95, lines: 91, statements: 88,
+        },
+        'src/components/GovernanceDelegation/DelegatedPowerHeader.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

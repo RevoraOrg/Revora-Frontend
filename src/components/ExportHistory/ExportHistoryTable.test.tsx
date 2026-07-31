@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ExportHistoryTable, MOCK_EXPORTS } from './ExportHistoryTable';
 import '@testing-library/jest-dom/vitest';
+import { axe } from 'jest-axe';
 
 Object.assign(navigator, {
   clipboard: {
@@ -26,8 +27,10 @@ describe('ExportHistoryTable', () => {
     render(<ExportHistoryTable />);
     
     // Open share dialog for the first item
-    const shareBtns = screen.getAllByTitle('Share Link');
-    fireEvent.click(shareBtns[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const shareBtn = screen.getByText('Share Link');
+    fireEvent.click(shareBtn);
     
     const dialogTitle = screen.getByText('Share Export Link');
     expect(dialogTitle).toBeInTheDocument();
@@ -62,8 +65,10 @@ describe('ExportHistoryTable', () => {
     expect(screen.getByText('All payouts in July')).toBeInTheDocument();
 
     // Open delete dialog for the first item
-    const deleteBtns = screen.getAllByTitle('Delete Export');
-    fireEvent.click(deleteBtns[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const deleteBtn = screen.getByText('Delete Export');
+    fireEvent.click(deleteBtn);
     
     const dialogTitle = screen.getByText('Delete Export');
     expect(dialogTitle).toBeInTheDocument();
@@ -74,7 +79,10 @@ describe('ExportHistoryTable', () => {
     expect(screen.getByText('All payouts in July')).toBeInTheDocument();
     
     // Open again
-    fireEvent.click(screen.getAllByTitle('Delete Export')[0]);
+    const menuBtnsAg = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtnsAg[0]);
+    const deleteBtnAg = screen.getByText('Delete Export');
+    fireEvent.click(deleteBtnAg);
     
     // Confirm delete
     const confirmBtn = screen.getByRole('button', { name: 'Delete' });
@@ -89,8 +97,10 @@ describe('ExportHistoryTable', () => {
     const initialRows = screen.getAllByRole('row');
     
     // Click rerun on the first item
-    const rerunBtns = screen.getAllByTitle('Rerun Export');
-    fireEvent.click(rerunBtns[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const rerunBtn = screen.getByText('Rerun Export');
+    fireEvent.click(rerunBtn);
     
     const newRows = screen.getAllByRole('row');
     expect(newRows.length).toBe(initialRows.length + 1);
@@ -100,12 +110,15 @@ describe('ExportHistoryTable', () => {
     render(<ExportHistoryTable />);
     
     // Delete all items one by one
-    let deleteBtns = screen.queryAllByTitle('Delete Export');
-    while(deleteBtns.length > 0) {
-      fireEvent.click(deleteBtns[0]);
+    let menuBtns = screen.queryAllByTitle('More actions');
+    while(menuBtns.length > 0) {
+      fireEvent.click(menuBtns[0]);
+      const deleteBtn = screen.getByText('Delete Export');
+      fireEvent.click(deleteBtn);
+      
       const confirmBtn = screen.getByRole('button', { name: 'Delete' });
       fireEvent.click(confirmBtn);
-      deleteBtns = screen.queryAllByTitle('Delete Export');
+      menuBtns = screen.queryAllByTitle('More actions');
     }
     
     expect(screen.getByText('No export history')).toBeInTheDocument();
@@ -113,8 +126,10 @@ describe('ExportHistoryTable', () => {
 
   it('closes dialogs on escape key', () => {
     render(<ExportHistoryTable />);
-    const shareBtns = screen.getAllByTitle('Share Link');
-    fireEvent.click(shareBtns[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const shareBtn = screen.getByText('Share Link');
+    fireEvent.click(shareBtn);
     
     expect(screen.getByText('Share Export Link')).toBeInTheDocument();
     fireEvent.keyDown(screen.getByRole('dialog'), { key: 'Escape', code: 'Escape' });
@@ -123,7 +138,10 @@ describe('ExportHistoryTable', () => {
   
   it('traps focus correctly in share dialog (Shift+Tab)', () => {
     render(<ExportHistoryTable />);
-    fireEvent.click(screen.getAllByTitle('Share Link')[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const shareBtn = screen.getByText('Share Link');
+    fireEvent.click(shareBtn);
     const dialog = screen.getByRole('dialog');
     
     // We just verify it doesn't crash on Tab
@@ -134,7 +152,10 @@ describe('ExportHistoryTable', () => {
 
   it('traps focus correctly in delete dialog (Shift+Tab)', () => {
     render(<ExportHistoryTable />);
-    fireEvent.click(screen.getAllByTitle('Delete Export')[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const deleteBtn = screen.getByText('Delete Export');
+    fireEvent.click(deleteBtn);
     const dialog = screen.getByRole('dialog');
     
     // We just verify it doesn't crash on Tab
@@ -147,12 +168,26 @@ describe('ExportHistoryTable', () => {
     navigator.clipboard.writeText = vi.fn().mockImplementation(() => Promise.reject('clipboard error'));
     render(<ExportHistoryTable />);
     
-    fireEvent.click(screen.getAllByTitle('Share Link')[0]);
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+    const shareBtn = screen.getByText('Share Link');
+    fireEvent.click(shareBtn);
     fireEvent.click(screen.getByText('Copy Link'));
     
     await waitFor(() => {
       // should display the URL string fallback
       expect(screen.getByText(/investor\/export\/exp1/)).toBeInTheDocument();
     });
+  });
+
+  it('is accessible', async () => {
+    const { container } = render(<ExportHistoryTable />);
+    
+    // Open menu to test menu a11y too
+    const menuBtns = screen.getAllByTitle('More actions');
+    fireEvent.click(menuBtns[0]);
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
   });
 });

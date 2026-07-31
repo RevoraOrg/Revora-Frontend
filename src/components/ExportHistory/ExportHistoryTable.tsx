@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { EmptyState } from '../designSystem/EmptyState';
 import { ShareLinkDialog } from './ShareLinkDialog';
 import { DeleteConfirmDialog } from './DeleteConfirmDialog';
-import { Share2, RefreshCw, Trash2, FileDown } from 'lucide-react';
+import { Share2, RefreshCw, Trash2, FileDown, MoreHorizontal } from 'lucide-react';
 
 export interface ExportHistoryEntry {
   id: string;
@@ -25,6 +25,107 @@ function formatBytes(bytes: number) {
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
+
+const ExportRowActions: React.FC<{
+  entry: ExportHistoryEntry;
+  onRerun: (id: string) => void;
+  onShare: (id: string) => void;
+  onDelete: (id: string) => void;
+}> = ({ entry, onRerun, onShare, onDelete }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
+  }, [isOpen]);
+
+  const handleFocusOut = (event: React.FocusEvent) => {
+    if (containerRef.current && !containerRef.current.contains(event.relatedTarget as Node)) {
+      setIsOpen(false);
+    }
+  };
+
+  return (
+    <div ref={containerRef} onBlur={handleFocusOut} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        className="btn btn--secondary btn--sm"
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        aria-label={`More actions for export ${entry.scope}`}
+        title="More actions"
+        onClick={() => setIsOpen(!isOpen)}
+        style={{ padding: '0.25rem 0.5rem' }}
+      >
+        <MoreHorizontal size={16} aria-hidden="true" />
+      </button>
+      
+      {isOpen && (
+        <div 
+          role="menu"
+          className="glass-card"
+          style={{ 
+            position: 'absolute', 
+            right: 0, 
+            top: '100%', 
+            marginTop: '0.25rem', 
+            zIndex: 50,
+            minWidth: '160px',
+            padding: '0.5rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.25rem',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}
+        >
+          <button 
+            role="menuitem"
+            className="btn btn--secondary btn--sm" 
+            style={{ width: '100%', justifyContent: 'flex-start' }}
+            onClick={() => { setIsOpen(false); onRerun(entry.id); }}
+          >
+            <RefreshCw size={14} aria-hidden="true" style={{ marginRight: '0.5rem' }} />
+            Rerun Export
+          </button>
+          <button 
+            role="menuitem"
+            className="btn btn--secondary btn--sm" 
+            style={{ width: '100%', justifyContent: 'flex-start' }}
+            onClick={() => { setIsOpen(false); onShare(entry.id); }}
+          >
+            <Share2 size={14} aria-hidden="true" style={{ marginRight: '0.5rem' }} />
+            Share Link
+          </button>
+          <button 
+            role="menuitem"
+            className="btn btn--secondary btn--sm" 
+            style={{ width: '100%', justifyContent: 'flex-start', color: 'var(--color-danger, #ef4444)' }}
+            onClick={() => { setIsOpen(false); onDelete(entry.id); }}
+          >
+            <Trash2 size={14} aria-hidden="true" style={{ marginRight: '0.5rem' }} />
+            Delete Export
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
+
 
 export const ExportHistoryTable: React.FC = () => {
   const [exports, setExports] = useState<ExportHistoryEntry[]>(MOCK_EXPORTS);
@@ -67,8 +168,8 @@ export const ExportHistoryTable: React.FC = () => {
         <FileDown size={20} />
         Export History
       </h2>
-      <div className="atf-results">
-        <table className="atf-table" style={{ width: '100%', textAlign: 'left' }}>
+      <div className="atf-results" style={{ overflowX: 'auto' }}>
+        <table className="atf-table" style={{ width: '100%', textAlign: 'left', minWidth: '600px' }}>
           <caption className="sr-only">Past exports table</caption>
           <thead>
             <tr>
@@ -97,35 +198,12 @@ export const ExportHistoryTable: React.FC = () => {
                 <td>{entry.scope}</td>
                 <td>{formatBytes(entry.sizeBytes)}</td>
                 <td style={{ textAlign: 'right' }}>
-                  <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                    <button 
-                      className="btn btn--secondary btn--sm" 
-                      title="Rerun Export" 
-                      onClick={() => handleRerun(entry.id)}
-                      aria-label={`Rerun export ${entry.scope}`}
-                      style={{ padding: '0.25rem 0.5rem' }}
-                    >
-                      <RefreshCw size={14} aria-hidden="true" />
-                    </button>
-                    <button 
-                      className="btn btn--secondary btn--sm" 
-                      title="Share Link"
-                      onClick={() => setShareDialogId(entry.id)}
-                      aria-label={`Share link for export ${entry.scope}`}
-                      style={{ padding: '0.25rem 0.5rem' }}
-                    >
-                      <Share2 size={14} aria-hidden="true" />
-                    </button>
-                    <button 
-                      className="btn btn--secondary btn--sm" 
-                      title="Delete Export"
-                      onClick={() => setDeleteDialogId(entry.id)}
-                      aria-label={`Delete export ${entry.scope}`}
-                      style={{ padding: '0.25rem 0.5rem', color: 'var(--color-danger, #ef4444)' }}
-                    >
-                      <Trash2 size={14} aria-hidden="true" />
-                    </button>
-                  </div>
+                  <ExportRowActions 
+                    entry={entry}
+                    onRerun={handleRerun}
+                    onShare={(id) => setShareDialogId(id)}
+                    onDelete={(id) => setDeleteDialogId(id)}
+                  />
                 </td>
               </tr>
             ))}

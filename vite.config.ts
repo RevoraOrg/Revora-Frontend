@@ -49,6 +49,8 @@ export default defineConfig({
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Issue #442 – Gantt-style Payout Schedule
+        'src/pages/PayoutSchedule.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {

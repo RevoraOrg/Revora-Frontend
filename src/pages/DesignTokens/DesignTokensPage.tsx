@@ -3,6 +3,8 @@ import { TOKEN_GROUPS, type TokenGroup, type Token } from "./tokens";
 import { contrastRatio, wcagGrade, LIGHT_SURFACE, DARK_SURFACE } from "./contrast";
 import { DevicePreview } from "./DevicePreview";
 import { ChartPaletteGuidelines } from "./ChartPaletteGuidelines";
+import { TokenDiff } from "./TokenDiff";
+import { TOKEN_DIFF_BEFORE, TOKEN_DIFF_AFTER } from "./tokenDiff";
 import "./DesignTokensPage.css";
 
 // ─── Copy hook ────────────────────────────────────────────────────────────────
@@ -50,7 +52,7 @@ function ColorSwatch({ token, surface }: { token: Token; surface: string }) {
     grade === "AA Large" ? "dt-grade--large" : "dt-grade--fail";
 
   return (
-    <div className="dt-color-row" role="row">
+    <div className="dt-color-row">
       <div
         className="dt-swatch"
         style={{ background: token.value }}
@@ -89,7 +91,7 @@ function SpacingRow({ token }: { token: Token }) {
   const barWidth = Math.min(remVal * 3, 200);
 
   return (
-    <div className="dt-spacing-row" role="row">
+    <div className="dt-spacing-row">
       <div className="dt-spacing-bar-wrap">
         <div className="dt-spacing-bar" style={{ width: barWidth }} aria-hidden="true" />
       </div>
@@ -112,7 +114,7 @@ function RadiusRow({ token }: { token: Token }) {
   const { copy, copied } = useCopy();
 
   return (
-    <div className="dt-radius-row" role="row">
+    <div className="dt-radius-row">
       <div
         className="dt-radius-preview"
         style={{ borderRadius: token.value }}
@@ -139,7 +141,7 @@ function TypographyRow({ token }: { token: Token }) {
   const isWeight = token.variable.includes("font-weight");
 
   return (
-    <div className="dt-typo-row" role="row">
+    <div className="dt-typo-row">
       <div className="dt-typo-preview">
         {isSize && (
           <span style={{ fontSize: token.value, lineHeight: 1.2, fontWeight: 500 }}>Aa</span>
@@ -170,7 +172,7 @@ function ShadowRow({ token }: { token: Token }) {
   const { copy, copied } = useCopy();
 
   return (
-    <div className="dt-shadow-row" role="row">
+    <div className="dt-shadow-row">
       <div
         className="dt-shadow-preview"
         style={{ boxShadow: token.value }}
@@ -196,7 +198,7 @@ function GenericRow({ token }: { token: Token }) {
   const { copy, copied } = useCopy();
 
   return (
-    <div className="dt-generic-row" role="row">
+    <div className="dt-generic-row">
       <span className="dt-token-name">{token.name}</span>
       <code className="dt-token-value">{token.value}</code>
       <span className="dt-token-desc">{token.description}</span>
@@ -242,7 +244,7 @@ function TokenSection({
         <span className="dt-section-count">{filtered.length}</span>
       </h2>
 
-      <div role="table" aria-label={`${group.label} tokens`}>
+      <div role="group" aria-label={`${group.label} tokens`}>
         {group.type === "color" &&
           filtered.map((t) => (
             <ColorSwatch key={t.variable} token={t} surface={surface} />
@@ -353,6 +355,11 @@ export function DesignTokensPage() {
             search={normalized}
           />
         ))}
+      </div>
+
+      {/* Token diff & export */}
+      <div className="dt-sections">
+        <TokenDiff before={TOKEN_DIFF_BEFORE} after={TOKEN_DIFF_AFTER} />
       </div>
 
       {/* Empty state */}

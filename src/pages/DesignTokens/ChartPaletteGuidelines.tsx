@@ -115,7 +115,7 @@ export function ChartPaletteGuidelines({ surface = "dark" }: ChartPaletteGuideli
       {/* Tab 1: Categorical Swatches & Contrast Table */}
       {activeTab === "swatches" && (
         <div className="dt-swatch-grid-wrap" style={getFilterStyle()}>
-          <div className="dt-swatch-grid" role="table" aria-label="Categorical chart tokens">
+          <div className="dt-swatch-grid" role="group" aria-label="Categorical chart tokens">
             {DARK_CHART_TOKENS.map((darkToken, idx) => {
               const lightToken = LIGHT_CHART_TOKENS[idx];
               const activeToken = surface === "dark" ? darkToken : lightToken;
@@ -123,7 +123,7 @@ export function ChartPaletteGuidelines({ surface = "dark" }: ChartPaletteGuideli
               const grade = wcagGrade(ratio);
 
               return (
-                <div key={darkToken.variable} className="dt-chart-swatch-card" role="row">
+                <div key={darkToken.variable} className="dt-chart-swatch-card">
                   <div
                     className="dt-chart-swatch-color"
                     style={{ background: activeToken.value }}
@@ -322,7 +322,7 @@ export function ChartPaletteGuidelines({ surface = "dark" }: ChartPaletteGuideli
 
       {/* Accessibility & Responsive Callout Notes */}
       <div className="dt-notes-callout">
-        <h4>Accessibility (WCAG 2.1 AA) & Responsive Assumptions</h4>
+        <h3>Accessibility (WCAG 2.1 AA) & Responsive Assumptions</h3>
         <ul>
           <li><strong>WCAG 2.1 AA Non-Text Contrast (1.4.11):</strong> Every dark-mode categorical hue maintains a contrast ratio of ≥ 6.8:1 against <code>#020617</code>, well exceeding the 3:1 graphical requirement.</li>
           <li><strong>Color Vision Deficiencies (WCAG 1.4.1):</strong> Designed across blue/yellow and red/green channels. Combined with shape markers or legend text, all categories remain identifiable.</li>

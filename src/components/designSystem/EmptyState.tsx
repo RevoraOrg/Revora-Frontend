@@ -189,11 +189,11 @@ const EmptyStateIllustration: React.FC<IllustrationProps> = ({ variant, size, se
       case 'revenue-reports':
         return <RevenueReportsGlyph primaryColor={primaryColor} mutedColor={mutedColor} accentColor={accentColor} isError={isError} />;
       case 'governance-proposals':
-        return <GovernanceProposalsGlyph primaryColor={primaryColor} mutedColor={mutedColor} isError={isError} />;
+        return <GovernanceProposalsGlyph primaryColor={primaryColor} mutedColor={mutedColor} accentColor={accentColor} isError={isError} />;
       case 'governance-votes':
-        return <GovernanceVotesGlyph primaryColor={primaryColor} mutedColor={mutedColor} isError={isError} />;
+        return <GovernanceVotesGlyph primaryColor={primaryColor} mutedColor={mutedColor} accentColor={accentColor} isError={isError} />;
       case 'governance-delegates':
-        return <GovernanceDelegatesGlyph primaryColor={primaryColor} mutedColor={mutedColor} isError={isError} />;
+        return <GovernanceDelegatesGlyph primaryColor={primaryColor} mutedColor={mutedColor} accentColor={accentColor} isError={isError} />;
       default:
         return null;
     }
@@ -506,13 +506,43 @@ const RevenueReportsGlyph: React.FC<{ primaryColor: string; mutedColor: string; 
 
 /* ─── Governance Glyphs ────────────────────────────────────────────────────── */
 
-const GovernanceProposalsGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({ primaryColor, mutedColor, isError }) => (
+const GovernanceProposalsGlyph: React.FC<{ primaryColor: string; mutedColor: string; accentColor: string; isError: boolean }> = ({ primaryColor, mutedColor, accentColor, isError }) => (
   <g>
-    <rect x="-10" y="-14" width="20" height="28" rx="2" {...fillStyle(primaryColor, 0.08)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
-    <line x1="-5" y1="-8" x2="5" y2="-8" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
-    <line x1="-5" y1="-2" x2="2" y2="-2" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
-    <circle cx="5" cy="6" r="6" {...fillStyle(primaryColor, 0.15)} stroke={primaryColor} strokeOpacity="0.6" strokeWidth="2" />
-    <path d="M5 3 L5 9 M2 6 L8 6" stroke={primaryColor} strokeOpacity="0.8" strokeWidth="1.5" />
+    {/* Back proposal document (stacked, offset) */}
+    <rect
+      x="-14"
+      y="-11"
+      width="21"
+      height="27"
+      rx="2.5"
+      transform="rotate(-8 0 0)"
+      {...fillStyle(mutedColor, 0.08)}
+      stroke={mutedColor}
+      strokeOpacity="0.3"
+      strokeWidth="2"
+    />
+    {/* Front proposal document */}
+    <rect
+      x="-11"
+      y="-14"
+      width="21"
+      height="27"
+      rx="2.5"
+      {...fillStyle(primaryColor, 0.08)}
+      stroke={primaryColor}
+      strokeOpacity="0.45"
+      strokeWidth="2"
+    />
+    {/* Fold corner */}
+    <path d="M5 -14 L10 -9 L5 -9 Z" fill={primaryColor} fillOpacity="0.15" />
+    {/* Proposal body lines */}
+    <line x1="-6" y1="-6" x2="6" y2="-6" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="-6" y1="0" x2="3" y2="0" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="-6" y1="6" x2="5" y2="6" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+    {/* "Create" plus badge */}
+    <circle cx="8" cy="7" r="7" fill={primaryColor} />
+    <circle cx="8" cy="7" r="9" fill="none" stroke={primaryColor} strokeOpacity="0.3" strokeWidth="1.5" />
+    <path d="M8 3.5 L8 10.5 M4.5 7 L11.5 7" stroke="#ffffff" strokeWidth="1.8" strokeLinecap="round" />
     {isError && (
       <g>
         <circle cx="0" cy="0" r="16" fill="rgba(239,68,68,0.1)" />
@@ -522,12 +552,21 @@ const GovernanceProposalsGlyph: React.FC<{ primaryColor: string; mutedColor: str
   </g>
 );
 
-const GovernanceVotesGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({ primaryColor, mutedColor, isError }) => (
+const GovernanceVotesGlyph: React.FC<{ primaryColor: string; mutedColor: string; accentColor: string; isError: boolean }> = ({ primaryColor, mutedColor, accentColor, isError }) => (
   <g>
-    <rect x="-14" y="-2" width="28" height="18" rx="2" {...fillStyle(primaryColor, 0.08)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
-    <line x1="-8" y1="-2" x2="8" y2="-2" stroke={primaryColor} strokeOpacity="0.6" strokeWidth="2" />
-    <path d="M-6 -14 L6 -14 L6 -2 L-6 -2 Z" {...fillStyle(mutedColor, 0.1)} stroke={mutedColor} strokeOpacity="0.5" strokeWidth="1.5" />
-    <path d="M-2 -10 L2 -10" stroke={mutedColor} strokeOpacity="0.5" strokeWidth="1" />
+    {/* Ballot box body */}
+    <rect x="-15" y="2" width="30" height="18" rx="2.5" {...fillStyle(primaryColor, 0.08)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
+    {/* Ballot slot lid */}
+    <rect x="-15" y="-2" width="30" height="5" rx="2.5" {...fillStyle(primaryColor, 0.18)} />
+    <line x1="-15" y1="-2" x2="15" y2="-2" stroke={primaryColor} strokeOpacity="0.5" strokeWidth="2" />
+    {/* Tally marks inside the box */}
+    <line x1="-10" y1="8" x2="-2" y2="8" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="-10" y1="13" x2="2" y2="13" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+    <line x1="-10" y1="18" x2="0" y2="18" stroke={mutedColor} strokeOpacity="0.4" strokeWidth="1.5" strokeLinecap="round" />
+    {/* Ballot card slipping into the slot */}
+    <rect x="-4" y="-14" width="8" height="13" rx="1.5" {...fillStyle(accentColor, 0.12)} stroke={accentColor} strokeOpacity="0.5" strokeWidth="1.5" />
+    {/* Check mark on the ballot */}
+    <path d="M-1.5 -8.5 L0.5 -6 L3.5 -10" stroke={primaryColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
     {isError && (
       <g>
         <circle cx="0" cy="0" r="16" fill="rgba(239,68,68,0.1)" />
@@ -537,11 +576,16 @@ const GovernanceVotesGlyph: React.FC<{ primaryColor: string; mutedColor: string;
   </g>
 );
 
-const GovernanceDelegatesGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({ primaryColor, mutedColor, isError }) => (
+const GovernanceDelegatesGlyph: React.FC<{ primaryColor: string; mutedColor: string; accentColor: string; isError: boolean }> = ({ primaryColor, mutedColor, accentColor, isError }) => (
   <g>
-    <circle cx="0" cy="-6" r="6" {...fillStyle(primaryColor, 0.1)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
-    <path d="M-10 12 C-10 4 10 4 10 12" {...fillStyle(primaryColor, 0.1)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
-    <path d="M8 0 L10 4 L14 4 L11 7 L12 11 L8 8.5 L4 11 L5 7 L2 4 L6 4 Z" {...fillStyle(primaryColor, 0.2)} stroke={primaryColor} strokeOpacity="0.8" strokeWidth="1.5" />
+    {/* Delegate head */}
+    <circle cx="-6" cy="-8" r="6" {...fillStyle(primaryColor, 0.1)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
+    {/* Delegate shoulders */}
+    <path d="M-17 11 C-17 2 -13 -2 -6 -2 C1 -2 5 2 5 11" {...fillStyle(primaryColor, 0.1)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
+    {/* Delegation chain links */}
+    <rect x="7" y="-10" width="10" height="7" rx="3.5" {...fillStyle(accentColor, 0.12)} stroke={accentColor} strokeOpacity="0.6" strokeWidth="1.8" />
+    <rect x="14" y="-3" width="10" height="7" rx="3.5" {...fillStyle(accentColor, 0.18)} stroke={accentColor} strokeOpacity="0.7" strokeWidth="1.8" />
+    <line x1="14" y1="-6.5" x2="14.5" y2="-1" stroke={accentColor} strokeOpacity="0.5" strokeWidth="1.5" />
     {isError && (
       <g>
         <circle cx="0" cy="0" r="16" fill="rgba(239,68,68,0.1)" />

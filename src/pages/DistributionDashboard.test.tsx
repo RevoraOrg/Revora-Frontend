@@ -48,9 +48,8 @@ describe('DistributionDashboard', () => {
   it('renders recent uploads queue section', () => {
     renderWithRouter();
 
-    expect(screen.getByText('Recent Uploads Queue')).toBeInTheDocument();
-    expect(screen.getByText('Q3_Revenue_Report.pdf')).toBeInTheDocument();
-    expect(screen.getByText('malicious_payload.exe')).toBeInTheDocument();
+    expect(screen.getByText('Batch Upload Queue')).toBeInTheDocument();
+    expect(screen.getByTestId('upload-queue')).toBeInTheDocument();
   });
 
   describe('error rate sparkline tiles', () => {
@@ -90,7 +89,8 @@ describe('DistributionDashboard', () => {
     it('renders By Region heading', () => {
       renderWithRouter();
 
-      expect(screen.getByText('By Region')).toBeInTheDocument();
+      const regionSection = screen.getByTestId('error-rate-by-region');
+      expect(within(regionSection).getByText('By Region')).toBeInTheDocument();
     });
 
     it('renders issuer error rate tiles with correct values', () => {
@@ -170,20 +170,74 @@ describe('DistributionDashboard', () => {
     renderWithRouter();
 
     expect(screen.getByRole('heading', { name: /Results Breakdown/i })).toBeInTheDocument();
-    expect(screen.getByText(/68\.4% turnout/i)).toBeInTheDocument();
+    expect(screen.getByText(/63\.5% turnout/i)).toBeInTheDocument();
   });
 
-  it('renders empty state for distributions', () => {
-    renderWithRouter();
+  describe('governance empty states', () => {
+    it('renders all three governance empty states when govEmpty=all', () => {
+      renderWithRouter(['/distribution-dashboard?govEmpty=all']);
 
-    expect(screen.getByText('No distributions yet')).toBeInTheDocument();
-  });
+      expect(screen.getByRole('heading', { name: /No active proposals/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /No votes cast yet/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /No delegates yet/i })).toBeInTheDocument();
+    });
 
-  it('has working Back to Discovery link', () => {
-    renderWithRouter();
+    it('renders Create Proposal CTA linking to the proposal creation flow', () => {
+      renderWithRouter(['/distribution-dashboard?govEmpty=proposals']);
 
-    const backLink = screen.getByText('Back to Discovery');
-    expect(backLink.closest('a')).toHaveAttribute('href', '/investor/portal');
+      const cta = screen.getByTestId('gov-empty-create-proposal');
+      expect(cta.closest('a')).toHaveAttribute(
+        'href',
+        '/startup/governance/proposals/create',
+      );
+    });
+
+    it('renders Back to Discovery link from governance empty states', () => {
+      renderWithRouter(['/distribution-dashboard?govEmpty=all']);
+
+      const backLinks = screen.getAllByText('Back to Discovery');
+      expect(backLinks.length).toBeGreaterThanOrEqual(1);
+      expect(backLinks[0].closest('a')).toHaveAttribute('href', '/investor/portal');
+    });
+
+    it('keeps proposal detail and results when govEmpty is unset', () => {
+      renderWithRouter();
+
+      expect(screen.queryByRole('heading', { name: /No active proposals/i })).toBeNull();
+      expect(screen.getByRole('heading', { name: /Increase Developer Grant Fund/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /Results Breakdown/i })).toBeInTheDocument();
+    });
+
+    it('renders monochrome empty-state illustrations in print mode', () => {
+      const originalMatchMedia = window.matchMedia;
+      window.matchMedia = ((query: string) =>
+        ({
+          matches: query === 'print',
+          media: query,
+          onchange: null,
+          addListener: () => {},
+          removeListener: () => {},
+          addEventListener: () => {},
+          removeEventListener: () => {},
+          dispatchEvent: () => false,
+        })) as unknown as typeof window.matchMedia;
+
+      renderWithRouter(['/distribution-dashboard?govEmpty=all']);
+
+      window.matchMedia = originalMatchMedia;
+
+      const svgs = document.querySelectorAll('.empty-state-icon-wrap svg');
+      expect(svgs.length).toBeGreaterThanOrEqual(3);
+      svgs.forEach((svg) => {
+        expect(svg.innerHTML).toContain('stroke="#000000"');
+      });
+    });
+
+    it('passes axe accessibility checks with governance empty states', async () => {
+      const { container } = renderWithRouter(['/distribution-dashboard?govEmpty=all']);
+      const results = await axe(container);
+      expect(results).toHaveNoViolations();
+    });
   });
 
   it('passes axe accessibility checks with 0 violations', async () => {

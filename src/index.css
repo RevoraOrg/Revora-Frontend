@@ -85,6 +85,10 @@
 
   --primary: #3b82f6;
   --primary-hover: #2563eb;
+  /* Primary button fill — darkened to meet WCAG 2.1 AA (white text 4.5:1+).
+     --primary is retained for text links / accents where 4.86:1 on dark holds. */
+  --primary-btn-bg: #2563eb;
+  --primary-btn-bg-hover: #1d4ed8;
   --text-main: #e5e7eb;
   --text-muted: #cbd5e1;
   --text-accent: #38bdf8;
@@ -356,7 +360,7 @@ body {
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--primary-btn-bg);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -368,7 +372,7 @@ body {
 }
 
 .btn-primary:hover {
-  background: var(--primary-hover);
+  background: var(--primary-btn-bg-hover);
   transform: translateY(-1px);
 }
 

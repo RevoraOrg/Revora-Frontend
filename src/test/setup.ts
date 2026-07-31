@@ -13,6 +13,21 @@ global.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+// matchMedia stub — jsdom does not implement it. Components that detect print
+// mode (usePrintMode) and some chart widgets call window.matchMedia() on mount.
+if (!window.matchMedia) {
+  window.matchMedia = ((query: string) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  })) as unknown as typeof window.matchMedia;
+}
+
 // jsdom does not implement scrollIntoView — provide a minimal stub
 if (!Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = function () {};

@@ -17,8 +17,11 @@ export function NetworkSwitcherPanel({
 }: NetworkSwitcherPanelProps) {
   const { recentNetworkIds, addRecentNetwork } = useRecentNetworks();
   const panelRef = useRef<HTMLDivElement>(null);
+  const listboxRef = useRef<HTMLDivElement>(null);
 
-  const recentNetworks = networks.filter((n) => recentNetworkIds.includes(n.id));
+  const recentNetworks = recentNetworkIds
+    .map((id) => networks.find((n) => n.id === id))
+    .filter((n): n is Network => Boolean(n));
   const nonRecentNetworks = networks.filter((n) => !recentNetworkIds.includes(n.id));
 
   const handleNetworkClick = useCallback(
@@ -40,7 +43,7 @@ export function NetworkSwitcherPanel({
   }, [onClose]);
 
   useEffect(() => {
-    panelRef.current?.focus();
+    listboxRef.current?.focus();
   }, []);
 
   const handleKeyDown = useCallback(
@@ -101,29 +104,8 @@ export function NetworkSwitcherPanel({
   );
 
   return (
-    <div
-      ref={panelRef}
-      className="network-switcher-panel"
-      role="listbox"
-      aria-label="Select a network"
-      tabIndex={-1}
-      onKeyDown={handleKeyDown}
-    >
-      {recentNetworks.length > 0 && (
-        <>
-          <div className="network-switcher-section-header" aria-hidden="true">
-            Recent Networks
-          </div>
-          <ul className="network-switcher-list" role="presentation">
-            {recentNetworks.map(renderNetworkItem)}
-          </ul>
-          <div className="network-switcher-separator" role="separator" aria-orientation="horizontal" />
-        </>
-      )}
-      <div className="network-switcher-section-header" aria-hidden="true">
-        All Networks
-      </div>
-      {nonRecentNetworks.length === 0 && recentNetworks.length === 0 ? (
+    <div ref={panelRef} className="network-switcher-panel" onKeyDown={handleKeyDown}>
+      {networks.length === 0 ? (
         <div className="network-switcher-empty">
           <p className="network-switcher-empty-title">No networks available</p>
           <p className="network-switcher-empty-description">
@@ -131,9 +113,55 @@ export function NetworkSwitcherPanel({
           </p>
         </div>
       ) : (
-        <ul className="network-switcher-list" role="presentation">
-          {nonRecentNetworks.map(renderNetworkItem)}
-        </ul>
+        <div
+          ref={listboxRef}
+          className="network-switcher-listbox"
+          role="listbox"
+          aria-label="Select a network"
+          tabIndex={-1}
+        >
+          {recentNetworks.length > 0 && (
+            <>
+              <div
+                id="network-switcher-recents-heading"
+                className="network-switcher-section-header"
+                aria-hidden="true"
+              >
+                Recent Networks
+              </div>
+              <ul
+                className="network-switcher-list"
+                role="group"
+                aria-labelledby="network-switcher-recents-heading"
+              >
+                {recentNetworks.map(renderNetworkItem)}
+              </ul>
+              <div
+                className="network-switcher-separator"
+                data-testid="network-switcher-separator"
+                aria-hidden="true"
+              />
+            </>
+          )}
+          {nonRecentNetworks.length > 0 && (
+            <>
+              <div
+                id="network-switcher-all-heading"
+                className="network-switcher-section-header"
+                aria-hidden="true"
+              >
+                All Networks
+              </div>
+              <ul
+                className="network-switcher-list"
+                role="group"
+                aria-labelledby="network-switcher-all-heading"
+              >
+                {nonRecentNetworks.map(renderNetworkItem)}
+              </ul>
+            </>
+          )}
+        </div>
       )}
       <div className="network-switcher-footer">
         <button className="network-switcher-close-btn" onClick={onClose}>

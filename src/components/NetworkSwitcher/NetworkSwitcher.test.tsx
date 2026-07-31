@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { axe } from 'jest-axe';
 import { NetworkSwitcher } from './NetworkSwitcher';
 import { RecentNetworksProvider } from '../RecentNetworksProvider/RecentNetworksProvider';
 
@@ -24,8 +25,37 @@ beforeEach(() => {
   localStorageMock.clear();
 });
 
+afterEach(() => {
+  document.documentElement.removeAttribute('data-theme');
+});
+
 function renderWithProvider(ui: React.ReactElement) {
   return render(<RecentNetworksProvider>{ui}</RecentNetworksProvider>);
+}
+
+/**
+ * Stateful harness mirroring how AppShell owns the current network id. The real
+ * NetworkSwitcher is controlled, so selections must update the trigger for
+ * subsequent panel interactions to work.
+ */
+function Harness({ items = networks }: { items?: typeof networks }) {
+  const [currentNetworkId, setCurrentNetworkId] = React.useState<string>();
+  return (
+    <NetworkSwitcher
+      networks={items}
+      currentNetworkId={currentNetworkId}
+      onNetworkChange={setCurrentNetworkId}
+    />
+  );
+}
+
+function openPanel() {
+  fireEvent.click(screen.getByRole('button', { name: /current network/i }));
+}
+
+function selectNetwork(name: string) {
+  openPanel();
+  fireEvent.click(screen.getByText(name));
 }
 
 describe('NetworkSwitcher', () => {
@@ -51,7 +81,7 @@ describe('NetworkSwitcher', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={() => {}} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     expect(screen.getByRole('listbox')).toBeInTheDocument();
   });
 
@@ -59,7 +89,7 @@ describe('NetworkSwitcher', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={() => {}} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     expect(screen.getAllByRole('option')).toHaveLength(4);
   });
 
@@ -68,7 +98,7 @@ describe('NetworkSwitcher', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={onChange} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     fireEvent.click(screen.getByText('Solana'));
     expect(onChange).toHaveBeenCalledWith('solana');
   });
@@ -77,7 +107,7 @@ describe('NetworkSwitcher', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={() => {}} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     fireEvent.click(screen.getByText('Solana'));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
@@ -86,7 +116,7 @@ describe('NetworkSwitcher', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={() => {}} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });
@@ -95,7 +125,7 @@ describe('NetworkSwitcher', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={() => {}} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     const listbox = screen.getByRole('listbox');
     const options = screen.getAllByRole('option');
     options[0].focus();
@@ -109,37 +139,158 @@ describe('NetworkSwitcher', () => {
     expect(document.activeElement).toBe(options[0]);
   });
 
+  it('hides the Recent Networks section for a new user with no recents', () => {
+    renderWithProvider(<Harness items={networks} />);
+    openPanel();
+    expect(screen.queryByText('Recent Networks')).not.toBeInTheDocument();
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(4);
+  });
+
   it('shows recents section after networks are used', () => {
-    const onChange = vi.fn();
-    renderWithProvider(
-      <NetworkSwitcher networks={networks} onNetworkChange={onChange} />,
-    );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
-    fireEvent.click(screen.getByText('Ethereum'));
-    fireEvent.click(screen.getByRole('button', { name: /Ethereum/i }));
-    fireEvent.click(screen.getByText('Polygon'));
-    fireEvent.click(screen.getByRole('button', { name: /Polygon/i }));
+    renderWithProvider(<Harness items={networks} />);
+    selectNetwork('Ethereum');
+    selectNetwork('Polygon');
+    openPanel();
     expect(screen.getByText('Recent Networks')).toBeInTheDocument();
+    expect(screen.getByText('All Networks')).toBeInTheDocument();
+  });
+
+  it('lists recents most-recent-first and excludes them from All Networks', () => {
+    renderWithProvider(<Harness items={networks} />);
+    selectNetwork('Ethereum');
+    selectNetwork('Polygon');
+    openPanel();
+    const recentsGroup = screen.getByRole('group', { name: /recent networks/i });
+    const recents = screen.getAllByRole('option').filter((el) =>
+      recentsGroup.contains(el),
+    );
+    expect(recents.map((el) => el.textContent)).toEqual(['Polygon', 'Ethereum']);
+    const allGroup = screen.getByRole('group', { name: /all networks/i });
+    const all = screen.getAllByRole('option').filter((el) => allGroup.contains(el));
+    expect(all.map((el) => el.textContent)).toEqual(['Solana', 'Arbitrum']);
   });
 
   it('renders separator between recents and all networks', () => {
-    const onChange = vi.fn();
-    renderWithProvider(
-      <NetworkSwitcher networks={networks} onNetworkChange={onChange} />,
+    renderWithProvider(<Harness items={networks} />);
+    selectNetwork('Ethereum');
+    selectNetwork('Polygon');
+    openPanel();
+    expect(screen.getByTestId('network-switcher-separator')).toBeInTheDocument();
+  });
+
+  it('moves a duplicate selection to the top without repeating it', () => {
+    renderWithProvider(<Harness items={networks} />);
+    selectNetwork('Ethereum');
+    selectNetwork('Polygon');
+    selectNetwork('Ethereum');
+    openPanel();
+    const recentsGroup = screen.getByRole('group', { name: /recent networks/i });
+    const recents = screen.getAllByRole('option').filter((el) =>
+      recentsGroup.contains(el),
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
-    fireEvent.click(screen.getByText('Ethereum'));
-    fireEvent.click(screen.getByRole('button', { name: /Ethereum/i }));
-    fireEvent.click(screen.getByText('Polygon'));
-    fireEvent.click(screen.getByRole('button', { name: /Polygon/i }));
-    expect(screen.getByRole('separator')).toBeInTheDocument();
+    expect(recents.map((el) => el.textContent)).toEqual(['Ethereum', 'Polygon']);
+    const allGroup = screen.getByRole('group', { name: /all networks/i });
+    const all = screen.getAllByRole('option').filter((el) => allGroup.contains(el));
+    expect(all.map((el) => el.textContent)).toEqual(['Solana', 'Arbitrum']);
+  });
+
+  it('keeps only the three most recent networks', () => {
+    renderWithProvider(<Harness items={networks} />);
+    selectNetwork('Ethereum');
+    selectNetwork('Polygon');
+    selectNetwork('Solana');
+    selectNetwork('Arbitrum');
+    openPanel();
+    const recentsGroup = screen.getByRole('group', { name: /recent networks/i });
+    const recents = screen.getAllByRole('option').filter((el) =>
+      recentsGroup.contains(el),
+    );
+    expect(recents).toHaveLength(3);
+    expect(recents.map((el) => el.textContent)).toEqual([
+      'Arbitrum',
+      'Solana',
+      'Polygon',
+    ]);
+    const allGroup = screen.getByRole('group', { name: /all networks/i });
+    const all = screen.getAllByRole('option').filter((el) => allGroup.contains(el));
+    expect(all.map((el) => el.textContent)).toEqual(['Ethereum']);
+  });
+
+  it('restores recents persisted from a previous session', () => {
+    store['revora-recent-networks:default'] = JSON.stringify(['polygon', 'ethereum']);
+    renderWithProvider(<Harness items={networks} />);
+    openPanel();
+    const recentsGroup = screen.getByRole('group', { name: /recent networks/i });
+    const recents = screen.getAllByRole('option').filter((el) =>
+      recentsGroup.contains(el),
+    );
+    expect(recents.map((el) => el.textContent)).toEqual(['Polygon', 'Ethereum']);
+  });
+
+  it('treats corrupted persisted recents as empty', () => {
+    store['revora-recent-networks:default'] = 'not-json[';
+    renderWithProvider(<Harness items={networks} />);
+    openPanel();
+    expect(screen.queryByText('Recent Networks')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('option')).toHaveLength(4);
+  });
+
+  it('supports keyboard navigation across recent and all-network sections', () => {
+    store['revora-recent-networks:default'] = JSON.stringify(['polygon', 'ethereum']);
+    renderWithProvider(<Harness items={networks} />);
+    openPanel();
+    const listbox = screen.getByRole('listbox');
+    const options = screen.getAllByRole('option');
+    expect(options.map((el) => el.textContent)).toEqual([
+      'Polygon',
+      'Ethereum',
+      'Solana',
+      'Arbitrum',
+    ]);
+    options[0].focus();
+    fireEvent.keyDown(listbox, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(options[1]);
+    fireEvent.keyDown(listbox, { key: 'ArrowDown' });
+    expect(document.activeElement).toBe(options[2]);
+    fireEvent.keyDown(listbox, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(options[1]);
+    fireEvent.keyDown(listbox, { key: 'ArrowUp' });
+    expect(document.activeElement).toBe(options[0]);
+  });
+
+  it('labels each section group from its visible heading', () => {
+    store['revora-recent-networks:default'] = JSON.stringify(['polygon']);
+    renderWithProvider(<Harness items={networks} />);
+    openPanel();
+    expect(screen.getByRole('group', { name: 'Recent Networks' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'All Networks' })).toBeInTheDocument();
+  });
+
+  it('shows an empty state when no networks are configured', () => {
+    renderWithProvider(<Harness items={[]} />);
+    openPanel();
+    expect(screen.queryByText('Recent Networks')).not.toBeInTheDocument();
+    expect(screen.queryByText('All Networks')).not.toBeInTheDocument();
+    expect(screen.getByText('No networks available')).toBeInTheDocument();
+  });
+
+  it('passes axe in light and dark mode with recents present', async () => {
+    store['revora-recent-networks:default'] = JSON.stringify(['polygon', 'ethereum']);
+    const { container } = renderWithProvider(<Harness items={networks} />);
+    openPanel();
+    expect(await axe(container)).toHaveNoViolations();
+
+    document.documentElement.setAttribute('data-theme', 'dark');
+    expect(await axe(container)).toHaveNoViolations();
+    document.documentElement.removeAttribute('data-theme');
   });
 
   it('closes on close button click', () => {
     renderWithProvider(
       <NetworkSwitcher networks={networks} onNetworkChange={() => {}} />,
     );
-    fireEvent.click(screen.getByRole('button', { name: /select network/i }));
+    openPanel();
     fireEvent.click(screen.getByText('Close'));
     expect(screen.queryByRole('listbox')).not.toBeInTheDocument();
   });

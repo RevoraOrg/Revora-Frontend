@@ -65,6 +65,20 @@ Six branded SVG illustrations, all decorative (`aria-hidden="true"`):
 | `notifications` | Bell + notification dot | Notifications panel |
 | `revenue-reports` | Document + mini chart + `$` | Revenue Reports |
 
+### Governance variants
+
+Three additional governance-specific illustrations (see
+[`governance-empty-state-illustrations.md`](governance-empty-state-illustrations.md)):
+
+| Variant | Glyph | Use Case |
+|---|---|---|
+| `governance-proposals` | Stacked proposal documents + create badge | No active proposals |
+| `governance-votes` | Ballot slipping into an empty ballot box | No votes cast |
+| `governance-delegates` | Delegate with delegation chain links | No delegates |
+
+All governance glyphs support the `isMonochrome` print palette and follow the
+same colour strategy below.
+
 ### SVG Color Strategy
 
 - **Strokes**: Use `currentColor` or CSS custom properties (`var(--primary)`, `var(--error)`) so icons inherit parent text colour.
@@ -197,6 +211,7 @@ import { EmptyState } from './components/designSystem/EmptyState';
 | Audit Trail | [`AuditTrail`](src/pages/AuditTrail.tsx) + [`ActivityFeed`](src/components/ActivityFeed.tsx) | `audit-trail` | `default` |
 | Notifications | [`NotificationPanel`](src/components/Notifications/NotificationPanel.tsx) | `notifications` | `default` |
 | Revenue Reports | [`RevenueReports`](src/pages/RevenueReports.tsx) | `revenue-reports` | `default` |
+| Distribution Dashboard governance | [`DistributionDashboard`](src/pages/DistributionDashboard.tsx) | `governance-proposals` / `governance-votes` / `governance-delegates` | `default` |
 
 ---
 

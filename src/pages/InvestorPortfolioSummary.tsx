@@ -33,38 +33,45 @@ interface InvestorPortfolioSummaryProps {
   /** Inject mock data for testing */
   __allocations?: AllocationSlice[];
   __performance?: PerformanceDataPoint[];
+  /** Force every KPI tile into a given status (demo/testing of tile states) */
+  __kpiStatus?: KPIData['status'];
 }
 
 export const InvestorPortfolioSummary: React.FC<InvestorPortfolioSummaryProps> = ({
   __allocations = MOCK_ALLOCATIONS,
   __performance = MOCK_PERFORMANCE,
+  __kpiStatus,
 }) => {
   const totalInvested = __allocations.reduce((s, a) => s + a.value, 0);
   const currentValue = __performance.length > 0 ? __performance[__performance.length - 1].value : totalInvested;
   const totalReturn = totalInvested > 0 ? ((currentValue - totalInvested) / totalInvested) * 100 : 0;
-  
+
   const isNewInvestor = __allocations.length === 0;
+  const kpiStatus: KPIData['status'] = __kpiStatus ?? (isNewInvestor ? 'empty' : 'success');
 
   const totalValueKPI: KPIData = {
     label: "Total Value",
     value: currentValue,
     type: 'currency',
-    status: isNewInvestor ? 'empty' : 'success',
+    status: kpiStatus,
     trend: totalReturn,
+    emptyText: "No investments yet",
   };
 
   const realizedGainsKPI: KPIData = {
     label: "Realized Gains",
     value: isNewInvestor ? null : currentValue - totalInvested, // simplified for mock
     type: 'currency',
-    status: isNewInvestor ? 'empty' : 'success',
+    status: kpiStatus,
+    emptyText: "No investments yet",
   };
 
   const upcomingPayoutsKPI: KPIData = {
     label: "Upcoming Payouts",
     value: isNewInvestor ? null : 3,
     type: 'number',
-    status: isNewInvestor ? 'empty' : 'success',
+    status: kpiStatus,
+    emptyText: "No payouts scheduled",
     actionText: isNewInvestor ? undefined : 'View calendar',
     actionLink: isNewInvestor ? undefined : '/investor/calendar'
   };
@@ -73,7 +80,8 @@ export const InvestorPortfolioSummary: React.FC<InvestorPortfolioSummaryProps> =
     label: "Pending Actions",
     value: 1,
     type: 'number',
-    status: 'success', // Always show 1 for mock purposes
+    status: kpiStatus,
+    emptyText: "No pending actions",
     actionText: 'Review now',
     actionLink: '/investor/actions'
   };

@@ -10,6 +10,7 @@ import { GovernanceResults } from '../components/designSystem/GovernanceResults'
 import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
 import type { DistributionFilterState } from '../components/DistributionFilterToolbar/DistributionFilterToolbar.types';
 import type { PayoutDetail, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel';
 import { ErrorRateSparklineTile } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
 import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
@@ -18,6 +19,12 @@ import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/Blackl
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
 import { UploadQueue } from '../components/UploadQueue/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { usePrintMode } from '../hooks/usePrintMode';
+import { PreOpenBanner } from '../components/PreOpenBanner';
+import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar/DistributionFilterToolbar';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { FinancialTermsForm } from '../components/FinancialTermsForm/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -222,6 +229,28 @@ export const DistributionDashboard: React.FC = () => {
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  // Demo affordance: ?govEmpty=proposals|votes|delegates|all renders the
+  // governance empty states in place of the mock data below.
+  const govEmpty = searchParams.get('govEmpty');
+  const isEmptyProposals = govEmpty === 'proposals' || govEmpty === 'all';
+  const isEmptyVotes = govEmpty === 'votes' || govEmpty === 'all';
+  const isEmptyDelegates = govEmpty === 'delegates' || govEmpty === 'all';
+  const isPrinting = usePrintMode();
+
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
+
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const preopenTargetDate = useMemo(() => {
     const d = new Date();
@@ -229,6 +258,9 @@ export const DistributionDashboard: React.FC = () => {
     d.setHours(9, 0, 0, 0);
     return d;
   }, []);
+
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
 
   const [filterState, setFilterState] = useState<DistributionFilterState>(() => {
     return {
@@ -242,6 +274,49 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const updateFiltersAndUrl = useCallback(
+    (next: DistributionFilterState) => {
+      setFilterState(next);
+      const params = new URLSearchParams(searchParams);
+      if (next.searchQuery) {
+        params.set('search', next.searchQuery);
+      } else {
+        params.delete('search');
+      }
+      if (next.dateRange && next.dateRange !== 'all') {
+        params.set('date', next.dateRange);
+      } else {
+        params.delete('date');
+      }
+      if (next.issuer && next.issuer !== 'all') {
+        params.set('issuer', next.issuer);
+      } else {
+        params.delete('issuer');
+      }
+      if (next.region && next.region !== 'all') {
+        params.set('region', next.region);
+      } else {
+        params.delete('region');
+      }
+      if (next.status && next.status !== 'all') {
+        params.set('status', next.status);
+      } else {
+        params.delete('status');
+      }
+      if (next.segmentBy && next.segmentBy !== 'none') {
+        params.set('segment', next.segmentBy);
+      } else {
+        params.delete('segment');
+      }
+      if (next.compareMode) {
+        params.set('compare', 'true');
+      } else {
+        params.delete('compare');
+      }
+      setSearchParams(params);
+    },
+    [searchParams, setSearchParams],
+  );
 
 
   const handleUploadAll = useCallback(() => {
@@ -483,20 +558,38 @@ export const DistributionDashboard: React.FC = () => {
         onResetFilters={handleResetFilters}
       />
 
-      <section aria-labelledby="governance-proposal-heading" className="glass-card p-6 md:p-8">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Governance</p>
-            <h2 id="governance-proposal-heading" className="text-xl font-semibold text-white">
-              Proposal Detail
-            </h2>
+      {isEmptyProposals ? (
+        <EmptyState
+          variant="governance-proposals"
+          title="No active proposals"
+          description="There are no open governance proposals right now. Create the first proposal to start the conversation."
+          isMonochrome={isPrinting}
+          primaryAction={{
+            label: 'Create Proposal',
+            href: '/startup/governance/proposals/create',
+            testId: 'gov-empty-create-proposal',
+          }}
+          secondaryAction={{
+            label: 'Back to Discovery',
+            href: '/investor/portal',
+          }}
+        />
+      ) : (
+        <section aria-labelledby="governance-proposal-heading" className="glass-card p-6 md:p-8">
+          <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Governance</p>
+              <h2 id="governance-proposal-heading" className="text-xl font-semibold text-white">
+                Proposal Detail
+              </h2>
+            </div>
+            <p className="text-sm text-muted max-w-2xl">
+              Review quorum, support, and the latest vote distribution before casting your decision.
+            </p>
           </div>
-          <p className="text-sm text-muted max-w-2xl">
-            Review quorum, support, and the latest vote distribution before casting your decision.
-          </p>
-        </div>
-        <GovernanceProposalDetail proposal={GOVERNANCE_PROPOSAL} />
-      </section>
+          <GovernanceProposalDetail proposal={GOVERNANCE_PROPOSAL} />
+        </section>
+      )}
 
       <section aria-labelledby="upload-queue-heading" className="glass-card p-6 md:p-8">
         <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
@@ -649,16 +742,52 @@ export const DistributionDashboard: React.FC = () => {
 
       {/* Governance Delegation */}
       <div className="mt-8">
-        <GovernanceDelegation />
+        {isEmptyDelegates ? (
+          <EmptyState
+            variant="governance-delegates"
+            title="No delegates yet"
+            description="Delegate your voting power to a trusted community member so your voice is heard even when you are away."
+            isMonochrome={isPrinting}
+            primaryAction={{
+              label: 'Delegate Voting Power',
+              href: '/investor/portal',
+              testId: 'gov-empty-delegate',
+            }}
+            secondaryAction={{
+              label: 'Back to Discovery',
+              href: '/investor/portal',
+            }}
+          />
+        ) : (
+          <GovernanceDelegation />
+        )}
       </div>
 
       {/* Governance Results Breakdown */}
       <div className="mt-12">
-        <GovernanceResults
-          results={{ for: 124, against: 58, abstain: 18 }}
-          participation={{ turnout: 63.5, uniqueVoters: 200, delegates: 12 }}
-          status="passed"
-        />
+        {isEmptyVotes ? (
+          <EmptyState
+            variant="governance-votes"
+            title="No votes cast yet"
+            description="Ballots will appear here once voting closes. Review active proposals and cast your vote to shape the protocol."
+            isMonochrome={isPrinting}
+            primaryAction={{
+              label: 'View Active Proposals',
+              href: '/startup/governance/proposals/create',
+              testId: 'gov-empty-view-proposals',
+            }}
+            secondaryAction={{
+              label: 'Back to Discovery',
+              href: '/investor/portal',
+            }}
+          />
+        ) : (
+          <GovernanceResults
+            results={{ for: 124, against: 58, abstain: 18 }}
+            participation={{ turnout: 63.5, uniqueVoters: 200, delegates: 12 }}
+            status="passed"
+          />
+        )}
       </div>
 
       {/* Financial terms wizard step */}
@@ -710,6 +839,7 @@ export const DistributionDashboard: React.FC = () => {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }}
       />
+    </div>
     </div>
   );
 };

@@ -98,6 +98,9 @@ describe('EmptyState', () => {
     'audit-trail',
     'notifications',
     'revenue-reports',
+    'governance-proposals',
+    'governance-votes',
+    'governance-delegates',
   ] as const)('renders variant %s without crashing', (variant) => {
     const { getByRole } = render(<EmptyState {...baseProps} variant={variant} />);
     expect(getByRole('status')).toBeInTheDocument();
@@ -132,5 +135,36 @@ describe('EmptyState', () => {
       />,
     );
     expect(screen.getByLabelText('Report Revenue')).toBeInTheDocument();
+  });
+
+  it.each([
+    'governance-proposals',
+    'governance-votes',
+    'governance-delegates',
+  ] as const)('renders governance variant %s with a decorative illustration', (variant) => {
+    const { container } = render(<EmptyState {...baseProps} variant={variant} />);
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('renders a monochrome illustration using the grayscale palette', () => {
+    const { container } = render(
+      <EmptyState {...baseProps} variant="governance-proposals" isMonochrome />,
+    );
+    const svg = container.querySelector('svg');
+    expect(svg).not.toBeNull();
+    expect(svg.innerHTML).toContain('stroke="#000000"');
+    expect(svg.innerHTML).toContain('stroke="#555555"');
+    expect(svg.querySelector('[fill="#000000"]')).not.toBeNull();
+  });
+
+  it('renders color illustration when isMonochrome is not set', () => {
+    const { container } = render(
+      <EmptyState {...baseProps} variant="governance-votes" />,
+    );
+    const svg = container.querySelector('svg');
+    expect(svg.innerHTML).toContain('var(--primary)');
+    expect(svg.innerHTML).not.toContain('stroke="#000000"');
   });
 });

@@ -70,6 +70,8 @@ export const DEMO_PAYOUTS: Payout[] = [
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 
+
+
 /**
  * Compute a date range that spans all payouts at the given zoom level.
  * Returns start/end as Date objects (start of day).

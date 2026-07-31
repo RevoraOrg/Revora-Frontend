@@ -42,6 +42,8 @@ export const TOKEN_GROUPS: TokenGroup[] = [
     tokens: [
       { name: "Primary", variable: "--primary", value: "#3b82f6", description: "Brand primary blue" },
       { name: "Primary Hover", variable: "--primary-hover", value: "#2563eb", description: "Primary interactive state" },
+      { name: "Primary Button BG", variable: "--primary-btn-bg", value: "#2563eb", description: "Primary button fill — 5.17:1 contrast with white text (WCAG 2.1 AA)" },
+      { name: "Primary Button BG Hover", variable: "--primary-btn-bg-hover", value: "#1d4ed8", description: "Primary button hover — 6.70:1 contrast with white text" },
       { name: "Text Main", variable: "--text-main", value: "#e5e7eb", description: "Primary text" },
       { name: "Text Muted", variable: "--text-muted", value: "#cbd5e1", description: "Secondary text, WCAG AA on dark bg" },
       { name: "Text Accent", variable: "--text-accent", value: "#38bdf8", description: "Accent/highlight text" },

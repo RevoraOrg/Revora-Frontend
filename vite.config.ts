@@ -43,6 +43,8 @@ export default defineConfig({
         'src/components/DocumentUploader/DocumentUploader.tsx',
         // Issue #472 – Governance vote receipt
         'src/components/GovernanceVoteReceipt/GovernanceVoteReceipt.tsx',
+        // Issue #481 – Transaction receipt share-as-image
+        'src/components/StatusTimeline/TransactionReceiptShare.tsx',
         // Command Palette
         'src/components/CommandPalette/CommandPalette.tsx',
         'src/components/CommandPalette/commandPaletteData.ts',
@@ -156,6 +158,9 @@ export default defineConfig({
           statements: 95,
         },
         'src/components/Notifications/NotificationBell.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/StatusTimeline/TransactionReceiptShare.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

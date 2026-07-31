@@ -19,6 +19,8 @@ import { StartupDashboard } from "./pages/StartupDashboard";
 import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
 import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
+import { LockupSchedulePage } from "./pages/LockupSchedulePage";
+import { PayoutSchedule } from "./pages/PayoutSchedule";
 
 export function App() {
   return (
@@ -62,6 +64,10 @@ export function App() {
           <Route path="/investor/portfolio" element={<InvestorPortfolioSummary />} />
           {/* Issue #139 – Virtualized Ledger Table */}
           <Route path="/investor/ledger" element={<LedgerDemoPage />} />
+          {/* Issue #219 & #495 – Gantt timeline / payout calendar */}
+          <Route path="/investor/payouts" element={<PayoutSchedule />} />
+          {/* Issue #473 – Lockup Cliff-and-Vesting Visualization */}
+          <Route path="/investor/lockup" element={<LockupSchedulePage />} />
 
           {/* Admin routes */}
           <Route path="/admin/alerts" element={<AdminAlertsInbox />} />
@@ -139,6 +145,7 @@ function Home() {
               <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
               <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
               <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
+              <li>• <Link to="/investor/lockup" className="link-styled">View token lockup schedule</Link></li>
               <li>• See real-time RevenueShare payouts</li>
             </ul>
           </section>

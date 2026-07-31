@@ -15,7 +15,6 @@ import { PayoutStatusPill, PAYOUT_STATUS_ORDER } from '../components/PayoutStatu
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { CalendarExportDialog } from '../components/CalendarExportDialog';
 import { Button } from '../components/Button';
-import { PayoutStatusPill, PAYOUT_STATUS_ORDER } from '../components/PayoutStatusPill';
 
 export interface Payout {
   id: string;
@@ -44,8 +43,6 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts = DEMO_P
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [showGantt, setShowGantt] = useState(false); // default to table for backward compatibility
   const [zoom, setZoom] = useState<ZoomLevel>('month');
-
-  const payouts = payoutsProp ?? DEMO_PAYOUTS;
 
   /* ─── Group by issuer for Gantt lanes ─── */
   const lanes = useMemo(() => {
@@ -174,8 +171,6 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts = DEMO_P
               ))}
             </tbody>
           </table>
-        </>
-      )}
 
             {/* Gantt lanes */}
             {lanes.map((lane) => (
@@ -256,7 +251,6 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts = DEMO_P
                 </div>
               </div>
             ))}
-          </div>
 
           {/* Gantt pattern key */}
           <div className="mt-4 pt-3 border-t border-[rgba(148,163,184,0.1)]">
@@ -275,7 +269,7 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts = DEMO_P
               </span>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Table View (accessible fallback, also shown by default) */}

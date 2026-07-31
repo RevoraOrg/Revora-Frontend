@@ -490,9 +490,267 @@
   gap: var(--spacing-sm);
 }
 
+/* ─── Rich Text Editor Formatting Toolbar ───────────────────────────── */
+
+.gpf-rt-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2xs);
+  padding: var(--spacing-2xs) var(--spacing-xs);
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid var(--glass-border);
+  border-bottom: none;
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+  flex-wrap: wrap;
+}
+
+.gpf-rt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.gpf-rt-btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-main);
+}
+
+.gpf-rt-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.gpf-rt-divider {
+  width: 1px;
+  height: 1rem;
+  background: var(--glass-border);
+  margin: 0 var(--spacing-2xs);
+}
+
+.gpf-textarea {
+  border-top-left-radius: 0 !important;
+  border-top-right-radius: 0 !important;
+}
+
+/* ─── Action Builder Validation and Controls ────────────────────────── */
+
+.gpf-action-reorder-btn,
+.gpf-action-control-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.gpf-action-reorder-btn:hover:not(:disabled),
+.gpf-action-control-btn:hover {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--text-main);
+}
+
+.gpf-action-reorder-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.gpf-action-reorder-btn:focus-visible,
+.gpf-action-control-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.gpf-val-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-xs);
+  margin-top: var(--spacing-xs);
+  border: 1px solid transparent;
+  width: 100%;
+}
+
+.gpf-val-icon {
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-sm);
+  flex-shrink: 0;
+}
+
+.gpf-val-message {
+  line-height: var(--line-height-normal);
+}
+
+/* Validation Specific Sub-classes */
+.gpf-val--valid {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--success);
+}
+
+.gpf-val--malformed {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: var(--error);
+}
+
+.gpf-val--pending {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
+  color: var(--primary);
+  animation: gpf-pulse 1.5s ease-in-out infinite;
+}
+
+.gpf-val--duplicate {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--warning);
+}
+
+.gpf-val--unknown {
+  background: rgba(245, 158, 11, 0.08);
+  border-color: rgba(245, 158, 11, 0.25);
+  color: var(--warning);
+}
+
+.gpf-val--unavailable {
+  background: rgba(148, 163, 184, 0.08);
+  border-color: rgba(148, 163, 184, 0.25);
+  color: var(--text-muted);
+}
+
+/* ─── Grid and General Form Fields ──────────────────────────────────── */
+
+.gpf-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.gpf-field-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-3xs);
+}
+
+.gpf-field-helper {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.gpf-tag-chip button:focus-visible {
+  outline: 2px solid var(--text-accent);
+  outline-offset: 1px;
+}
+
+/* ─── Workspace and Preview Panel ───────────────────────────────────── */
+
+.gpf-workspace {
+  width: 100%;
+}
+
+.gpf-preview-column {
+  position: sticky;
+  top: var(--spacing-xl);
+}
+
+.gpf-preview-panel-wrapper {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-xl);
+}
+
+.gpf-mobile-preview-toggle {
+  display: none;
+}
+
+/* Autosave Chip Custom Subclasses */
+.gpf-autosave--offline {
+  color: var(--warning);
+  border-color: var(--warning);
+}
+
+.gpf-autosave--failed {
+  color: var(--error);
+  border-color: var(--error);
+}
+
+.gpf-autosave--unsaved {
+  color: var(--text-muted);
+  border-color: var(--glass-border-bright);
+}
+
 /* ─── Responsive ────────────────────────────────────────────────────── */
 
+@media (max-width: 1023px) {
+  .gpf-workspace {
+    grid-template-columns: 1fr !important;
+  }
+
+  .gpf-preview-column {
+    position: static;
+  }
+
+  .gpf-mobile-preview-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(30, 41, 59, 0.45);
+    border: 1px dashed var(--glass-border);
+    border-radius: var(--radius-lg);
+    color: var(--text-accent);
+    font-weight: var(--font-weight-semibold);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    margin-bottom: var(--spacing-md);
+    transition: all 0.2s ease;
+  }
+
+  .gpf-mobile-preview-toggle:hover {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: var(--primary);
+  }
+
+  .gpf-preview-panel-wrapper {
+    display: none;
+  }
+
+  .gpf-preview-panel-wrapper--expanded {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+  }
+}
+
 @media (max-width: 767px) {
+  .gpf-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+
   .gpf-container {
     padding: var(--spacing-md);
   }

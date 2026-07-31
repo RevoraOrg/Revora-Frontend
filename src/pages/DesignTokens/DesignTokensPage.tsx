@@ -3,6 +3,7 @@ import { TOKEN_GROUPS, type TokenGroup, type Token } from "./tokens";
 import { contrastRatio, wcagGrade, LIGHT_SURFACE, DARK_SURFACE } from "./contrast";
 import { DevicePreview } from "./DevicePreview";
 import { ChartPaletteGuidelines } from "./ChartPaletteGuidelines";
+import { ChartTooltipContrastDemo } from "./ChartTooltipContrastDemo";
 import "./DesignTokensPage.css";
 
 // ─── Copy hook ────────────────────────────────────────────────────────────────
@@ -326,6 +327,9 @@ export function DesignTokensPage() {
 
       {/* Dark-Mode Chart Palette & Usage Guidelines */}
       <ChartPaletteGuidelines surface={surface} />
+
+      {/* Dark-Mode Tooltip & Axis Label Contrast Pass */}
+      <ChartTooltipContrastDemo surface={surface} />
 
       {/* Search */}
       <div className="dt-search-wrap">

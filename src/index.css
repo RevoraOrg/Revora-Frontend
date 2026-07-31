@@ -194,12 +194,13 @@
   --bell-badge-bg-static: #b91c1c;
   --bell-badge-ring-static: #fee2e2;
 
-  /* Chart Tooltip & Axis Tokens (Issue #268) */
+  /* Chart Tooltip & Axis Tokens (Issue #268, contrast pass #491) */
   --chart-tooltip-bg: #0f172a;
   --chart-tooltip-fg: #f8fafc;
-  --chart-tooltip-border: #334155;
+  --chart-tooltip-border: #64748b;
   --chart-axis-label-color: #94a3b8;
   --chart-axis-label-size: 0.75rem;
+  --chart-axis-label-weight: 500;
 
   /* Categorical Chart Palette (Issue #267) */
   --chart-cat-1-light: #2563eb;

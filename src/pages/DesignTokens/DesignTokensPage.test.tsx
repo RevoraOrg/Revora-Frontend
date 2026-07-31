@@ -59,6 +59,33 @@ describe("TOKEN_GROUPS", () => {
     const colors = TOKEN_GROUPS.find((g) => g.id === "colors");
     expect(colors?.tokens.some((t) => t.variable === "--primary")).toBe(true);
   });
+  it("documents the dark-mode tooltip and axis contrast tokens", () => {
+    const colors = TOKEN_GROUPS.find((g) => g.id === "colors");
+    const typography = TOKEN_GROUPS.find((g) => g.id === "typography");
+    const tooltipBorder = colors?.tokens.find((t) => t.variable === "--chart-tooltip-border");
+    const axisColor = colors?.tokens.find((t) => t.variable === "--chart-axis-label-color");
+    const axisSize = typography?.tokens.find((t) => t.variable === "--chart-axis-label-size");
+    const axisWeight = typography?.tokens.find((t) => t.variable === "--chart-axis-label-weight");
+    expect(tooltipBorder?.value).toBe("#64748b");
+    expect(axisColor?.value).toBe("#94a3b8");
+    expect(axisSize?.value).toBe("0.75rem");
+    expect(axisWeight?.value).toBe("500");
+  });
+  it("keeps the tooltip border at >= 3:1 non-text contrast", () => {
+    const colors = TOKEN_GROUPS.find((g) => g.id === "colors");
+    const tooltipBorder = colors?.tokens.find((t) => t.variable === "--chart-tooltip-border");
+    const tooltipBg = colors?.tokens.find((t) => t.variable === "--chart-tooltip-bg");
+    const ratio = contrastRatio(tooltipBorder!.value, tooltipBg!.value);
+    expect(ratio).not.toBeNull();
+    expect(ratio!).toBeGreaterThanOrEqual(3.0);
+  });
+  it("keeps the axis label color at >= 4.5:1 on the dark surface", () => {
+    const colors = TOKEN_GROUPS.find((g) => g.id === "colors");
+    const axisColor = colors?.tokens.find((t) => t.variable === "--chart-axis-label-color");
+    const ratio = contrastRatio(axisColor!.value, "#020617");
+    expect(ratio).not.toBeNull();
+    expect(ratio!).toBeGreaterThanOrEqual(4.5);
+  });
 });
 
 // ─── Page render tests ────────────────────────────────────────────────────────
@@ -166,6 +193,15 @@ describe("DesignTokensPage", () => {
     copyBtns.forEach((btn) => {
       expect(btn).toHaveAccessibleName();
     });
+  });
+
+  it("renders the chart tooltip and axis contrast section", () => {
+    render(<DesignTokensPage />);
+    expect(
+      screen.getByRole("heading", { name: /dark-mode tooltip & axis label contrast/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText("Q3 Revenue")).toBeInTheDocument();
+    expect(screen.getByText("Contrast verification")).toBeInTheDocument();
   });
 
   it("search clears results when input cleared", async () => {

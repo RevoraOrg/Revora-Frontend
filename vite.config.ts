@@ -51,6 +51,12 @@ export default defineConfig({
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Issue #469 – Governance delegation flow
+        'src/components/GovernanceDelegation/GovernanceDelegation.tsx',
+        'src/components/GovernanceDelegation/DelegateProfileCard.tsx',
+        'src/components/GovernanceDelegation/DelegateSearch.tsx',
+        'src/components/GovernanceDelegation/DelegationDialogs.tsx',
+        'src/components/GovernanceDelegation/DelegatedPowerHeader.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -161,6 +167,22 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/StatusTimeline/TransactionReceiptShare.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        // Issue #469 – Governance delegation flow
+        'src/components/GovernanceDelegation/GovernanceDelegation.tsx': {
+          branches: 95, functions: 83, lines: 95, statements: 95,
+        },
+        'src/components/GovernanceDelegation/DelegateProfileCard.tsx': {
+          branches: 91, functions: 95, lines: 95, statements: 90,
+        },
+        'src/components/GovernanceDelegation/DelegateSearch.tsx': {
+          branches: 92, functions: 92, lines: 95, statements: 95,
+        },
+        'src/components/GovernanceDelegation/DelegationDialogs.tsx': {
+          branches: 85, functions: 95, lines: 91, statements: 88,
+        },
+        'src/components/GovernanceDelegation/DelegatedPowerHeader.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

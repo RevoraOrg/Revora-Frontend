@@ -144,7 +144,7 @@ export const OnChainStatusBadge: React.FC<OnChainStatusBadgeProps> = ({
       const clipObj = navigator.clipboard;
       const keys = clipObj ? Object.keys(clipObj) : [];
       const val = (clipObj as Record<string, unknown>)?.writeText;
-      // eslint-disable-next-line no-console
+       
       console.log('CLIP_KEYS:', JSON.stringify(keys), typeof val, val === navigator.clipboard.writeText);
     }
     await navigator.clipboard.writeText(value);

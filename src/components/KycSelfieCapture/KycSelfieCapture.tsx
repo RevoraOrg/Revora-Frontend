@@ -234,4 +234,13 @@ export default function KycSelfieCapture({
       <div className={`ksc-container${className ? ` ${className}` : ''}`}>
         <div className="ksc-header">
           <h2 id={titleId} className="ksc-title">Starting camera…</h2>
-          <p className="ksc-subtitle">Please allow camera access when prompted<
+          <p className="ksc-subtitle">Please allow camera access when prompted.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
+};
+
+export default KycSelfieCapture;

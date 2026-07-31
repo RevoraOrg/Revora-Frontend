@@ -49,6 +49,9 @@ export default defineConfig({
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Investor Statement
+        'src/components/InvestorStatement/InvestorStatement.tsx',
+        'src/components/InvestorStatement/usePrintStatement.ts',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {

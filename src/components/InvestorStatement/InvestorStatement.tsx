@@ -104,15 +104,13 @@ export const InvestorStatement: React.FC<InvestorStatementProps> = ({
             <dd>{formattedDate}</dd>
           </div>
         </dl>
-        <p className="statement-disclaimer">
-          This statement is generated for informational purposes only. All values
-          are denominated in {currency} and subject to market fluctuations.
-          Past performance is not indicative of future results.
+        <p className="statement-disclaimer" role="doc-note">
+          This statement is generated for informational purposes only. All values are denominated in
+          {" "}{currency} and subject to market fluctuations. Past performance is not indicative of future results.
         </p>
       </div>
 
-      {/* Main Statement Content */}
-      {/* ── Document Header ── */}
+      {/* Screen/Web Header (Hidden when printing, uses standard app layout) */}
       <header className="statement-header">
         <h1 className="statement-title">Investor Statement</h1>
         <dl className="statement-meta">
@@ -392,8 +390,8 @@ export const InvestorStatement: React.FC<InvestorStatementProps> = ({
       </footer>
 
       {/* Signature Section - only visible in print */}
-      <section className="signature-section print-only">
-        <h2 className="statement-footer-heading">Authorization</h2>
+      <section className="signature-section print-only" aria-labelledby="signature-heading">
+        <h2 id="signature-heading" className="statement-footer-heading">Authorization</h2>
         <div className="signature-line">
           <div className="signature-label">Authorized Signature</div>
           <div className="signature-date">Date</div>

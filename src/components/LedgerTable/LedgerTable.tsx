@@ -49,6 +49,51 @@ const ROW_HEIGHTS: Record<DensityMode, number> = {
 
 const OVERSCAN = 5;
 
+
+const ResizeHandle: React.FC<{ columnKey: string; onResize: (key: string, delta: number) => void }> = ({
+  columnKey,
+  onResize,
+}) => {
+  const [dragging, setDragging] = useState(false);
+  const startXRef = useRef(0);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(true);
+    startXRef.current = e.clientX;
+  }, []);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const delta = e.clientX - startXRef.current;
+      startXRef.current = e.clientX;
+      onResize(columnKey, delta);
+    };
+    const handleMouseUp = () => setDragging(false);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [dragging, columnKey, onResize]);
+
+  return (
+    <div
+      className={`lt-resize-handle${dragging ? ' lt-resize-handle--dragging' : ''}`}
+      role="separator"
+      aria-label={`Resize ${columnKey} column`}
+      aria-orientation="vertical"
+      aria-valuenow={0}
+      tabIndex={0}
+      onMouseDown={handleMouseDown}
+    />
+  );
+};
+
+
 type FlattenedRow<T> = 
   | { isGroup: true; key: string; value: any; items: T[] }
   | { isGroup: false; row: T };
@@ -76,6 +121,7 @@ function LedgerTable<T>({
   const [detailRow, setDetailRow] = useState<string | number | null>(null);
   
   const [groupBy, setGroupBy] = useState<keyof T | null>(null);
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
 
   const columnMenuRef = useRef<HTMLDivElement>(null);
@@ -233,6 +279,13 @@ function LedgerTable<T>({
     },
     [handleRowClick],
   );
+
+  const handleResize = useCallback((key: string, delta: number) => {
+    setColumnWidths((prev) => ({
+      ...prev,
+      [key]: Math.max(80, (prev[key] || 120) + delta),
+    }));
+  }, []);
 
   const toggleGroup = useCallback((key: string) => {
     setCollapsedGroups(prev => {
@@ -470,12 +523,16 @@ function LedgerTable<T>({
             {filteredColumns.map((col) => (
               <div
                 key={col.key}
-                className="lt-cell lt-cell--header"
+                className={`lt-cell lt-cell--header${columnWidths[col.key] ? ' lt-cell--resizing' : ''}`}
                 role="columnheader"
                 aria-label={col.label}
-                style={col.width ? { width: col.width, minWidth: col.width } : undefined}
+                style={{
+                  ...(col.width ? { width: col.width, minWidth: col.width } : {}),
+                  ...(columnWidths[col.key] ? { width: columnWidths[col.key], minWidth: columnWidths[col.key] } : {}),
+                }}
               >
                 {col.label}
+                <ResizeHandle columnKey={col.key} onResize={handleResize} />
               </div>
             ))}
           </div>

@@ -168,10 +168,16 @@ function TxHashButton({ txHash, onClick }: { txHash: string; onClick?: () => voi
   const handleCopy = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      navigator.clipboard.writeText(txHash).then(() => {
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(txHash).then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 2000);
+        });
+      } else {
+        // Fallback for jsdom/test environments
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-      });
+      }
     },
     [txHash],
   );

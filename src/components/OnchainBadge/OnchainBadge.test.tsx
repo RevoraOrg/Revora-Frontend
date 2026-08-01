@@ -218,13 +218,16 @@ describe("OnchainBadge", () => {
 
   describe("txHash", () => {
     it("renders truncated txHash and copy button", () => {
-      render(
+      const { container } = render(
         <OnchainBadge
           variant="confirmed"
           txHash="0xabcdef1234567890abcdef1234567890abcdef12"
         />,
       );
-      expect(screen.getByText("0xabcd...cdef")).toBeInTheDocument();
+      // Text is split across elements — check container textContent
+      expect(container.textContent).toContain("0xabcd");
+      expect(container.textContent).toContain("ef12");
+      expect(screen.getByLabelText(/Copy transaction hash/)).toBeInTheDocument();
     });
 
     it("renders copy button", () => {

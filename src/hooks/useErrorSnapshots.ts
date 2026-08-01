@@ -7,6 +7,8 @@ export interface ErrorSnapshot {
   group: SnapshotGroup;
   title: string;
   description?: string;
+  errorMessage?: string;
+  stackTrace?: string;
   timestamp: number;
   onRetry?: () => void | Promise<void>;
   onDiscard?: () => void | Promise<void>;

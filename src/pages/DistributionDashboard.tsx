@@ -15,6 +15,12 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
+import { BlacklistFiltersPanel } from '../components/BlacklistFiltersPanel/BlacklistFiltersPanel';
+import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar/DistributionFilterToolbar';
+import { FinancialTermsForm } from '../components/FinancialTermsForm/FinancialTermsForm';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel';
+import { PreOpenBanner } from '../components/PreOpenBanner';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
 import { UploadQueue } from '../components/UploadQueue/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
@@ -222,6 +228,20 @@ export const DistributionDashboard: React.FC = () => {
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
+
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const preopenTargetDate = useMemo(() => {
     const d = new Date();
@@ -242,7 +262,34 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(
+    searchParams.get('payoutId')
+  );
 
+  const updateFiltersAndUrl = useCallback(
+    (newState: DistributionFilterState) => {
+      setFilterState(newState);
+
+      const params: Record<string, string> = {};
+      if (newState.searchQuery) params.search = newState.searchQuery;
+      if (newState.dateRange !== 'all') params.date = newState.dateRange;
+      if (newState.issuer !== 'all' && newState.issuer !== 'All Issuers') {
+        params.issuer = newState.issuer;
+      }
+      if (newState.region !== 'all' && newState.region !== 'All Regions') {
+        params.region = newState.region;
+      }
+      if (newState.status !== 'all' && newState.status !== 'All Statuses') {
+        params.status = newState.status;
+      }
+      if (newState.segmentBy !== 'none') params.segment = newState.segmentBy;
+      if (newState.compareMode) params.compare = 'true';
+
+      setSearchParams(params);
+    },
+    [setSearchParams]
+  );
 
   const handleUploadAll = useCallback(() => {
     uploadFiles(mockUploader);
@@ -647,6 +694,11 @@ export const DistributionDashboard: React.FC = () => {
         </div>
       </section>
 
+      {/* ── Blacklist Filters & Saved Views (Issue #431) ── */}
+      <section aria-labelledby="blacklist-panel-heading" className="glass-card p-6 md:p-8">
+        <BlacklistFiltersPanel />
+      </section>
+
       {/* Governance Delegation */}
       <div className="mt-8">
         <GovernanceDelegation />
@@ -710,6 +762,7 @@ export const DistributionDashboard: React.FC = () => {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }}
       />
+    </div>
     </div>
   );
 };

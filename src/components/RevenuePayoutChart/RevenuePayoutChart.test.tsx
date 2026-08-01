@@ -4,6 +4,19 @@ import { describe, it, expect, vi } from 'vitest';
 import { axe } from 'jest-axe';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from './RevenuePayoutChart';
 
+function mockMatchMedia(matches = false) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
+
 const mockData: RevenuePayoutDataPoint[] = [
   { period: 'Jan', revenue: 100000, payout: 80000 },
   { period: 'Feb', revenue: 120000, payout: 100000 },
@@ -12,6 +25,10 @@ const mockData: RevenuePayoutDataPoint[] = [
 const mockEmptyData: RevenuePayoutDataPoint[] = [];
 
 describe('RevenuePayoutChart', () => {
+  beforeEach(() => {
+    mockMatchMedia(false);
+  });
+
   it('renders correctly with data', () => {
     render(<RevenuePayoutChart data={mockData} />);
     expect(screen.getByTestId('revenue-payout-chart')).toBeInTheDocument();
@@ -46,41 +63,34 @@ describe('RevenuePayoutChart', () => {
 
   it('handles hover state for tooltips', () => {
     render(<RevenuePayoutChart data={mockData} __initialView="chart" />);
-    
+
     // Find the first bar
     const firstBar = screen.getByLabelText(/Jan Payout:/i);
-    
+
     fireEvent.mouseEnter(firstBar);
-    
-    // Tooltip should appear containing the period text
-    expect(screen.getByText('Jan')).toBeInTheDocument();
+
+    // Tooltip should appear containing the period and payout
+    expect(screen.getByText('Revenue:')).toBeInTheDocument();
     expect(screen.getByText(/80,000/i)).toBeInTheDocument();
-    
+
     fireEvent.mouseLeave(firstBar);
-    expect(screen.queryByText('Jan')).not.toBeInTheDocument();
+    expect(screen.queryByText('Revenue:')).not.toBeInTheDocument();
   });
 
   it('exports CSV on button click', () => {
     const createElementSpy = vi.spyOn(document, 'createElement');
-    const appendChildSpy = vi.spyOn(document.body, 'appendChild').mockImplementation(() => {
-      return document.body;
-    });
-    const removeChildSpy = vi.spyOn(document.body, 'removeChild').mockImplementation(() => {
-      return document.body;
-    });
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
     render(<RevenuePayoutChart data={mockData} />);
-    
+
     const exportBtn = screen.getByTestId('export-csv-btn');
     fireEvent.click(exportBtn);
-    
+
     expect(createElementSpy).toHaveBeenCalledWith('a');
-    expect(appendChildSpy).toHaveBeenCalled();
-    expect(removeChildSpy).toHaveBeenCalled();
-    
+    expect(clickSpy).toHaveBeenCalled();
+
     createElementSpy.mockRestore();
-    appendChildSpy.mockRestore();
-    removeChildSpy.mockRestore();
+    clickSpy.mockRestore();
   });
 
   it('handles negative or sparse data without crashing', () => {

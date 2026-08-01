@@ -1,0 +1,342 @@
+/**
+ * BlacklistSavedViews — Issue #431
+ *
+ * Saved-views dropdown with apply / rename / default / share / delete.
+ * Uses existing design-system tokens from index.css :root.
+ */
+
+:root {
+  --bl-sv-row-hover: rgba(51, 65, 85, 0.6);
+  --bl-sv-row-active-bg: rgba(59, 130, 246, 0.12);
+  --bl-sv-icon-btn: rgba(148, 163, 184, 0.9);
+  --bl-sv-icon-btn-hover: #ffffff;
+  --bl-sv-danger: #f87171;
+}
+
+/* ─── Trigger ─────────────────────────────────────────────────────── */
+
+.blacklist-saved-views {
+  position: relative;
+  display: inline-flex;
+}
+
+.blacklist-saved-views-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.5rem 0.875rem;
+  border-radius: var(--radius-lg, 0.75rem);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-medium, 500);
+  background: var(--glass-bg-accent, rgba(30, 41, 59, 0.5));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  color: var(--text-main, #e5e7eb);
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    background 0.15s ease;
+}
+
+.blacklist-saved-views-trigger:hover,
+.blacklist-saved-views-trigger.is-open {
+  border-color: var(--primary, #3b82f6);
+  color: var(--text-accent, #38bdf8);
+}
+
+.blacklist-saved-views-trigger:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.blacklist-saved-views-count {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-accent, #38bdf8);
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: var(--radius-full, 9999px);
+  padding: 0.0625rem 0.375rem;
+}
+
+/* ─── Panel ───────────────────────────────────────────────────────── */
+
+.blacklist-saved-views-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  inset-inline-end: 0;
+  z-index: 40;
+  width: 320px;
+  max-width: min(320px, calc(100vw - 2rem));
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  border-radius: var(--radius-lg, 0.75rem);
+  box-shadow: var(--shadow-xl);
+  backdrop-filter: var(--glass-blur, blur(12px));
+  overflow: hidden;
+}
+
+.blacklist-saved-views-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm, 0.75rem) var(--spacing-md, 1rem);
+  border-bottom: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+}
+
+.blacklist-saved-views-title {
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  color: var(--text-main, #e5e7eb);
+}
+
+.blacklist-saved-views-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #cbd5e1);
+  cursor: pointer;
+}
+
+.blacklist-saved-views-close:hover {
+  background: var(--bl-sv-row-hover);
+  color: #ffffff;
+}
+
+/* ─── List ────────────────────────────────────────────────────────── */
+
+.blacklist-saved-views-list {
+  list-style: none;
+  margin: 0;
+  padding: var(--spacing-xs, 0.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.blacklist-saved-view-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--radius-md, 0.5rem);
+  position: relative;
+}
+
+.blacklist-saved-view-row.is-active {
+  background: var(--bl-sv-row-active-bg);
+}
+
+.blacklist-saved-view-row:hover {
+  background: var(--bl-sv-row-hover);
+}
+
+.blacklist-saved-view-name {
+  flex: 1;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0;
+  background: transparent;
+  border: none;
+  color: var(--text-main, #e5e7eb);
+  font-size: var(--font-size-sm, 0.875rem);
+  text-align: start;
+  cursor: pointer;
+}
+
+.blacklist-saved-view-name:hover {
+  color: var(--text-accent, #38bdf8);
+}
+
+.blacklist-saved-view-default-badge {
+  font-size: var(--font-size-3xs, 0.625rem);
+  font-weight: var(--font-weight-semibold, 600);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  border-radius: var(--radius-full, 9999px);
+  padding: 0.0625rem 0.375rem;
+}
+
+.blacklist-saved-view-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.blacklist-saved-view-row:hover .blacklist-saved-view-actions,
+.blacklist-saved-view-actions:focus-within {
+  opacity: 1;
+}
+
+.blacklist-saved-view-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background: transparent;
+  border: none;
+  color: var(--bl-sv-icon-btn);
+  cursor: pointer;
+}
+
+.blacklist-saved-view-actions button:hover {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--bl-sv-icon-btn-hover);
+}
+
+.blacklist-saved-view-actions button.is-danger:hover {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--bl-sv-danger);
+}
+
+.blacklist-saved-view-actions button.is-default {
+  color: #fbbf24;
+}
+
+.blacklist-saved-view-actions button:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 1px;
+}
+
+.blacklist-saved-view-copied {
+  position: absolute;
+  inset-inline-end: 0.5rem;
+  bottom: -0.75rem;
+  font-size: var(--font-size-3xs, 0.625rem);
+  color: var(--success, #10b981);
+}
+
+/* ─── Rename (inline) ─────────────────────────────────────────────── */
+
+.blacklist-saved-view-rename {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.blacklist-saved-view-rename input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--primary, #3b82f6);
+  border-radius: var(--radius-sm, 0.375rem);
+  padding: 0.25rem 0.5rem;
+  color: #ffffff;
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.blacklist-saved-view-rename button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: var(--radius-sm, 0.375rem);
+  background: transparent;
+  border: none;
+  color: var(--success, #10b981);
+  cursor: pointer;
+}
+
+.blacklist-saved-view-rename button:hover {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+/* ─── Empty / error states ────────────────────────────────────────── */
+
+.blacklist-saved-views-empty,
+.blacklist-saved-views-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-2xs, 0.25rem);
+  padding: var(--spacing-xl, 1.5rem) var(--spacing-md, 1rem);
+  text-align: center;
+  color: var(--text-muted, #cbd5e1);
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.blacklist-saved-views-empty svg {
+  color: var(--text-accent, #38bdf8);
+  margin-bottom: var(--spacing-2xs, 0.25rem);
+}
+
+.blacklist-saved-views-error svg {
+  color: var(--error, #ef4444);
+  margin-bottom: var(--spacing-2xs, 0.25rem);
+}
+
+.blacklist-saved-views-empty-hint,
+.blacklist-saved-views-error-hint {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-muted, #cbd5e1);
+  opacity: 0.75;
+}
+
+/* ─── Footer (save current filters) ───────────────────────────────── */
+
+.blacklist-saved-views-footer {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs, 0.5rem);
+  padding: var(--spacing-sm, 0.75rem) var(--spacing-md, 1rem);
+  border-top: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+}
+
+.blacklist-saved-views-new-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  border-radius: var(--radius-md, 0.5rem);
+  padding: 0.375rem 0.625rem;
+  color: #ffffff;
+  font-size: var(--font-size-sm, 0.875rem);
+}
+
+.blacklist-saved-views-new-input:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 1px;
+}
+
+.blacklist-saved-views-save-btn {
+  padding: 0.375rem 0.75rem;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: var(--font-weight-semibold, 600);
+  background: var(--primary, #3b82f6);
+  border: 1px solid transparent;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.blacklist-saved-views-save-btn:hover:not(:disabled) {
+  background: var(--primary-hover, #2563eb);
+}
+
+.blacklist-saved-views-save-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* RTL: keep the panel anchored to the trigger edge */
+[dir='rtl'] .blacklist-saved-views-panel {
+  inset-inline-end: 0;
+}

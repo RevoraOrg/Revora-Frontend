@@ -527,3 +527,44 @@
 }
 
 
+
+/* ─── Column Resize Handle ─────────────────────────────────────── */
+.lt-cell {
+  position: relative;
+}
+
+.lt-resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background 0.15s ease;
+  z-index: 5;
+  user-select: none;
+}
+
+.lt-resize-handle:hover,
+.lt-resize-handle:active,
+.lt-resize-handle--dragging {
+  background: var(--accent-color, #3b82f6);
+  opacity: 0.4;
+}
+
+.lt-resize-handle--dragging {
+  opacity: 0.7;
+  width: 4px;
+}
+
+/* Keyboard resize indicator */
+.lt-cell--resizing {
+  outline: 2px dashed var(--accent-color, #3b82f6);
+  outline-offset: -2px;
+}
+
+/* Prevent text selection during resize */
+.lt-table-wrap--resizing {
+  user-select: none;
+}

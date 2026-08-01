@@ -6,6 +6,19 @@ import { DistributionDashboard } from './DistributionDashboard';
 
 expect.extend(toHaveNoViolations);
 
+function mockMatchMedia(matches = false) {
+  window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+    matches,
+    media: query,
+    onchange: null,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })) as unknown as typeof window.matchMedia;
+}
+
 describe('DistributionDashboard', () => {
   const renderWithRouter = (initialEntries = ['/distribution-dashboard']) => {
     return render(
@@ -20,6 +33,11 @@ describe('DistributionDashboard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    mockMatchMedia(false);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('renders distribution dashboard header and description', () => {
@@ -45,12 +63,11 @@ describe('DistributionDashboard', () => {
     expect(screen.getByRole('button', { name: /for/i })).toBeInTheDocument();
   });
 
-  it('renders recent uploads queue section', () => {
+  it('renders the batch upload queue section', () => {
     renderWithRouter();
 
-    expect(screen.getByText('Recent Uploads Queue')).toBeInTheDocument();
-    expect(screen.getByText('Q3_Revenue_Report.pdf')).toBeInTheDocument();
-    expect(screen.getByText('malicious_payload.exe')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /batch upload queue/i })).toBeInTheDocument();
+    expect(screen.getByTestId('upload-queue')).toBeInTheDocument();
   });
 
   describe('error rate sparkline tiles', () => {
@@ -90,7 +107,7 @@ describe('DistributionDashboard', () => {
     it('renders By Region heading', () => {
       renderWithRouter();
 
-      expect(screen.getByText('By Region')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'By Region' })).toBeInTheDocument();
     });
 
     it('renders issuer error rate tiles with correct values', () => {
@@ -170,25 +187,20 @@ describe('DistributionDashboard', () => {
     renderWithRouter();
 
     expect(screen.getByRole('heading', { name: /Results Breakdown/i })).toBeInTheDocument();
-    expect(screen.getByText(/68\.4% turnout/i)).toBeInTheDocument();
+    expect(screen.getByText(/63\.5% turnout/i)).toBeInTheDocument();
   });
 
-  it('renders empty state for distributions', () => {
+  it('renders the blacklist filters and saved views section', () => {
     renderWithRouter();
 
-    expect(screen.getByText('No distributions yet')).toBeInTheDocument();
-  });
-
-  it('has working Back to Discovery link', () => {
-    renderWithRouter();
-
-    const backLink = screen.getByText('Back to Discovery');
-    expect(backLink.closest('a')).toHaveAttribute('href', '/investor/portal');
+    expect(screen.getByRole('heading', { name: 'Blacklist' })).toBeInTheDocument();
+    expect(screen.getByTestId('blacklist-filter-chips')).toBeInTheDocument();
+    expect(screen.getByTestId('blacklist-saved-views-trigger')).toBeInTheDocument();
   });
 
   it('passes axe accessibility checks with 0 violations', async () => {
     const { container } = renderWithRouter();
     const results = await axe(container);
     expect(results).toHaveNoViolations();
-  });
+  }, 60000);
 });

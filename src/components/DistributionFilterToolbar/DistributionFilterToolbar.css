@@ -1,4 +1,4 @@
-/* DistributionFilterToolbar.css — Issue #214 */
+/* DistributionFilterToolbar.css — Issue #437 (RTL + a11y hardening pass on #214) */
 
 :root {
   --filter-toolbar-bg: rgba(15, 23, 42, 0.85);
@@ -6,6 +6,19 @@
   --filter-pill-bg: rgba(59, 130, 246, 0.15);
   --filter-pill-border: rgba(59, 130, 246, 0.3);
   --filter-pill-text: #38bdf8;
+}
+
+/* Screen-reader-only utility for the aria-live filter-status region */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* Main Toolbar Wrapper */
@@ -54,7 +67,9 @@
   background: rgba(30, 41, 59, 0.6);
   border: 1px solid var(--filter-toolbar-border);
   border-radius: var(--radius-md, 0.5rem);
-  padding: 0.5rem 0.75rem 0.5rem 2.25rem;
+  padding-block: 0.5rem;
+  padding-inline-end: 0.75rem;
+  padding-inline-start: 2.25rem;
   color: #ffffff;
   font-size: var(--font-size-sm, 0.875rem);
   transition: all 0.15s ease;
@@ -68,7 +83,7 @@
 
 .filter-search-icon {
   position: absolute;
-  left: 0.75rem;
+  inset-inline-start: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   color: var(--text-muted, #cbd5e1);
@@ -126,7 +141,7 @@
 .filter-popover-panel {
   position: absolute;
   top: calc(100% + 0.5rem);
-  left: 0;
+  inset-inline-start: 0;
   min-width: 240px;
   background: rgba(15, 23, 42, 0.98);
   border: 1px solid var(--filter-toolbar-border);
@@ -138,6 +153,16 @@
   flex-direction: column;
   gap: 0.5rem;
   animation: filterPopoverFadeIn 0.15s ease-out;
+}
+
+/* Variant for panels that should hang off the end (trailing) edge instead
+   of the start edge — e.g. the presets panel, which sits at the far end
+   of row 2. Replaces the previous inline `style={{ right: 0, left: 'auto' }}`
+   which was LTR-only and never flipped in RTL layouts. */
+.filter-popover-panel--end-aligned {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  width: 280px;
 }
 
 @keyframes filterPopoverFadeIn {
@@ -158,7 +183,7 @@
   padding: 0.5rem 0.75rem;
   color: var(--text-main, #e5e7eb);
   font-size: var(--font-size-sm, 0.875rem);
-  text-align: left;
+  text-align: start;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -204,8 +229,8 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-md, 1rem);
-  border-left: 1px solid var(--filter-toolbar-border);
-  padding-left: var(--spacing-md, 1rem);
+  border-inline-start: 1px solid var(--filter-toolbar-border);
+  padding-inline-start: var(--spacing-md, 1rem);
 }
 
 .filter-select {
@@ -249,7 +274,7 @@
   content: '';
   position: absolute;
   top: 2px;
-  left: 2px;
+  inset-inline-start: 2px;
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -263,6 +288,10 @@
 
 .compare-toggle-checkbox:checked::before {
   transform: translateX(16px);
+}
+
+[dir='rtl'] .compare-toggle-checkbox:checked::before {
+  transform: translateX(-16px);
 }
 
 .compare-toggle-checkbox:focus-visible {
@@ -398,8 +427,7 @@
 .mobile-filter-sheet {
   position: fixed;
   bottom: 0;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   max-height: 85vh;
   background: rgba(15, 23, 42, 0.98);
   border-top-left-radius: var(--radius-xl, 1rem);
@@ -477,7 +505,11 @@
   }
 }
 
-/* RTL Support for tag wrapping */
-[dir="rtl"] .active-pills-list {
-  flex-direction: row-reverse;
-}
+/* NOTE: the previous `[dir="rtl"] .active-pills-list { flex-direction:
+   row-reverse; }` rule has been removed. `flex-direction: row` already
+   flows along the inline axis, which flips automatically under `dir="rtl"`
+   — the explicit row-reverse override was double-flipping the pill order
+   back to LTR visual order inside an RTL context. All other positioning
+   in this file now uses logical properties (inset-inline-*, padding-
+   inline-*, border-inline-*) so it flips correctly without any [dir]
+   overrides at all. */

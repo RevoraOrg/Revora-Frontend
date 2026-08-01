@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import './DistributionFilterToolbar.css';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 import {
   DistributionFilterState,
   DateRangeOption,
@@ -33,6 +34,17 @@ const PRESET_DEFAULTS: FilterPreset[] = [
   },
 ];
 
+// Human-readable labels used only for the aria-live announcement.
+const FIELD_LABELS: Record<string, string> = {
+  searchQuery: 'Search',
+  dateRange: 'Date range',
+  issuer: 'Issuer',
+  region: 'Region',
+  status: 'Status',
+  segmentBy: 'Segmentation',
+  compareMode: 'Compare mode',
+};
+
 export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps> = ({
   filters,
   onFilterChange,
@@ -46,6 +58,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
   const [openPopover, setOpenPopover] = useState<'date' | 'issuer' | 'region' | 'status' | 'presets' | null>(null);
   const [isMobileSheetOpen, setIsMobileSheetOpen] = useState(false);
   const [presetInputName, setPresetInputName] = useState('');
+  const [liveMessage, setLiveMessage] = useState('');
   const [customPresets, setCustomPresets] = useState<FilterPreset[]>(() => {
     if (savedPresets) return savedPresets;
     try {
@@ -60,7 +73,16 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
   });
 
   const toolbarRef = useRef<HTMLDivElement>(null);
-  const mobileSheetRef = useRef<HTMLDivElement>(null);
+
+  // Focus traps — one per popover panel, plus the mobile sheet. Each moves
+  // focus in on open, traps Tab/Shift+Tab, and returns focus to the trigger
+  // that opened it on close (Escape, outside click, or Apply/Close).
+  const datePanelRef = useFocusTrap<HTMLDivElement>(openPopover === 'date');
+  const issuerPanelRef = useFocusTrap<HTMLDivElement>(openPopover === 'issuer');
+  const regionPanelRef = useFocusTrap<HTMLDivElement>(openPopover === 'region');
+  const statusPanelRef = useFocusTrap<HTMLDivElement>(openPopover === 'status');
+  const presetsPanelRef = useFocusTrap<HTMLDivElement>(openPopover === 'presets');
+  const mobileSheetRef = useFocusTrap<HTMLDivElement>(isMobileSheetOpen);
 
   // Close popovers when clicking outside or pressing Escape
   useEffect(() => {
@@ -92,6 +114,8 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
         ...filters,
         [key]: value,
       });
+      const label = FIELD_LABELS[key as string] ?? String(key);
+      setLiveMessage(`${label} filter updated`);
     },
     [filters, onFilterChange]
   );
@@ -129,6 +153,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
     }
     setPresetInputName('');
     setOpenPopover(null);
+    setLiveMessage(`Preset "${newPreset.name}" saved`);
   };
 
   // Load a preset
@@ -139,6 +164,12 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
     });
     setOpenPopover(null);
     setIsMobileSheetOpen(false);
+    setLiveMessage(`Preset "${preset.name}" applied`);
+  };
+
+  const handleResetFilters = () => {
+    onResetFilters();
+    setLiveMessage('All filters cleared');
   };
 
   return (
@@ -149,6 +180,11 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
       aria-label="Distribution filters and segmentation"
       data-testid="distribution-filter-toolbar"
     >
+      {/* Visually-hidden live region announcing filter changes to screen readers */}
+      <div className="visually-hidden" aria-live="polite" role="status" data-testid="filter-live-region">
+        {liveMessage}
+      </div>
+
       {/* Mobile Collapsible Button (< 768px) */}
       <button
         type="button"
@@ -158,12 +194,9 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
         aria-controls="mobile-filter-sheet"
         data-testid="mobile-filter-trigger"
       >
-        <span>🔍 Filters & Segmentation</span>
-        {activeCount > 0 && (
-          <span className="mobile-filter-badge" data-testid="mobile-filter-badge">
-            {activeCount} active
-          </span>
-        )}
+        <span>
+          <span aria-hidden="true">🔍</span> Filters {activeCount > 0 ? `(${activeCount})` : ''}
+        </span>
       </button>
 
       {/* Desktop Toolbar Row (>= 768px) */}
@@ -172,7 +205,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
           <div className="filter-controls-group">
             {/* Search Bar */}
             <div className="filter-search-input-wrap">
-              <span className="filter-search-icon">🔍</span>
+              <span className="filter-search-icon" aria-hidden="true">🔍</span>
               <input
                 type="search"
                 className="filter-search-input"
@@ -188,20 +221,28 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
             <div className="filter-popover-wrap">
               <button
                 type="button"
+                id="filter-trigger-date"
                 className={`filter-popover-trigger ${filters.dateRange !== 'all' ? 'is-active' : ''} ${
                   openPopover === 'date' ? 'is-open' : ''
                 }`}
                 onClick={() => setOpenPopover(openPopover === 'date' ? null : 'date')}
                 aria-expanded={openPopover === 'date'}
                 aria-haspopup="dialog"
+                aria-controls="date-filter-panel"
                 data-testid="filter-trigger-date"
               >
-                📅 Date: {filters.dateRange.toUpperCase()}
-                <span className="text-xs">▼</span>
+                <span aria-hidden="true">📅</span> Date: {filters.dateRange.toUpperCase()}
+                <span className="text-xs" aria-hidden="true">▼</span>
               </button>
 
               {openPopover === 'date' && (
-                <div className="filter-popover-panel" role="dialog" aria-label="Date range options">
+                <div
+                  ref={datePanelRef}
+                  id="date-filter-panel"
+                  className="filter-popover-panel"
+                  role="dialog"
+                  aria-label="Date range options"
+                >
                   {(['all', '30d', '90d', 'ytd', 'custom'] as DateRangeOption[]).map((opt) => (
                     <button
                       key={opt}
@@ -223,7 +264,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                           ? 'Year to Date'
                           : 'Custom Range'}
                       </span>
-                      {filters.dateRange === opt && <span>✓</span>}
+                      {filters.dateRange === opt && <span aria-hidden="true">✓</span>}
                     </button>
                   ))}
 
@@ -259,14 +300,21 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                 onClick={() => setOpenPopover(openPopover === 'issuer' ? null : 'issuer')}
                 aria-expanded={openPopover === 'issuer'}
                 aria-haspopup="dialog"
+                aria-controls="issuer-filter-panel"
                 data-testid="filter-trigger-issuer"
               >
-                🏢 Issuer: {filters.issuer === 'all' ? 'All' : filters.issuer}
-                <span className="text-xs">▼</span>
+                <span aria-hidden="true">🏢</span> Issuer: {filters.issuer === 'all' ? 'All' : filters.issuer}
+                <span className="text-xs" aria-hidden="true">▼</span>
               </button>
 
               {openPopover === 'issuer' && (
-                <div className="filter-popover-panel" role="dialog" aria-label="Issuer options">
+                <div
+                  ref={issuerPanelRef}
+                  id="issuer-filter-panel"
+                  className="filter-popover-panel"
+                  role="dialog"
+                  aria-label="Issuer options"
+                >
                   {issuerOptions.map((opt) => (
                     <button
                       key={opt}
@@ -283,7 +331,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                     >
                       <span>{opt}</span>
                       {(filters.issuer === opt || (opt === 'All Issuers' && filters.issuer === 'all')) && (
-                        <span>✓</span>
+                        <span aria-hidden="true">✓</span>
                       )}
                     </button>
                   ))}
@@ -301,14 +349,21 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                 onClick={() => setOpenPopover(openPopover === 'region' ? null : 'region')}
                 aria-expanded={openPopover === 'region'}
                 aria-haspopup="dialog"
+                aria-controls="region-filter-panel"
                 data-testid="filter-trigger-region"
               >
-                🌍 Region: {filters.region === 'all' ? 'All' : filters.region}
-                <span className="text-xs">▼</span>
+                <span aria-hidden="true">🌍</span> Region: {filters.region === 'all' ? 'All' : filters.region}
+                <span className="text-xs" aria-hidden="true">▼</span>
               </button>
 
               {openPopover === 'region' && (
-                <div className="filter-popover-panel" role="dialog" aria-label="Region options">
+                <div
+                  ref={regionPanelRef}
+                  id="region-filter-panel"
+                  className="filter-popover-panel"
+                  role="dialog"
+                  aria-label="Region options"
+                >
                   {regionOptions.map((opt) => (
                     <button
                       key={opt}
@@ -325,7 +380,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                     >
                       <span>{opt}</span>
                       {(filters.region === opt || (opt === 'All Regions' && filters.region === 'all')) && (
-                        <span>✓</span>
+                        <span aria-hidden="true">✓</span>
                       )}
                     </button>
                   ))}
@@ -343,14 +398,21 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                 onClick={() => setOpenPopover(openPopover === 'status' ? null : 'status')}
                 aria-expanded={openPopover === 'status'}
                 aria-haspopup="dialog"
+                aria-controls="status-filter-panel"
                 data-testid="filter-trigger-status"
               >
-                ⚡ Status: {filters.status === 'all' ? 'All' : filters.status}
-                <span className="text-xs">▼</span>
+                <span aria-hidden="true">⚡</span> Status: {filters.status === 'all' ? 'All' : filters.status}
+                <span className="text-xs" aria-hidden="true">▼</span>
               </button>
 
               {openPopover === 'status' && (
-                <div className="filter-popover-panel" role="dialog" aria-label="Status options">
+                <div
+                  ref={statusPanelRef}
+                  id="status-filter-panel"
+                  className="filter-popover-panel"
+                  role="dialog"
+                  aria-label="Status options"
+                >
                   {statusOptions.map((opt) => (
                     <button
                       key={opt}
@@ -367,7 +429,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                     >
                       <span>{opt}</span>
                       {(filters.status === opt || (opt === 'All Statuses' && filters.status === 'all')) && (
-                        <span>✓</span>
+                        <span aria-hidden="true">✓</span>
                       )}
                     </button>
                   ))}
@@ -519,7 +581,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
               <button
                 type="button"
                 className="filter-clear-all-btn"
-                onClick={onResetFilters}
+                onClick={handleResetFilters}
                 data-testid="filter-clear-all-btn"
               >
                 Clear All
@@ -533,15 +595,19 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                   type="button"
                   className="filter-save-preset-btn"
                   onClick={() => setOpenPopover(openPopover === 'presets' ? null : 'presets')}
+                  aria-expanded={openPopover === 'presets'}
+                  aria-haspopup="dialog"
+                  aria-controls="presets-filter-panel"
                   data-testid="filter-presets-trigger"
                 >
-                  ⭐ Presets ({customPresets.length})
+                  <span aria-hidden="true">⭐</span> Presets ({customPresets.length})
                 </button>
 
                 {openPopover === 'presets' && (
                   <div
-                    className="filter-popover-panel"
-                    style={{ right: 0, left: 'auto', width: '280px' }}
+                    ref={presetsPanelRef}
+                    id="presets-filter-panel"
+                    className="filter-popover-panel filter-popover-panel--end-aligned"
                     role="dialog"
                     aria-label="Filter presets"
                   >
@@ -726,7 +792,7 @@ export const DistributionFilterToolbar: React.FC<DistributionFilterToolbarProps>
                 type="button"
                 className="payout-btn-secondary"
                 onClick={() => {
-                  onResetFilters();
+                  handleResetFilters();
                   setIsMobileSheetOpen(false);
                 }}
               >

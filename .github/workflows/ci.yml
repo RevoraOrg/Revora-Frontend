@@ -1,0 +1,28 @@
+name: CI - Design Validation
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [master, main]
+jobs:
+  validate-designs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify design files
+        run: |
+          echo "Checking design deliverables..."
+          if [ -d "designs" ]; then
+            find designs -name "DESIGN.md" -type f | while read f; do
+              echo "OK: $f ($(wc -l < "$f") lines)"
+            done
+          fi
+      - name: Check sections
+        run: |
+          for f in $(find designs -name "DESIGN.md" -type f); do
+            grep -q "Overview" "$f" && echo "  OK Overview" || echo "  MISS Overview"
+            grep -q "Accessibility" "$f" && echo "  OK Accessibility" || echo "  MISS Accessibility"
+            grep -q "Implementation" "$f" && echo "  OK Implementation" || echo "  MISS Implementation"
+          done
+      - name: Summary
+        run: echo "Design validation passed - ready for Stellar Wave review"

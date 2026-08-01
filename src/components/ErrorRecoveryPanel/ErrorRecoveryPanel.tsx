@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
 import './ErrorRecoveryPanel.css';
 import { useErrorSnapshots, ErrorSnapshot, SnapshotGroup } from '../../hooks/useErrorSnapshots';
 
@@ -10,6 +10,40 @@ export interface ErrorRecoveryPanelProps {
 
 const GROUP_ORDER: SnapshotGroup[] = ['Transactions', 'Forms', 'Uploads', 'Other'];
 
+const copyToClipboard = async (text: string): Promise<boolean> => {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    // Fallback for older browsers
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      return true;
+    } catch {
+      return false;
+    } finally {
+      document.body.removeChild(textarea);
+    }
+  }
+};
+
+const formatSnapshotForCopy = (snapshot: ErrorSnapshot): string => {
+  const lines = [
+    `Error: ${snapshot.title}`,
+    snapshot.description ? `Description: ${snapshot.description}` : '',
+    snapshot.errorMessage ? `Message: ${snapshot.errorMessage}` : '',
+    `Time: ${new Date(snapshot.timestamp).toLocaleString()}`,
+    snapshot.stackTrace ? `\nStack Trace:\n${snapshot.stackTrace}` : '',
+  ];
+  return lines.filter(Boolean).join('\n');
+};
+
 export const ErrorRecoveryPanel: React.FC<ErrorRecoveryPanelProps> = ({
   isOpen,
   onClose,
@@ -19,6 +53,9 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryPanelProps> = ({
   const panelRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
+  const [dismissingIds, setDismissingIds] = useState<Set<string>>(new Set());
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Group snapshots
   const groupedSnapshots = useMemo(() => {
@@ -36,7 +73,6 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryPanelProps> = ({
     if (isOpen) {
       markAllRead();
       previousFocusRef.current = (document.activeElement as HTMLElement) || triggerRef?.current || null;
-      // Focus close button on open
       setTimeout(() => {
         closeBtnRef.current?.focus();
       }, 50);
@@ -92,6 +128,38 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryPanelProps> = ({
   const handleDiscard = (snapshot: ErrorSnapshot) => {
     snapshot.onDiscard?.();
     removeSnapshot(snapshot.id);
+  };
+
+  const handleDismiss = (snapshotId: string) => {
+    setDismissingIds(prev => new Set(prev).add(snapshotId));
+    setTimeout(() => {
+      removeSnapshot(snapshotId);
+      setDismissingIds(prev => {
+        const next = new Set(prev);
+        next.delete(snapshotId);
+        return next;
+      });
+    }, 300);
+  };
+
+  const handleCopy = async (snapshot: ErrorSnapshot) => {
+    const success = await copyToClipboard(formatSnapshotForCopy(snapshot));
+    if (success) {
+      setCopiedId(snapshot.id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
+  };
+
+  const toggleStackTrace = (snapshotId: string) => {
+    setExpandedTraces(prev => {
+      const next = new Set(prev);
+      if (next.has(snapshotId)) {
+        next.delete(snapshotId);
+      } else {
+        next.add(snapshotId);
+      }
+      return next;
+    });
   };
 
   if (!isOpen) return null;
@@ -159,17 +227,65 @@ export const ErrorRecoveryPanel: React.FC<ErrorRecoveryPanelProps> = ({
                   <h3 className="error-group-title">{group}</h3>
                   <div className="error-list">
                     {groupedSnapshots[group].map(snapshot => (
-                      <div key={snapshot.id} className="error-item-card" data-testid="error-item">
+                      <div
+                        key={snapshot.id}
+                        className={`error-item-card ${dismissingIds.has(snapshot.id) ? 'error-item-card--dismissing' : ''}`}
+                        data-testid="error-item"
+                      >
                         <div className="error-item-main">
-                          <h4 className="error-item-title">{snapshot.title}</h4>
+                          <div className="error-item-title-row">
+                            <h4 className="error-item-title">{snapshot.title}</h4>
+                            <button
+                              type="button"
+                              className="error-item-dismiss-btn"
+                              onClick={() => handleDismiss(snapshot.id)}
+                              aria-label={`Dismiss ${snapshot.title}`}
+                              title="Dismiss"
+                            >
+                              ✕
+                            </button>
+                          </div>
                           {snapshot.description && (
                             <p className="error-item-desc">{snapshot.description}</p>
+                          )}
+                          {snapshot.errorMessage && (
+                            <p className="error-item-error-msg">{snapshot.errorMessage}</p>
                           )}
                           <p className="error-item-time">
                             {new Date(snapshot.timestamp).toLocaleString()}
                           </p>
+                          {snapshot.stackTrace && (
+                            <div className="error-stack-trace-section">
+                              <button
+                                type="button"
+                                className="error-stack-toggle"
+                                onClick={() => toggleStackTrace(snapshot.id)}
+                                aria-expanded={expandedTraces.has(snapshot.id)}
+                              >
+                                <span className="error-stack-toggle-icon">
+                                  {expandedTraces.has(snapshot.id) ? '▾' : '▸'}
+                                </span>
+                                Stack Trace
+                              </button>
+                              {expandedTraces.has(snapshot.id) && (
+                                <pre className="error-stack-trace-content" data-testid="stack-trace">
+                                  {snapshot.stackTrace}
+                                </pre>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="error-item-actions">
+                          <button
+                            type="button"
+                            className="error-btn-icon"
+                            onClick={() => handleCopy(snapshot)}
+                            aria-label={`Copy details for ${snapshot.title}`}
+                            title="Copy error details"
+                            data-testid="copy-error-btn"
+                          >
+                            {copiedId === snapshot.id ? '✓ Copied' : '📋'}
+                          </button>
                           <button
                             type="button"
                             className="error-btn-primary"

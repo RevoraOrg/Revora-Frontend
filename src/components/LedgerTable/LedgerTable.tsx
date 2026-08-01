@@ -2,10 +2,10 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Columns,
   SlidersHorizontal,
-  X,
   ChevronRight,
   ChevronDown,
-  ExternalLink,
+  Check,
+  Copy,
 } from 'lucide-react';
 import './LedgerTable.css';
 
@@ -53,6 +53,32 @@ type FlattenedRow<T> =
   | { isGroup: true; key: string; value: any; items: T[] }
   | { isGroup: false; row: T };
 
+function formatRowForCopy<T>(row: T, columns: Column<T>[]): string {
+  return columns.map(col => {
+    // Render to string by extracting text content
+    const rendered = col.render(row);
+    if (rendered === null || rendered === undefined) return '';
+    if (typeof rendered === 'string') return rendered;
+    if (typeof rendered === 'number' || typeof rendered === 'boolean') return String(rendered);
+    // React element — try to get text content
+    const el = rendered as React.ReactElement;
+    if (el.props && el.props.children) {
+      // Recursively extract text from children
+      const extractText = (child: any): string => {
+        if (typeof child === 'string') return child;
+        if (typeof child === 'number') return String(child);
+        if (Array.isArray(child)) return child.map(extractText).join('');
+        if (child && typeof child === 'object' && 'props' in child && child.props?.children) {
+          return extractText(child.props.children);
+        }
+        return '';
+      };
+      return extractText(el.props.children);
+    }
+    return '';
+  }).join('\t');
+}
+
 function LedgerTable<T>({
   data,
   columns,
@@ -72,7 +98,9 @@ function LedgerTable<T>({
   const [currentPage, setCurrentPage] = useState(0);
   const [showColumnMenu, setShowColumnMenu] = useState(false);
   const [showDensityMenu, setShowDensityMenu] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<string | number | null>(null);
+  // Multi-select: Set of selected row keys
+  const [selectedRows, setSelectedRows] = useState<Set<string | number>>(new Set());
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
   const [detailRow, setDetailRow] = useState<string | number | null>(null);
   
   const [groupBy, setGroupBy] = useState<keyof T | null>(null);
@@ -213,22 +241,56 @@ function LedgerTable<T>({
     });
   }, []);
 
-  const handleRowClick = useCallback(
-    (row: T, index: number) => {
-      const key = rowKey(row);
-      if (rowDetail) {
-        setDetailRow((prev) => (prev === key ? null : key));
+  const selectRange = useCallback((fromIndex: number, toIndex: number) => {
+    const start = Math.min(fromIndex, toIndex);
+    const end = Math.max(fromIndex, toIndex);
+    const newSelected = new Set<string | number>();
+    for (let i = start; i <= end; i++) {
+      const item = pageData[i];
+      if (item && !item.isGroup) {
+        newSelected.add(rowKey(item.row));
       }
-      setSelectedRow(key);
+    }
+    setSelectedRows(newSelected);
+  }, [pageData, rowKey]);
+
+  const handleRowClick = useCallback(
+    (row: T, index: number, event?: React.MouseEvent) => {
+      const key = rowKey(row);
+
+      if (event?.shiftKey && lastSelectedIndex >= 0) {
+        // Shift+click: range select from last selected index to current
+        selectRange(lastSelectedIndex, index);
+        setLastSelectedIndex(index);
+      } else if (event?.ctrlKey || event?.metaKey) {
+        // Ctrl/Cmd+click: toggle individual row selection
+        setSelectedRows(prev => {
+          const next = new Set(prev);
+          if (next.has(key)) {
+            next.delete(key);
+          } else {
+            next.add(key);
+          }
+          return next;
+        });
+        setLastSelectedIndex(index);
+      } else {
+        // Normal click: select single row, clear others
+        if (rowDetail) {
+          setDetailRow((prev) => (prev === key ? null : key));
+        }
+        setSelectedRows(new Set([key]));
+        setLastSelectedIndex(index);
+      }
       setSelectedRowIndex(index);
     },
-    [rowKey, rowDetail],
+    [rowKey, rowDetail, lastSelectedIndex, selectRange],
   );
 
   const handleCellClick = useCallback(
     (row: T, index: number, colIndex: number, e: React.MouseEvent) => {
       e.stopPropagation();
-      handleRowClick(row, index);
+      handleRowClick(row, index, e);
       setFocusedColumnIndex(colIndex);
     },
     [handleRowClick],
@@ -243,12 +305,66 @@ function LedgerTable<T>({
     });
   }, []);
 
+  // Copy selected rows to clipboard as TSV
+  const copySelectedRows = useCallback(() => {
+    if (selectedRows.size === 0) return;
+
+    const selectedData = data.filter(row => selectedRows.has(rowKey(row)));
+    
+    // Build TSV: header + data rows
+    const header = filteredColumns.map(col => col.label).join('\t');
+    const rows = selectedData.map(row => formatRowForCopy(row, filteredColumns));
+    const tsv = [header, ...rows].join('\n');
+
+    navigator.clipboard.writeText(tsv).catch(() => {
+      // Fallback
+      const textarea = document.createElement('textarea');
+      textarea.value = tsv;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+      } catch {
+        // silently fail
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    });
+  }, [selectedRows, data, rowKey, filteredColumns]);
+
+  // Select all non-group rows on current page
+  const selectAllOnPage = useCallback(() => {
+    const newSelected = new Set<string | number>();
+    pageData.forEach(item => {
+      if (!item.isGroup) {
+        newSelected.add(rowKey(item.row));
+      }
+    });
+    setSelectedRows(newSelected);
+  }, [pageData, rowKey]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const maxIndex = pageData.length - 1;
       const isRtl = scrollRef.current
         ? getComputedStyle(scrollRef.current).direction === 'rtl' || document.dir === 'rtl'
         : false;
+
+      // Ctrl+C: copy selected rows
+      if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+        e.preventDefault();
+        copySelectedRows();
+        return;
+      }
+
+      // Ctrl+A: select all on page
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault();
+        selectAllOnPage();
+        return;
+      }
 
       switch (e.key) {
         case 'ArrowDown':
@@ -258,7 +374,12 @@ function LedgerTable<T>({
             if (next >= 0) {
               const item = pageData[next];
               if (!item.isGroup) {
-                setSelectedRow(rowKey(item.row));
+                if (e.shiftKey && lastSelectedIndex >= 0) {
+                  selectRange(lastSelectedIndex, next);
+                } else {
+                  setSelectedRows(new Set([rowKey(item.row)]));
+                  setLastSelectedIndex(next);
+                }
                 if (rowDetail) setDetailRow(rowKey(item.row));
               }
             }
@@ -272,7 +393,12 @@ function LedgerTable<T>({
             if (next >= 0) {
               const item = pageData[next];
               if (!item.isGroup) {
-                setSelectedRow(rowKey(item.row));
+                if (e.shiftKey && lastSelectedIndex >= 0) {
+                  selectRange(lastSelectedIndex, next);
+                } else {
+                  setSelectedRows(new Set([rowKey(item.row)]));
+                  setLastSelectedIndex(next);
+                }
                 if (rowDetail) setDetailRow(rowKey(item.row));
               }
             }
@@ -303,6 +429,16 @@ function LedgerTable<T>({
           e.preventDefault();
           if (e.ctrlKey || e.metaKey) {
             setSelectedRowIndex(0);
+            // Select first non-group row
+            const first = pageData[0];
+            if (first && !first.isGroup) {
+              if (e.shiftKey && lastSelectedIndex >= 0) {
+                selectRange(lastSelectedIndex, 0);
+              } else {
+                setSelectedRows(new Set([rowKey(first.row)]));
+                setLastSelectedIndex(0);
+              }
+            }
           } else {
             setFocusedColumnIndex(0);
           }
@@ -311,6 +447,15 @@ function LedgerTable<T>({
           e.preventDefault();
           if (e.ctrlKey || e.metaKey) {
             setSelectedRowIndex(maxIndex);
+            const last = pageData[maxIndex];
+            if (last && !last.isGroup) {
+              if (e.shiftKey && lastSelectedIndex >= 0) {
+                selectRange(lastSelectedIndex, maxIndex);
+              } else {
+                setSelectedRows(new Set([rowKey(last.row)]));
+                setLastSelectedIndex(maxIndex);
+              }
+            }
           } else {
             setFocusedColumnIndex(Math.max(0, totalCols - 1));
           }
@@ -323,16 +468,29 @@ function LedgerTable<T>({
             if (item.isGroup) {
               toggleGroup(item.key);
             } else {
-              handleRowClick(item.row, selectedRowIndex);
+              if (e.ctrlKey || e.metaKey) {
+                // Toggle selection
+                const key = rowKey(item.row);
+                setSelectedRows(prev => {
+                  const next = new Set(prev);
+                  if (next.has(key)) next.delete(key);
+                  else next.add(key);
+                  return next;
+                });
+                setLastSelectedIndex(selectedRowIndex);
+              } else {
+                handleRowClick(item.row, selectedRowIndex);
+              }
             }
           }
           break;
         case 'Escape':
           setDetailRow(null);
+          setSelectedRows(new Set());
           break;
       }
     },
-    [pageData, selectedRowIndex, totalCols, rowKey, rowDetail, handleRowClick, toggleGroup],
+    [pageData, selectedRowIndex, totalCols, rowKey, rowDetail, handleRowClick, toggleGroup, lastSelectedIndex, selectRange, copySelectedRows, selectAllOnPage],
   );
 
   if (columns.length === 0) {
@@ -353,6 +511,21 @@ function LedgerTable<T>({
           {totalPages > 1 && (
             <span className="lt-page-info">
               Page {currentPage + 1} of {totalPages}
+            </span>
+          )}
+          {selectedRows.size > 0 && (
+            <span className="lt-selection-info">
+              {selectedRows.size} selected
+              <button
+                type="button"
+                className="lt-selection-copy-btn"
+                onClick={copySelectedRows}
+                aria-label="Copy selected rows"
+                title="Copy selected rows (TSV)"
+              >
+                <Copy size={12} aria-hidden="true" />
+                Copy
+              </button>
             </span>
           )}
           {groupableColumns && groupableColumns.length > 0 && (
@@ -460,6 +633,7 @@ function LedgerTable<T>({
         tabIndex={0}
         role="grid"
         aria-label={ariaLabel}
+        aria-multiselectable="true"
         onKeyDown={handleKeyDown}
         onScroll={(e) => setScrollTop((e.target as HTMLDivElement).scrollTop)}
         aria-rowcount={pageData.length}
@@ -530,7 +704,7 @@ function LedgerTable<T>({
                       type="button"
                       className="lt-group-toggle"
                       aria-label={isCollapsed ? 'Expand group' : 'Collapse group'}
-                      tabIndex={-1} // Handled by row focus
+                      tabIndex={-1}
                     >
                       {isCollapsed ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                     </button>
@@ -544,7 +718,7 @@ function LedgerTable<T>({
 
             const row = item.row;
             const key = rowKey(row);
-            const isSelected = selectedRow === key;
+            const isSelected = selectedRows.has(key);
             const isDetailOpen = detailRow === key;
             
             return (
@@ -562,13 +736,13 @@ function LedgerTable<T>({
                     right: 0,
                     height: rowHeight,
                   }}
-                  onClick={() => handleRowClick(row, globalIndex)}
+                  onClick={(e) => handleRowClick(row, globalIndex, e as React.MouseEvent)}
                   tabIndex={-1}
                 >
                   {rowDetail && (
                     <div
                       className={`lt-cell lt-cell--detail ${isRowFocused && focusedColumnIndex === 0 ? 'lt-cell--focused' : ''}`}
-                      onClick={(e) => handleCellClick(row, globalIndex, 0, e)}
+                      onClick={(e) => handleCellClick(row, globalIndex, 0, e as React.MouseEvent)}
                     >
                       <button
                         type="button"
@@ -598,7 +772,7 @@ function LedgerTable<T>({
                         className={`lt-cell ${isCellFocused ? 'lt-cell--focused' : ''}`}
                         role="gridcell"
                         style={col.width ? { width: col.width, minWidth: col.width } : undefined}
-                        onClick={(e) => handleCellClick(row, globalIndex, colIndex, e)}
+                        onClick={(e) => handleCellClick(row, globalIndex, colIndex, e as React.MouseEvent)}
                       >
                         {col.render(row)}
                       </div>

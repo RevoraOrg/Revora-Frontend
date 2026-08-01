@@ -18,7 +18,12 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { RevenueReportingCalendar } from './RevenueReportingCalendar';
-import { RevenueReport, ReportStatus } from './RevenueReportingCalendar.types';
+import {
+  RevenueReport,
+  ReportStatus,
+  getOverdueDays,
+  getOverdueSeverity,
+} from './RevenueReportingCalendar.types';
 
 const noop = () => {};
 
@@ -859,6 +864,178 @@ describe('RevenueReportingCalendar', () => {
         />,
       );
       expect(container.firstChild).toHaveClass('my-custom-class');
+    });
+  });
+
+  /* ─── Overdue Severity Indicators ──────────────────────────────── */
+
+  describe('Overdue severity indicators', () => {
+    // Helper: build a report whose dueDate is N days in the past
+    function overdueReport(daysAgo: number, id = 'rpt-od'): RevenueReport {
+      const due = new Date();
+      due.setDate(due.getDate() - daysAgo);
+      const isoDate = due.toISOString().split('T')[0];
+      return {
+        id,
+        date: isoDate,
+        dueDate: isoDate,
+        status: 'overdue',
+        currency: 'USD',
+        locale: 'en-US',
+      };
+    }
+
+    it('classifies 1-day overdue as mild', () => {
+      expect(getOverdueSeverity(1)).toBe('mild');
+    });
+
+    it('classifies 3-day overdue as mild (boundary)', () => {
+      expect(getOverdueSeverity(3)).toBe('mild');
+    });
+
+    it('classifies 4-day overdue as moderate', () => {
+      expect(getOverdueSeverity(4)).toBe('moderate');
+    });
+
+    it('classifies 29-day overdue as moderate (boundary)', () => {
+      expect(getOverdueSeverity(29)).toBe('moderate');
+    });
+
+    it('classifies 30-day overdue as critical (boundary)', () => {
+      expect(getOverdueSeverity(30)).toBe('critical');
+    });
+
+    it('classifies 60-day overdue as critical', () => {
+      expect(getOverdueSeverity(60)).toBe('critical');
+    });
+
+    it('getOverdueDays returns a non-negative integer for a past due date', () => {
+      const pastDate = new Date();
+      pastDate.setDate(pastDate.getDate() - 5);
+      const days = getOverdueDays(pastDate.toISOString().split('T')[0]);
+      expect(days).toBeGreaterThanOrEqual(4); // allow 1 day clock drift
+      expect(Number.isInteger(days)).toBe(true);
+    });
+
+    it('renders mild overdue badge class on cell', () => {
+      const report = overdueReport(2);
+      render(
+        <RevenueReportingCalendar
+          reports={[report]}
+          viewMonth={report.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      const badge = document.querySelector('.rc-overdue-badge--mild');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('renders moderate overdue badge class on cell', () => {
+      const report = overdueReport(10);
+      render(
+        <RevenueReportingCalendar
+          reports={[report]}
+          viewMonth={report.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      const badge = document.querySelector('.rc-overdue-badge--moderate');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('renders critical overdue badge class on cell', () => {
+      const report = overdueReport(35);
+      render(
+        <RevenueReportingCalendar
+          reports={[report]}
+          viewMonth={report.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      const badge = document.querySelector('.rc-overdue-badge--critical');
+      expect(badge).toBeInTheDocument();
+    });
+
+    it('aria-label includes severity and days overdue for mild', () => {
+      const report = overdueReport(2);
+      render(
+        <RevenueReportingCalendar
+          reports={[report]}
+          viewMonth={report.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      // Cell aria-label must mention "Mild" and "day"
+      const cell = document.querySelector('[data-date="' + report.date + '"]');
+      expect(cell).toBeInTheDocument();
+      expect(cell?.getAttribute('aria-label')).toMatch(/mild/i);
+      expect(cell?.getAttribute('aria-label')).toMatch(/day.*overdue|overdue.*day/i);
+    });
+
+    it('aria-label includes severity and days overdue for critical', () => {
+      const report = overdueReport(35);
+      render(
+        <RevenueReportingCalendar
+          reports={[report]}
+          viewMonth={report.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      const cell = document.querySelector('[data-date="' + report.date + '"]');
+      expect(cell?.getAttribute('aria-label')).toMatch(/critical/i);
+      expect(cell?.getAttribute('aria-label')).toMatch(/day.*overdue|overdue.*day/i);
+    });
+
+    it('legend shows all three overdue severity tiers', () => {
+      render(
+        <RevenueReportingCalendar
+          reports={baseReports}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      expect(screen.getByText(/overdue.*1.*3|1.*3.*day/i)).toBeInTheDocument();
+      expect(screen.getByText(/overdue.*4.*29|4.*29.*day/i)).toBeInTheDocument();
+      expect(screen.getByText(/overdue.*30\+|30\+.*day/i)).toBeInTheDocument();
+    });
+
+    it('overdue badge is hidden from assistive tech (aria-hidden)', () => {
+      const report = overdueReport(10);
+      render(
+        <RevenueReportingCalendar
+          reports={[report]}
+          viewMonth={report.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      const badge = document.querySelector('.rc-overdue-badge');
+      expect(badge).toHaveAttribute('aria-hidden', 'true');
+    });
+
+    it('multiple issuers on same cell still renders a single overdue badge', () => {
+      const report1 = overdueReport(5, 'od-a');
+      const report2 = { ...overdueReport(5, 'od-b'), id: 'od-b' };
+      render(
+        <RevenueReportingCalendar
+          reports={[report1, report2]}
+          viewMonth={report1.date.slice(0, 7)}
+          locale="en-US"
+          weekStartsOn={0}
+        />,
+      );
+      // One badge per cell, not per report
+      const badges = document.querySelectorAll('.rc-overdue-badge');
+      expect(badges.length).toBe(1);
+      // Count badge should appear for 2 reports
+      const countBadge = document.querySelector('.rc-day-count');
+      expect(countBadge).toBeInTheDocument();
+      expect(countBadge?.textContent).toBe('2');
     });
   });
 });

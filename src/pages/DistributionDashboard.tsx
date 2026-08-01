@@ -15,9 +15,7 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
-import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
-import { UploadQueue } from '../components/UploadQueue/UploadQueue';
-import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { RedemptionPostCloseBanner } from '../components/RedemptionPostCloseBanner';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -242,7 +240,19 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
 
   const handleUploadAll = useCallback(() => {
     uploadFiles(mockUploader);

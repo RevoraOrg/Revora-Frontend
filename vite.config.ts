@@ -16,6 +16,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html'],
       include: [
+        'src/routes/notifications.ts',
         'src/hooks/useUploadQueue.ts',
         'src/components/UploadQueue/UploadQueue.tsx',
         'src/pages/DistributionDashboard.tsx',

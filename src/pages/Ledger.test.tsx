@@ -621,4 +621,171 @@ describe('Ledger Component', () => {
       expect(screen.getByText('1 / 5')).toBeInTheDocument();
     });
   });
+
+
+  // ────────────────────────────────────
+  // 16. Keyboard row selection (Issue #466)
+  // ────────────────────────────────────
+  describe('keyboard row selection', () => {
+    it('selects a row on click', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+      expect(rows.length).toBeGreaterThan(0);
+
+      // Click the first data row (not on a button)
+      const firstRow = rows[0];
+      const dateCell = firstRow.querySelector('td:nth-child(2)'); // date column, skip expand button
+      fireEvent.click(dateCell!);
+
+      expect(firstRow).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('deselects a row on second click', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+      const firstRow = rows[0];
+      const dateCell = firstRow.querySelector('td:nth-child(2)');
+
+      fireEvent.click(dateCell!);
+      expect(firstRow).toHaveAttribute('aria-selected', 'true');
+
+      fireEvent.click(dateCell!);
+      expect(firstRow).toHaveAttribute('aria-selected', 'false');
+    });
+
+    it('selects multiple rows independently', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      fireEvent.click(rows[1].querySelector('td:nth-child(2)')!);
+
+      expect(rows[0]).toHaveAttribute('aria-selected', 'true');
+      expect(rows[1]).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('shows selection count in header', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      fireEvent.click(rows[1].querySelector('td:nth-child(2)')!);
+
+      expect(screen.getByText('2 selected')).toBeInTheDocument();
+    });
+
+    it('selection indicator disappears when all deselected', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      expect(screen.getByText('1 selected')).toBeInTheDocument();
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      expect(screen.queryByText('1 selected')).not.toBeInTheDocument();
+    });
+
+    it('selects all rows with Ctrl+A on the table', () => {
+      render(<Ledger />);
+      const table = screen.getByRole('grid', { name: /ledger entries/i });
+
+      fireEvent.keyDown(table, { key: 'a', ctrlKey: true });
+
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+      rows.forEach(row => {
+        expect(row).toHaveAttribute('aria-selected', 'true');
+      });
+      expect(screen.getByText(/10 selected/)).toBeInTheDocument(); // page has 10 rows
+    });
+
+    it('clears selection with Escape key', () => {
+      render(<Ledger />);
+      const table = screen.getByRole('grid', { name: /ledger entries/i });
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      fireEvent.click(rows[1].querySelector('td:nth-child(2)')!);
+
+      fireEvent.keyDown(table, { key: 'Escape' });
+
+      rows.forEach(row => {
+        expect(row).toHaveAttribute('aria-selected', 'false');
+      });
+    });
+
+    it('copies selected rows as TSV on Ctrl+C', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText } });
+
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+      const table = screen.getByRole('grid', { name: /ledger entries/i });
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      fireEvent.keyDown(table, { key: 'c', ctrlKey: true });
+
+      await vi.waitFor(() => {
+        expect(writeText).toHaveBeenCalledTimes(1);
+      });
+
+      const tsv = writeText.mock.calls[0][0] as string;
+      expect(tsv).toContain('ID\tDate\tType'); // header row
+      expect(tsv).toContain('ENT-0001'); // selected row data
+    });
+
+    it('does not copy when nothing is selected', () => {
+      const writeText = vi.fn();
+      Object.assign(navigator, { clipboard: { writeText } });
+
+      render(<Ledger />);
+      const table = screen.getByRole('grid', { name: /ledger entries/i });
+
+      fireEvent.keyDown(table, { key: 'c', ctrlKey: true });
+
+      expect(writeText).not.toHaveBeenCalled();
+    });
+
+    it('shows "Copied!" feedback after Ctrl+C', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      Object.assign(navigator, { clipboard: { writeText } });
+
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+      const table = screen.getByRole('grid', { name: /ledger entries/i });
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      fireEvent.keyDown(table, { key: 'c', ctrlKey: true });
+
+      await vi.waitFor(() => {
+        expect(screen.getByText(/copied/i)).toBeInTheDocument();
+      });
+    });
+
+    it('supports Shift+click range selection', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+
+      // Click first row
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+      expect(rows[0]).toHaveAttribute('aria-selected', 'true');
+
+      // Shift+click third row
+      fireEvent.click(rows[2].querySelector('td:nth-child(2)')!, { shiftKey: true });
+
+      expect(rows[0]).toHaveAttribute('aria-selected', 'true');
+      expect(rows[1]).toHaveAttribute('aria-selected', 'true');
+      expect(rows[2]).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('shows selected rows with blue background', () => {
+      render(<Ledger />);
+      const rows = screen.getAllByRole('row').filter(r => r.hasAttribute('data-row-id'));
+
+      fireEvent.click(rows[0].querySelector('td:nth-child(2)')!);
+
+      expect(rows[0]).toHaveClass('bg-blue-50');
+      expect(rows[0]).toHaveClass('ring-blue-300');
+    });
+  });
+
 });

@@ -19,6 +19,20 @@ import {
 } from './onChainMetadataUtils';
 import './OnChainStatusBadge.css';
 
+// ─── Status variant config (Issue #478) ─────────────────────────────
+const STATUS_VARIANTS: Record<string, { label: string; className: string }> = {
+  pending:    { label: 'Pending',    className: 'ocb-badge--pending' },
+  retrying:   { label: 'Retrying',   className: 'ocb-badge--retrying' },
+  confirmed:  { label: 'Confirmed',  className: 'ocb-badge--confirmed' },
+};
+
+function statusLabel(status: OnChainMetadata['status'], confirmations?: number): string {
+  if (status === 'confirmed' && confirmations !== undefined) {
+    return `Confirmed (${confirmations})`;
+  }
+  return STATUS_VARIANTS[status ?? '']?.label ?? 'On-chain';
+}
+
 export interface OnChainMetadata {
   /** Ledger sequence or block height */
   blockNumber?: number | string;
@@ -30,6 +44,8 @@ export interface OnChainMetadata {
   /** Override default Stellar Expert URL */
   explorerUrl?: string;
   network?: StellarExplorerNetwork;
+  /** On-chain transaction status for visual variant (Issue #478) */
+  status?: 'pending' | 'retrying' | 'confirmed';
 }
 
 export interface OnChainStatusBadgeProps {
@@ -182,14 +198,14 @@ export const OnChainStatusBadge: React.FC<OnChainStatusBadgeProps> = ({
     >
       <button
         type="button"
-        className="ocb-badge"
+        className={`ocb-badge ${STATUS_VARIANTS[metadata.status ?? '']?.className ?? ''}`}
         aria-label={ariaLabel}
         aria-expanded={coarsePointer ? popoverOpen : undefined}
         aria-controls={panelId}
         onClick={handleTriggerClick}
       >
         <Link2 size={12} aria-hidden="true" />
-        <span>On-chain</span>
+        <span>{statusLabel(metadata.status, metadata.confirmations)}</span>
       </button>
 
       <div

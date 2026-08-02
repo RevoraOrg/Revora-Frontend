@@ -222,3 +222,32 @@
     transition: none;
   }
 }
+
+/* ─── Status variants (Issue #478) ──────────────────────────────── */
+
+.ocb-badge--pending {
+  --ocb-badge-bg: rgba(251, 191, 36, 0.15);
+  --ocb-badge-border: rgba(251, 191, 36, 0.4);
+  --ocb-badge-fg: #b45309;
+  --ocb-badge-bg-hover: rgba(251, 191, 36, 0.25);
+  --ocb-badge-border-hover: rgba(251, 191, 36, 0.6);
+  --ocb-badge-focus-ring: rgba(251, 191, 36, 0.3);
+}
+
+.ocb-badge--retrying {
+  --ocb-badge-bg: rgba(99, 102, 241, 0.15);
+  --ocb-badge-border: rgba(99, 102, 241, 0.4);
+  --ocb-badge-fg: #4338ca;
+  --ocb-badge-bg-hover: rgba(99, 102, 241, 0.25);
+  --ocb-badge-border-hover: rgba(99, 102, 241, 0.6);
+  --ocb-badge-focus-ring: rgba(99, 102, 241, 0.3);
+}
+
+.ocb-badge--confirmed {
+  --ocb-badge-bg: rgba(16, 185, 129, 0.15);
+  --ocb-badge-border: rgba(16, 185, 129, 0.4);
+  --ocb-badge-fg: #065f46;
+  --ocb-badge-bg-hover: rgba(16, 185, 129, 0.25);
+  --ocb-badge-border-hover: rgba(16, 185, 129, 0.6);
+  --ocb-badge-focus-ring: rgba(16, 185, 129, 0.3);
+}

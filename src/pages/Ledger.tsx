@@ -1,5 +1,6 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { ChevronRight } from 'lucide-react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { Copy, Check } from 'lucide-react';
+import { ChevronRight, Copy, Check } from 'lucide-react';
 
 // ────────────────────────────────────────
 // Types
@@ -104,6 +105,10 @@ const TYPE_STYLES: Record<LedgerEntry['type'], string> = {
 export const Ledger: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [copiedFeedback, setCopiedFeedback] = useState(false);
+  const anchorIndexRef = useRef<number | null>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const [liveMessage, setLiveMessage] = useState('');
   const pageSize = 10;
 
@@ -144,6 +149,135 @@ export const Ledger: React.FC = () => {
     [],
   );
 
+  // ─── Keyboard row selection helpers ────────────────────────────────
+  const toggleSelectRow = useCallback((id: string, event?: React.MouseEvent | KeyboardEvent) => {
+    setSelectedRows(prev => {
+      const next = new Set(prev);
+      if (event?.shiftKey && anchorIndexRef.current !== null) {
+        // Shift+click: range select from anchor to clicked row
+        const clickedIndex = pageData.findIndex(r => r.id === id);
+        const start = Math.min(anchorIndexRef.current, clickedIndex);
+        const end = Math.max(anchorIndexRef.current, clickedIndex);
+        for (let i = start; i <= end; i++) {
+          next.add(pageData[i].id);
+        }
+      } else if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+
+      // Update anchor index for next Shift selection
+      const clickedIndex = pageData.findIndex(r => r.id === id);
+      if (clickedIndex !== -1) anchorIndexRef.current = clickedIndex;
+
+      return next;
+    });
+  }, [pageData]);
+
+  const selectAll = useCallback(() => {
+    setSelectedRows(new Set(pageData.map(r => r.id)));
+  }, [pageData]);
+
+  const clearSelection = useCallback(() => {
+    setSelectedRows(new Set());
+    anchorIndexRef.current = null;
+  }, []);
+
+  // Copy selected rows as TSV (Ctrl+C)
+  const copySelectedAsTSV = useCallback(async () => {
+    if (selectedRows.size === 0) return;
+    const headers = ['ID', 'Date', 'Type', 'Amount', 'Asset', 'Status', 'Reference'];
+    const rows = pageData
+      .filter(r => selectedRows.has(r.id))
+      .map(r => [r.id, r.date, r.type, `$${r.amount.toFixed(2)}`, r.asset, r.status, r.reference].join('\t'));
+    const tsv = [headers.join('\t'), ...rows].join('\n');
+
+    try {
+      await navigator.clipboard.writeText(tsv);
+      setCopiedFeedback(true);
+      window.setTimeout(() => setCopiedFeedback(false), 2000);
+    } catch {
+      // Clipboard API unavailable — fallback silently
+    }
+  }, [selectedRows, pageData]);
+
+  // Keyboard handler for row selection
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    // Ctrl+A: select all visible rows
+    if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+      e.preventDefault();
+      selectAll();
+      return;
+    }
+
+    // Ctrl+C: copy selected rows as TSV
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
+      if (selectedRows.size > 0) {
+        e.preventDefault();
+        copySelectedAsTSV();
+      }
+      return;
+    }
+
+    // Escape: clear selection
+    if (e.key === 'Escape') {
+      clearSelection();
+      return;
+    }
+
+    // Arrow keys with Shift for range selection
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const currentFocus = document.activeElement;
+      const rows = tableRef.current?.querySelectorAll<HTMLTableRowElement>('tr[data-row-id]');
+      if (!rows || rows.length === 0) return;
+
+      let currentIdx = -1;
+      rows.forEach((row, i) => {
+        if (row.contains(currentFocus)) currentIdx = i;
+      });
+
+      const delta = e.key === 'ArrowDown' ? 1 : -1;
+      const newIdx = Math.max(0, Math.min(rows.length - 1, (currentIdx === -1 ? 0 : currentIdx) + delta));
+
+      if (e.shiftKey) {
+        // Shift+Arrow: extend selection
+        if (anchorIndexRef.current === null) anchorIndexRef.current = currentIdx === -1 ? 0 : currentIdx;
+        const start = Math.min(anchorIndexRef.current, newIdx);
+        const end = Math.max(anchorIndexRef.current, newIdx);
+        const newSelection = new Set<string>();
+        for (let i = start; i <= end; i++) {
+          const id = pageData[i]?.id;
+          if (id) newSelection.add(id);
+        }
+        setSelectedRows(newSelection);
+      } else {
+        // Arrow without Shift: move focus and clear selection unless Ctrl held
+        if (!e.ctrlKey && !e.metaKey) {
+          setSelectedRows(new Set());
+          anchorIndexRef.current = newIdx;
+        }
+        // Focus the new row
+        const targetRow = rows[newIdx];
+        const firstCell = targetRow?.querySelector<HTMLElement>('td button, td');
+        firstCell?.focus();
+      }
+    }
+  }, [selectedRows, pageData, selectAll, clearSelection, copySelectedAsTSV]);
+
+  // Global Ctrl+C listener for copying outside table focus
+  useEffect(() => {
+    const onGlobalCopy = (e: ClipboardEvent) => {
+      if (selectedRows.size > 0 && document.activeElement?.closest('[data-ledger-table]')) {
+        e.preventDefault();
+        copySelectedAsTSV();
+      }
+    };
+    document.addEventListener('copy', onGlobalCopy);
+    return () => document.removeEventListener('copy', onGlobalCopy);
+  }, [selectedRows, copySelectedAsTSV]);
+
   // Page change doesn't reset expanded state — persistence across paging
   // is intentional per the requirements.
 
@@ -167,6 +301,19 @@ export const Ledger: React.FC = () => {
         </h1>
         <p className="text-muted text-sm mt-1">
           Detailed transaction history and ledger entries.
+          {selectedRows.size > 0 && (
+            <span className="ml-2 inline-flex items-center gap-1 text-xs">
+              <span className="bg-blue-100 text-blue-800 rounded px-1.5 py-0.5 font-medium">
+                {selectedRows.size} selected
+              </span>
+              <span className="text-gray-400">· Ctrl+C to copy as TSV</span>
+              {copiedFeedback && (
+                <span className="text-green-600 flex items-center gap-0.5">
+                  <Check size={12} aria-hidden="true" /> Copied!
+                </span>
+              )}
+            </span>
+          )}
         </p>
       </div>
 
@@ -174,6 +321,9 @@ export const Ledger: React.FC = () => {
       <div className="bg-white rounded-lg shadow overflow-hidden border border-gray-200">
         {/* Desktop table */}
         <table
+          ref={tableRef}
+          onKeyDown={handleKeyDown}
+          data-ledger-table="true"
           className="min-w-full divide-y divide-gray-200 hidden sm:table"
           aria-label="Ledger entries table"
           role="grid"
@@ -234,11 +384,26 @@ export const Ledger: React.FC = () => {
                 <React.Fragment key={row.id}>
                   {/* Parent row */}
                   <tr
-                    className={`hover:bg-gray-50 transition-colors duration-150 ${
+                    data-row-id={row.id}
+                    className={`hover:bg-gray-50 transition-colors duration-150 cursor-pointer ${
                       isExpanded
-                        ? 'bg-blue-50/40 border-l-4 border-l-blue-400'
+                        ? 'border-l-4 border-l-blue-400'
                         : ''
+                    } ${
+                      selectedRows.has(row.id)
+                        ? 'bg-blue-50 ring-1 ring-inset ring-blue-300'
+                        : isExpanded
+                          ? 'bg-blue-50/40'
+                          : ''
                     }`}
+                    tabIndex={0}
+                    role="row"
+                    aria-selected={selectedRows.has(row.id)}
+                    onClick={(e) => {
+                      const target = e.target as HTMLElement;
+                      if (target.closest('button') || target.tagName === 'BUTTON') return;
+                      toggleSelectRow(row.id, e as unknown as React.MouseEvent);
+                    }}
                     aria-expanded={
                       hasSubEvents || hasEmptySubEvents
                         ? isExpanded

@@ -46,6 +46,10 @@ describe('formatConfirmations', () => {
     expect(formatConfirmations(1284)).toBe('1,284');
   });
 
+  it('formats zero confirmations', () => {
+    expect(formatConfirmations(0)).toBe('0');
+  });
+
   it('returns em dash for invalid values', () => {
     expect(formatConfirmations(undefined)).toBe('—');
     expect(formatConfirmations(-1)).toBe('—');
@@ -61,6 +65,19 @@ describe('formatTimeSince', () => {
 
   it('formats hours', () => {
     expect(formatTimeSince('2026-07-27T09:00:00.000Z', now)).toBe('3h ago');
+  });
+
+  it('formats minutes, days, months, and years', () => {
+    const now = Date.parse('2026-07-27T12:00:00.000Z');
+    expect(formatTimeSince('2026-07-27T11:50:00.000Z', now)).toBe('10m ago');
+    expect(formatTimeSince('2026-07-24T12:00:00.000Z', now)).toBe('3d ago');
+    expect(formatTimeSince('2026-05-27T12:00:00.000Z', now)).toBe('2mo ago');
+    expect(formatTimeSince('2024-07-27T12:00:00.000Z', now)).toBe('2y ago');
+  });
+
+  it('clamps future timestamps to 0s ago', () => {
+    const now = Date.parse('2026-07-27T12:00:00.000Z');
+    expect(formatTimeSince('2026-07-27T12:30:00.000Z', now)).toBe('0s ago');
   });
 
   it('returns em dash for missing or invalid timestamps', () => {

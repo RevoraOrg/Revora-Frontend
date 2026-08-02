@@ -30,13 +30,25 @@ function mockMatchMedia(options: { coarse?: boolean }) {
   })) as unknown as typeof window.matchMedia;
 }
 
+/**
+ * Install a clipboard spy on navigator.clipboard.
+ *
+ * Must run AFTER `userEvent.setup()`: user-event swaps `navigator.clipboard`
+ * for its own `items`-based stub at setup time, so a spy installed earlier is
+ * never seen by the component (or the assertions).
+ */
+function installClipboardSpy() {
+  const writeText = vi.fn().mockResolvedValue(undefined);
+  Object.defineProperty(window.navigator, 'clipboard', {
+    configurable: true,
+    value: { writeText },
+  });
+  return writeText;
+}
+
 describe('OnChainStatusBadge', () => {
   beforeEach(() => {
     mockMatchMedia({ coarse: false });
-    vi.stubGlobal('navigator', {
-      ...navigator,
-      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
-    });
   });
 
   afterEach(() => {
@@ -80,6 +92,7 @@ describe('OnChainStatusBadge', () => {
 
   it('announces copy success via polite live region', async () => {
     const user = userEvent.setup();
+    const writeText = installClipboardSpy();
     render(<OnChainStatusBadge metadata={fullMetadata} />);
 
     await user.click(screen.getByRole('button', { name: /copy hash/i }));
@@ -89,9 +102,61 @@ describe('OnChainStatusBadge', () => {
         'Transaction hash copied to clipboard.',
       );
     });
-    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
-      fullMetadata.transactionHash,
+    expect(writeText).toHaveBeenCalledWith(fullMetadata.transactionHash);
+  });
+
+  it('copies the block number and announces it via the live region', async () => {
+    const user = userEvent.setup();
+    const writeText = installClipboardSpy();
+    render(<OnChainStatusBadge metadata={fullMetadata} />);
+
+    await user.click(screen.getByRole('button', { name: /copy block/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Block number copied to clipboard.',
+      );
+    });
+    expect(writeText).toHaveBeenCalledWith('55001234');
+  });
+
+  it('flips the copy button into a copied (check) state', async () => {
+    const user = userEvent.setup();
+    installClipboardSpy();
+    render(<OnChainStatusBadge metadata={fullMetadata} />);
+
+    const copyHash = screen.getByRole('button', { name: /copy hash/i });
+    await user.click(copyHash);
+
+    await waitFor(() => {
+      expect(
+        screen.getByRole('button', { name: /hash copied to clipboard/i }),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('renders relative time-since in the panel', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(
+      Date.parse('2026-07-27T15:00:00.000Z'),
     );
+    render(<OnChainStatusBadge metadata={fullMetadata} />);
+    expect(screen.getByText('5h ago')).toBeInTheDocument();
+  });
+
+  it('handles very long block numbers without overflow', () => {
+    render(
+      <OnChainStatusBadge
+        metadata={{
+          blockNumber: '9999999999999999999999',
+          transactionHash: fullMetadata.transactionHash,
+        }}
+      />,
+    );
+    expect(
+      screen.getByText(
+        BigInt('9999999999999999999999').toLocaleString('en-US'),
+      ),
+    ).toBeInTheDocument();
   });
 
   it('disables copy when block number is missing', () => {

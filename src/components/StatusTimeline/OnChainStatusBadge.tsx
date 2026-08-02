@@ -1,8 +1,9 @@
 /**
- * OnChainStatusBadge — on-chain confirmation badge with metadata tooltip (Issue #256).
+ * OnChainStatusBadge — on-chain confirmation badge with metadata tooltip (Issues #256, #479).
  *
  * Pointer-fine: hover/focus reveals a tooltip panel.
  * Coarse pointer / touch: toggles the same panel as a popover.
+ * Copy actions announce success via a polite live region.
  */
 
 import React, { useCallback, useEffect, useId, useState } from 'react';
@@ -140,13 +141,6 @@ export const OnChainStatusBadge: React.FC<OnChainStatusBadgeProps> = ({
   const panelVisible = coarsePointer ? popoverOpen : undefined;
 
   const handleCopy = async (field: CopyField, value: string) => {
-    {
-      const clipObj = navigator.clipboard;
-      const keys = clipObj ? Object.keys(clipObj) : [];
-      const val = (clipObj as Record<string, unknown>)?.writeText;
-      // eslint-disable-next-line no-console
-      console.log('CLIP_KEYS:', JSON.stringify(keys), typeof val, val === navigator.clipboard.writeText);
-    }
     await navigator.clipboard.writeText(value);
     setCopiedField(field);
     const message =
@@ -186,6 +180,7 @@ export const OnChainStatusBadge: React.FC<OnChainStatusBadgeProps> = ({
         aria-label={ariaLabel}
         aria-expanded={coarsePointer ? popoverOpen : undefined}
         aria-controls={panelId}
+        aria-describedby={panelId}
         onClick={handleTriggerClick}
       >
         <Link2 size={12} aria-hidden="true" />

@@ -1,0 +1,100 @@
+/* ─────────────────────────────────────────────────────────────────────────
+ * RTL (Right-to-Left) consolidated styles
+ *
+ * This file centralizes RTL overrides that cannot be expressed through CSS
+ * logical properties alone — primarily gradient directions, transform origins,
+ * and physical-positioned elements that need explicit mirroring.
+ *
+ * ## What CSS logical properties handle automatically
+ *
+ * The following properties mirror under `dir="rtl"` without any extra CSS:
+ *   - margin-inline-start / margin-inline-end
+ *   - padding-inline-start / padding-inline-end
+ *   - inset-inline-start / inset-inline-end
+ *   - border-inline-start / border-inline-end
+ *   - text-align: start / end
+ *   - float: inline-start / inline-end
+ *
+ * ## What this file covers
+ *
+ *   1. Gradient angles (are physical, not logical)
+ *   2. Transform origins (default to physical center)
+ *   3. Box-shadow offsets (horizontal offset is physical)
+ *   4. Physical-positioned pseudo-elements
+ *   5. Explicit direction overrides for numeric content
+ * ───────────────────────────────────────────────────────────────────────── */
+
+/* ── Gradient helper classes ─────────────────────────────────────────── */
+
+[dir="rtl"] .rtl-mirror-gradient-to-right {
+  background-image: linear-gradient(
+    to left,
+    var(--rtl-grad-start, #10b981),
+    var(--rtl-grad-end, #3b82f6)
+  );
+}
+
+[dir="rtl"] .rtl-mirror-gradient-to-left {
+  background-image: linear-gradient(
+    to right,
+    var(--rtl-grad-start, #10b981),
+    var(--rtl-grad-end, #3b82f6)
+  );
+}
+
+/* ── Transform origin mirroring ──────────────────────────────────────── */
+
+[dir="rtl"] .rtl-transform-origin-start {
+  transform-origin: right center;
+}
+
+[dir="rtl"] .rtl-transform-origin-end {
+  transform-origin: left center;
+}
+
+/* ── Numeric content: always LTR ───────────────────────────────────────
+   Unicode bidi isolation prevents numeric sequences from being reordered
+   in RTL contexts. Per TR-9 and TR-53, numbers retain their natural order. ── */
+
+.rtl-num {
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── AppShell RTL adjustments ────────────────────────────────────────── */
+
+[dir="rtl"] .app-shell__sidebar {
+  /* Sidebar slides from the right in RTL */
+  transform-origin: right center;
+}
+
+[dir="rtl"] .app-shell__main {
+  /* Main content area padding flips */
+  padding-inline-start: var(--sidebar-width, 260px);
+  padding-inline-end: 0;
+}
+
+/* ── Stepper / progress indicator RTL (shared across wizards) ────────── */
+
+[dir="rtl"] .progress-indicator__fill {
+  transform-origin: right center;
+}
+
+[dir="rtl"] .progress-indicator__connector--active {
+  background: linear-gradient(
+    to left,
+    var(--ws-completed, #10b981),
+    var(--ws-active, #3b82f6)
+  );
+}
+
+/* ── Reduced motion (global) ─────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  [dir="rtl"] .rtl-animate,
+  [dir="rtl"] .wizard-stepper__fill,
+  [dir="rtl"] .progress-indicator__fill {
+    transition: none;
+  }
+}

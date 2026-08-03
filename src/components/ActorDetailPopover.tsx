@@ -1,5 +1,22 @@
 import React, { useEffect, useRef, useCallback } from 'react';
-import { AuditAction, Actor } from '../pages/AuditTrail';
+
+/* ─── Types ─────────────────────────────────────────────────────────────────── */
+
+export interface Actor {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  lastLogin: string;
+  avatar?: string;
+}
+
+export interface AuditAction {
+  id: string;
+  timestamp: string;
+  description: string;
+  action: string;
+}
 
 export interface ActorDetailPopoverProps {
   actor: Actor;

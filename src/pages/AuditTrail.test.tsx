@@ -296,66 +296,65 @@ describe('AuditTrail page', () => {
   });
 });
 
-/* ─── export scope dialog integration ─────────────────────────────── */
+/* ─── export history tab integration ─────────────────────────────── */
 
 describe('export integration', () => {
-  it('renders the Export button in the filter bar', () => {
+  it('renders the Export History tab button', () => {
     renderPage();
-    expect(screen.getByRole('button', { name: 'Export' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Export History' })).toBeInTheDocument();
   });
 
-  it('opens the export scope dialog when Export is clicked', async () => {
+  it('switches to export history view when Export History tab is clicked', async () => {
     const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('button', { name: 'Export History' }));
 
-    expect(screen.getByRole('dialog', { name: /export audit trail/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /export history/i })).toBeInTheDocument();
   });
 
-  it('shows the correct estimate in the export dialog based on filtered results', async () => {
+  it('renders export history entries in the table', async () => {
     const user = userEvent.setup();
-    renderPage('/investor/audit-trail?action=payout');
-
-    await user.click(screen.getByRole('button', { name: 'Export' }));
-
-    const dialog = screen.getByRole('dialog', { name: /export audit trail/i });
-    expect(within(dialog).getByTestId('export-estimate')).toHaveTextContent(/2/);
-  });
-
-  it('shows toast on export completion', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Export' }));
+    await user.click(screen.getByRole('button', { name: 'Export History' }));
 
-    const dialog = await screen.findByRole('dialog', { name: /export audit trail/i });
-    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
-
-    vi.advanceTimersByTime(2000);
-
-    const toast = await screen.findByTestId('export-toast');
-    expect(toast).toHaveTextContent(/export complete/i);
-
-    vi.useRealTimers();
+    // ExportHistoryTable should render with mock data
+    expect(screen.getByText(/All payouts in July/i)).toBeInTheDocument();
+    expect(screen.getByText(/Compliance audit report/i)).toBeInTheDocument();
   });
 
-  it('closes the export dialog after export completes', async () => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  it('reruns an export when the rerun button is clicked', async () => {
+    const user = userEvent.setup();
     renderPage();
 
-    await user.click(screen.getByRole('button', { name: 'Export' }));
-    expect(screen.getByRole('dialog', { name: /export audit trail/i })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Export History' }));
 
-    const dialog = screen.getByRole('dialog', { name: /export audit trail/i });
-    await user.click(within(dialog).getByRole('button', { name: /^export$/i }));
+    const rerunButton = screen.getByRole('button', { name: /rerun export all payouts in july/i });
+    await user.click(rerunButton);
 
-    vi.advanceTimersByTime(2000);
+    // A new entry should appear at the top (rerun creates a duplicate with new timestamp)
+    const rows = screen.getAllByRole('row');
+    expect(rows.length).toBeGreaterThan(3); // header + 3 original + 1 new
+  });
 
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: /export audit trail/i })).not.toBeInTheDocument());
+  it('deletes an export entry when confirmed', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
-    vi.useRealTimers();
+    await user.click(screen.getByRole('button', { name: 'Export History' }));
+
+    // Click delete button
+    const deleteBtn = screen.getByRole('button', { name: /delete export very old export/i });
+    await user.click(deleteBtn);
+
+    // Confirm deletion in the dialog
+    const dialog = await screen.findByRole('dialog', { name: /delete export/i });
+    await user.click(within(dialog).getByRole('button', { name: /delete/i }));
+
+    // Entry should be removed
+    await waitFor(() => {
+      expect(screen.queryByText(/Very old export/i)).not.toBeInTheDocument();
+    });
   });
 });

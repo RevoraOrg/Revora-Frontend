@@ -95,14 +95,14 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     await navigateToStep4(user);
 
     // Should show "Revealed: 0/10" initially
-    expect(screen.getByText(/Revealed: 0/10/)).toBeInTheDocument();
+    expect(screen.getByText(/Revealed: 0\/10/)).toBeInTheDocument();
 
     // Reveal first code
     const codeCards = screen.getAllByRole('button');
     await user.click(codeCards[0]);
 
     // Should now show "Revealed: 1/10"
-    expect(screen.getByText(/Revealed: 1/10/)).toBeInTheDocument();
+    expect(screen.getByText(/Revealed: 1\/10/)).toBeInTheDocument();
   });
 
   it('shows "Reveal All" and "Hide All" buttons', async () => {

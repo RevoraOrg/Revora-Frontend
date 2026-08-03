@@ -313,7 +313,6 @@ export const OfferingDetail: React.FC = () => {
           </div>
         </div>
       </div>
-      </>
       )}
     </div>
   );

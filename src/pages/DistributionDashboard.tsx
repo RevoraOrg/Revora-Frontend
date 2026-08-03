@@ -442,7 +442,8 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
+
+      {/* Main Content */}
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}

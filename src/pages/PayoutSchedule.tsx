@@ -1,20 +1,35 @@
 /**
  * PayoutSchedule — Gantt-style timeline view with table alternative (Issue #219, #444).
  *
+ * RTL mirror pass (Issue #495):
+ * - RTL detection via locale prop and i18n constants
+ * - Gantt bars positioned with `inset-inline-start` (logical CSS)
+ * - Today marker mirrored in RTL via CSS transform
+ * - Tooltips shift to inline-start edge in RTL (RTL-first placement)
+ * - Numeric dates wrapped in `<span dir="ltr">` with unicode-bidi:isolate
+ * - Gradient stripes on failed/canceled bars mirror in RTL
+ *
  * Features:
- * - Gantt chart with lane rows per issuer, payout bars with status colours,
+ * - View toggle: Gantt chart / accessible table
+ * - Gantt with lane rows per issuer, payout bars with status colours,
  *   today marker, and zoom controls (week/month/quarter)
- * - Accessible table with status pills and tooltips
- * - Hover popovers on gantt bars
+ * - Hover tooltips on gantt bars
  * - WCAG 2.1 AA, responsive, RTL-ready
  */
 
 import React, { useState, useMemo } from 'react';
-import { Calendar, Table2, BarChart3 } from 'lucide-react';
+import { Calendar, BarChart3, Table2 } from 'lucide-react';
 import { PayoutStatusPill, PAYOUT_STATUS_ORDER } from '../components/PayoutStatusPill';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { CalendarExportDialog } from '../components/CalendarExportDialog';
 import { Button } from '../components/Button';
+import { RTL_LOCALES } from '../constants/i18n';
+import { parseIsoDate, formatDisplayDate } from '../components/PayoutTimeline';
+import './PayoutSchedule.css';
+
+/* ─── Types ──────────────────────────────────────────────────────────── */
+
+export type ZoomLevel = 'week' | 'month' | 'quarter';
 
 export interface Payout {
   id: string;
@@ -24,96 +39,107 @@ export interface Payout {
   status: string;
 }
 
-export type ZoomLevel = 'week' | 'month' | 'quarter';
-export type PayoutData = Payout;
+/* ─── Color map for bar statuses ──────────────────────────────────── */
 
-export const DEMO_PAYOUTS: Payout[] = [
-  { id: '1', recipient: 'Issuer A', amount: 'USDC 12,500', scheduledFor: '2026-07-15', status: 'confirmed' },
-  { id: '2', recipient: 'Issuer B', amount: 'USDC 8,000', scheduledFor: '2026-08-01', status: 'scheduled' },
-  { id: '3', recipient: 'Issuer C', amount: 'USDC 5,200', scheduledFor: '2026-07-20', status: 'sending' },
-  { id: '4', recipient: 'Issuer D', amount: 'USDC 15,000', scheduledFor: '2026-06-30', status: 'failed' },
-  { id: '5', recipient: 'Issuer A', amount: 'USDC 3,500', scheduledFor: '2026-08-10', status: 'preparing' },
-  { id: '6', recipient: 'Issuer B', amount: 'USDC 2,100', scheduledFor: '2026-07-05', status: 'retrying' },
-  { id: '7', recipient: 'Issuer C', amount: 'USDC 9,800', scheduledFor: '2026-05-15', status: 'canceled' },
-];
-
-function parseDate(dateStr: string): Date {
-  return new Date(dateStr);
-}
-
-function daysBetween(start: Date, end: Date): number {
-  const msPerDay = 1000 * 60 * 60 * 24;
-  return Math.round((end.getTime() - start.getTime()) / msPerDay);
-}
-
-function getRange(items: Payout[], zoom: ZoomLevel): { start: Date; end: Date } {
-  if (!items || items.length === 0) {
-    const start = new Date();
-    const end = new Date();
-    end.setDate(end.getDate() + 30);
-    return { start, end };
-  }
-  const dates = items.map((i) => parseDate(i.scheduledFor).getTime());
-  const minTime = Math.min(...dates);
-  const maxTime = Math.max(...dates);
-  const start = new Date(minTime);
-  const end = new Date(maxTime);
-
-  if (zoom === 'week') {
-    start.setDate(start.getDate() - 3);
-    end.setDate(end.getDate() + 7);
-  } else if (zoom === 'quarter') {
-    start.setMonth(start.getMonth() - 1);
-    end.setMonth(end.getMonth() + 3);
-  } else {
-    // month
-    start.setDate(start.getDate() - 7);
-    end.setDate(end.getDate() + 30);
-  }
-  return { start, end };
-}
+const STATUS_BAR_COLORS: Record<string, string> = {
+  scheduled: '#3b82f6',
+  preparing: '#f59e0b',
+  sending: '#8b5cf6',
+  confirmed: '#10b981',
+  retrying: '#f97316',
+  failed: '#ef4444',
+  canceled: '#64748b',
+};
 
 function statusBarColor(status: string): string {
-  switch (status.toLowerCase()) {
-    case 'scheduled':
-      return '#94a3b8';
-    case 'preparing':
-      return '#3b82f6';
-    case 'sending':
-      return '#06b6d4';
-    case 'confirmed':
-      return '#10b981';
-    case 'retrying':
-      return '#f59e0b';
-    case 'failed':
-      return '#ef4444';
-    case 'canceled':
-    case 'cancelled':
-      return '#64748b';
-    default:
-      return '#94a3b8';
-  }
+  return STATUS_BAR_COLORS[status] ?? '#64748b';
 }
+
+/* ─── Demo data ─────────────────────────────────────────────────────── */
+
+export const DEMO_PAYOUTS: Payout[] = [
+  { id: '1', recipient: 'Issuer A', amount: 'USDC 12,500', scheduledFor: '2026-07-15', status: 'scheduled' },
+  { id: '2', recipient: 'Issuer B', amount: 'USDC 8,000', scheduledFor: '2026-07-10', status: 'confirmed' },
+  { id: '3', recipient: 'Issuer C', amount: 'USDC 5,000', scheduledFor: '2026-06-20', status: 'confirmed' },
+  { id: '4', recipient: 'Issuer D', amount: 'USDC 3,000', scheduledFor: '2026-08-01', status: 'sending' },
+  { id: '5', recipient: 'Issuer A', amount: 'USDC 2,500', scheduledFor: '2026-06-01', status: 'failed' },
+  { id: '6', recipient: 'Issuer B', amount: 'USDC 1,500', scheduledFor: '2026-05-15', status: 'canceled' },
+  { id: '7', recipient: 'Issuer C', amount: 'USDC 750', scheduledFor: '2026-07-25', status: 'retrying' },
+  { id: '8', recipient: 'Issuer D', amount: 'USDC 6,000', scheduledFor: '2026-08-15', status: 'scheduled' },
+];
+
+/* ─── Helpers ────────────────────────────────────────────────────────── */
+
+
+
+/**
+ * Compute a date range that spans all payouts at the given zoom level.
+ * Returns start/end as Date objects (start of day).
+ */
+function getRange(payouts: Payout[], zoom: ZoomLevel): { start: Date; end: Date } {
+  if (payouts.length === 0) {
+    const now = new Date();
+    return { start: now, end: now };
+  }
+
+  const dates = payouts.map((p) => parseIsoDate(p.scheduledFor));
+  let min = new Date(Math.min(...dates.map((d) => d.getTime())));
+  let max = new Date(Math.max(...dates.map((d) => d.getTime())));
+
+  // Pad the range based on zoom level
+  const padDays = zoom === 'week' ? 7 : zoom === 'month' ? 30 : 90;
+  min.setDate(min.getDate() - Math.floor(padDays / 2));
+  max.setDate(max.getDate() + Math.floor(padDays / 2));
+
+  return { start: min, end: max };
+}
+
+/** Compute days between two Date objects. */
+function daysBetweenDates(a: Date, b: Date): number {
+  return Math.round((b.getTime() - a.getTime()) / 86_400_000);
+}
+
+/** Format a date range label. */
+function formatRangeLabel(start: Date, end: Date, zoom: ZoomLevel): string {
+  const opts: Intl.DateTimeFormatOptions =
+    zoom === 'week'
+      ? { month: 'short', day: 'numeric', year: 'numeric' }
+      : zoom === 'month'
+        ? { month: 'long', year: 'numeric' }
+        : { quarter: 'numeric', year: 'numeric' };
+
+  const startStr = new Intl.DateTimeFormat('en-US', opts).format(start);
+  const endStr = new Intl.DateTimeFormat('en-US', opts).format(end);
+  return `${startStr} – ${endStr}`;
+}
+
+/* ─── Props ──────────────────────────────────────────────────────────── */
 
 interface PayoutScheduleProps {
   payouts?: Payout[];
   empty?: boolean;
+  /** Locale string for RTL detection. Defaults to 'en-US'. */
+  locale?: string;
 }
 
+/* ─── Component ──────────────────────────────────────────────────────── */
+
 export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
-  payouts: payoutsProp,
+  payouts: payoutsProp = DEMO_PAYOUTS,
   empty = false,
+  locale = 'en-US',
 }) => {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
-  const [showGantt, setShowGantt] = useState(false); // default to table view
+  const [showGantt, setShowGantt] = useState(false);
   const [zoom, setZoom] = useState<ZoomLevel>('month');
+  const [hoveredPayoutId, setHoveredPayoutId] = useState<string | null>(null);
 
-  const payouts = payoutsProp ?? DEMO_PAYOUTS;
+  const isRtl = RTL_LOCALES.includes(locale);
 
   /* ─── Group by issuer for Gantt lanes ─── */
   const lanes = useMemo(() => {
-    const map = new Map<string, PayoutData[]>();
-    for (const p of payouts) {
+    const map = new Map<string, Payout[]>();
+    for (const p of payoutsProp) {
       const arr = map.get(p.recipient) ?? [];
       arr.push(p);
       map.set(p.recipient, arr);
@@ -122,17 +148,25 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
       issuer,
       items: items.sort((a, b) => a.scheduledFor.localeCompare(b.scheduledFor)),
     }));
-  }, [payouts]);
+  }, [payoutsProp]);
 
   /* ─── Time range ─── */
-  const range = useMemo(() => getRange(lanes.flatMap((l) => l.items), zoom), [lanes, zoom]);
-  const totalDays = daysBetween(range.start, range.end) || 1;
+  const range = useMemo(
+    () => getRange(lanes.flatMap((l) => l.items), zoom),
+    [lanes, zoom],
+  );
+  const totalDays = daysBetweenDates(range.start, range.end) || 1;
 
-  const todayOffset = daysBetween(range.start, new Date());
+  const todayDate = new Date();
+  const todayOffset = daysBetweenDates(range.start, todayDate);
+  const todayPct = ((todayOffset / totalDays) * 100).toFixed(2);
 
-  /* ─── Tooltip state for gantt bars ─── */
-  const [hoveredPayout, setHoveredPayout] = useState<string | null>(null);
+  /* ─── Zoom handlers ─── */
+  const handleZoomChange = (next: ZoomLevel) => {
+    setZoom(next);
+  };
 
+  /* ─── Empty state ─── */
   if (empty) {
     return (
       <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
@@ -174,9 +208,12 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
   }
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div
+      className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in"
+      dir={isRtl ? 'rtl' : 'ltr'}
+    >
+      {/* ── Header ── */}
+      <div className="flex justify-between items-start flex-wrap gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Payout Schedule</h1>
           <p className="text-muted text-sm mt-1">
@@ -185,30 +222,30 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {/* View Mode Toggle */}
-          <div role="tablist" aria-label="View options" className="flex items-center gap-1 bg-surface p-1 rounded-lg border border-border">
+          {/* View Toggle */}
+          <div
+            className="psp-toggle"
+            role="tablist"
+            aria-label="View mode"
+          >
             <button
-              role="tab"
               type="button"
+              role="tab"
               aria-selected={!showGantt}
+              className={`psp-toggle-btn ${!showGantt ? 'psp-toggle-btn--active' : ''}`}
               onClick={() => setShowGantt(false)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                !showGantt ? 'bg-primary text-white' : 'text-muted hover:text-text-main'
-              }`}
             >
-              <Table2 size={14} />
+              <Table2 size={16} aria-hidden="true" />
               Table
             </button>
             <button
-              role="tab"
               type="button"
+              role="tab"
               aria-selected={showGantt}
+              className={`psp-toggle-btn ${showGantt ? 'psp-toggle-btn--active' : ''}`}
               onClick={() => setShowGantt(true)}
-              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 ${
-                showGantt ? 'bg-primary text-white' : 'text-muted hover:text-text-main'
-              }`}
             >
-              <BarChart3 size={14} />
+              <BarChart3 size={16} aria-hidden="true" />
               Gantt
             </button>
           </div>
@@ -224,99 +261,122 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
         </div>
       </div>
 
-      {/* Gantt View */}
+      {/* ── Status Legend (always visible) ── */}
+      <div
+        data-testid="payout-status-legend"
+        className="flex flex-wrap gap-2"
+      >
+        {PAYOUT_STATUS_ORDER.map((status) => (
+          <PayoutStatusPill key={status} status={status} variant="full" />
+        ))}
+      </div>
+
+      {/* ── Gantt Chart View ── */}
       {showGantt && (
-        <div className="rounded-xl border border-[rgba(148,163,184,0.15)] bg-[rgba(15,23,42,0.35)] p-4 space-y-4">
-          <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-[rgba(148,163,184,0.1)]">
-            <span className="text-xs text-muted font-medium">
-              {range.start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} – {range.end.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        <div className="psp-gantt" data-testid="payout-gantt-view">
+          {/* Controls row */}
+          <div className="psp-controls">
+            <span className="psp-range-label" dir="ltr">
+              {formatRangeLabel(range.start, range.end, zoom)}
             </span>
-            <div role="group" aria-label="Zoom controls" className="flex items-center gap-1">
-              {(['week', 'month', 'quarter'] as const).map((level) => (
+
+            <div
+              className="psp-zoom-group"
+              role="group"
+              aria-label="Zoom controls"
+            >
+              {(['week', 'month', 'quarter'] as ZoomLevel[]).map((level) => (
                 <button
                   key={level}
                   type="button"
+                  role="button"
                   aria-pressed={zoom === level}
-                  onClick={() => setZoom(level)}
-                  className={`px-2.5 py-1 text-xs font-medium rounded capitalize transition-colors ${
-                    zoom === level ? 'bg-primary/20 text-primary border border-primary/30' : 'text-muted hover:text-text-main'
-                  }`}
+                  className={`psp-zoom-btn ${zoom === level ? 'psp-zoom-btn--active' : ''}`}
+                  onClick={() => handleZoomChange(level)}
                 >
-                  {level}
+                  {level.charAt(0).toUpperCase() + level.slice(1)}
                 </button>
               ))}
             </div>
           </div>
 
           {/* Gantt lanes */}
-          {lanes.map((lane) => (
-            <div key={lane.issuer} className="flex items-center mb-3 last:mb-0">
-              {/* Lane label */}
-              <div className="w-36 shrink-0 pr-3 flex items-center gap-2">
-                <span className="text-sm font-semibold text-text-main truncate" title={lane.issuer}>
-                  {lane.issuer}
-                </span>
-                <span className="text-[10px] text-muted whitespace-nowrap">
-                  {lane.items.length}
-                </span>
-              </div>
+          <div className="psp-lanes">
+            {lanes.map((lane) => (
+              <div key={lane.issuer} className="psp-lane">
+                <div className="psp-lane-label">
+                  <span className="psp-lane-name" title={lane.issuer}>
+                    {lane.issuer}
+                  </span>
+                  <span className="psp-lane-count">{lane.items.length}</span>
+                </div>
 
-              {/* Bar track */}
-              <div className="flex-1 relative h-8 rounded-md bg-[rgba(2,6,23,0.4)] border border-[rgba(148,163,184,0.06)]">
-                {/* Today marker */}
-                {todayOffset >= 0 && todayOffset <= totalDays && (
-                  <div
-                    className="absolute top-0 bottom-0 w-0.5 bg-primary/60 z-10 pointer-events-none"
-                    style={{ left: `${(todayOffset / totalDays) * 100}%` }}
-                    aria-hidden="true"
-                  >
-                    <div className="absolute -top-1 -left-1 w-2.5 h-2.5 rounded-full bg-primary" />
-                  </div>
-                )}
-
-                {/* Payout bars */}
-                {lane.items.map((item) => {
-                  const itemDate = parseDate(item.scheduledFor);
-                  const offset = daysBetween(range.start, itemDate);
-                  const pct = (offset / totalDays) * 100;
-                  const color = statusBarColor(item.status);
-                  const isFailedOrCanceled = item.status === 'failed' || item.status === 'canceled';
-                  const isHovered = hoveredPayout === item.id;
-
-                  return (
+                <div className="psp-track">
+                  {/* Today marker */}
+                  {todayOffset >= 0 && todayOffset <= totalDays && (
                     <div
-                      key={item.id}
-                      className="absolute rounded-sm transition-all duration-150 cursor-default"
-                      style={{
-                        left: `${Math.max(0, pct)}%`,
-                        width: `${Math.max(2, 100 / totalDays)}%`,
-                        top: '25%',
-                        height: '50%',
-                        minWidth: 4,
-                        backgroundColor: color,
-                        opacity: isHovered ? 1 : 0.8,
-                        ...(isFailedOrCanceled
-                          ? {
-                              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 3px, rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 6px), ${color}`,
-                            }
-                          : {}),
-                      }}
-                      title={`${lane.issuer}: ${item.amount} — ${item.scheduledFor} — ${item.status}`}
-                      onMouseEnter={() => setHoveredPayout(item.id)}
-                      onMouseLeave={() => setHoveredPayout(null)}
+                      className="psp-today-marker"
+                      style={{ '--psp-today-pct': `${todayPct}%` } as React.CSSProperties}
+                      aria-hidden="true"
                     >
-                      {/* Tooltip */}
-                      {isHovered && (
-                        <div
-                          className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-20 pointer-events-none"
-                          role="tooltip"
-                        >
-                          <div className="bg-[#0f172a] border border-[rgba(148,163,184,0.2)] rounded-lg px-2.5 py-1.5 text-xs whitespace-nowrap shadow-xl">
-                            <div className="font-semibold text-text-main">{lane.issuer}</div>
-                            <div className="text-muted mt-0.5">{item.amount}</div>
-                            <div className="text-muted">{item.scheduledFor}</div>
-                            <div className="mt-0.5">
-                              <PayoutStatusPill status={item.status} variant="compact" showTooltip={false} />
+                      <div className="psp-today-dot" />
+                    </div>
+                  )}
+
+                  {/* Payout bars */}
+                  {lane.items.map((item) => {
+                    const itemDate = parseIsoDate(item.scheduledFor);
+                    const offset = daysBetweenDates(range.start, itemDate);
+                    const pct = (offset / totalDays) * 100;
+                    const color = statusBarColor(item.status);
+                    const isFailedOrCanceled =
+                      item.status === 'failed' || item.status === 'canceled';
+                    const isHovered = hoveredPayoutId === item.id;
+
+                    const classNames = [
+                      'psp-bar',
+                      isFailedOrCanceled ? `psp-bar--${item.status}` : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={classNames}
+                        style={{
+                          insetInlineStart: `${Math.max(0, pct)}%`,
+                          width: `${Math.max(2, 100 / totalDays)}%`,
+                          top: '25%',
+                          height: '50%',
+                          minWidth: 4,
+                          opacity: isHovered ? 1 : 0.8,
+                          backgroundColor: color,
+                        } as React.CSSProperties}
+                        title={`${lane.issuer}: ${item.amount} — ${item.scheduledFor} — ${item.status}`}
+                        onMouseEnter={() => setHoveredPayoutId(item.id)}
+                        onMouseLeave={() => setHoveredPayoutId(null)}
+                      >
+                        {/* Tooltip */}
+                        {isHovered && (
+                          <div className="psp-bar-tooltip" role="tooltip">
+                            <div className="psp-bar-tooltip-inner">
+                              <div className="psp-bar-tooltip-issuer">
+                                {lane.issuer}
+                              </div>
+                              <div className="psp-bar-tooltip-amount">
+                                {item.amount}
+                              </div>
+                              <div className="psp-bar-tooltip-date" dir="ltr">
+                                {formatDisplayDate(item.scheduledFor)}
+                              </div>
+                              <div className="psp-bar-tooltip-status">
+                                <PayoutStatusPill
+                                  status={item.status}
+                                  variant="compact"
+                                  showTooltip={false}
+                                />
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -328,30 +388,31 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
             </div>
           ))}
 
-          {/* Gantt pattern key */}
-          <div className="mt-4 pt-3 border-t border-[rgba(148,163,184,0.1)]">
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="text-xs text-muted">Pattern key:</span>
-              <span className="flex items-center gap-1 text-[10px] text-muted">
-                <span
-                  className="inline-block w-3 h-3 rounded-sm"
-                  style={{ background: 'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px), #64748b' }}
-                />
-                Failed / Canceled
-              </span>
-              <span className="flex items-center gap-1 text-[10px] text-muted">
-                <span className="inline-block w-2 h-0.5 rounded bg-primary/60" />
-                Today marker
-              </span>
-            </div>
+          {/* Pattern key */}
+          <div className="psp-pattern-key">
+            <span className="psp-pattern-key-label">Pattern key:</span>
+            <span className="psp-pattern-key-item">
+              <span
+                className="inline-block w-3 h-3 rounded-sm"
+                style={{
+                  background:
+                    'repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px), #64748b',
+                }}
+              />
+              Failed / Canceled
+            </span>
+            <span className="psp-pattern-key-item">
+              <span className="inline-block w-2 h-0.5 rounded bg-primary/60" />
+              Today marker
+            </span>
           </div>
         </div>
       )}
 
-      {/* Table View */}
+      {/* ── Table View (default/fallback) ── */}
       {!showGantt && (
         <div
-          className="rounded-xl border border-[rgba(148,163,184,0.15)] bg-[rgba(15,23,42,0.35)] overflow-x-auto"
+          className="rounded-xl border border-glass-border bg-[rgba(15,23,42,0.35)] overflow-x-auto"
           data-testid="payout-schedule-table"
         >
           <table className="psp-table w-full">
@@ -364,30 +425,43 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
               </tr>
             </thead>
             <tbody>
-              {payouts.map((payout) => (
-                <tr key={payout.id} className="psp-table-row" data-testid={`payout-row-${payout.id}`}>
-                  <td className="font-medium text-text-main">{payout.recipient}</td>
-                  <td className="text-muted">{payout.amount}</td>
-                  <td className="text-muted">{payout.scheduledFor}</td>
-                  <td>
-                    <PayoutStatusPill status={payout.status} variant="compact" />
-                  </td>
-                </tr>
-              ))}
+              {lanes.flatMap((lane) =>
+                lane.items.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="psp-table-row"
+                    data-testid={`payout-row-${item.id}`}
+                  >
+                    <td className="font-medium text-text-main">
+                      {item.recipient}
+                    </td>
+                    <td className="text-muted">{item.amount}</td>
+                    <td className="text-muted" dir="ltr">
+                      {formatDisplayDate(item.scheduledFor)}
+                    </td>
+                    <td>
+                      <PayoutStatusPill
+                        status={item.status}
+                        variant="compact"
+                      />
+                    </td>
+                  </tr>
+                )),
+              )}
             </tbody>
           </table>
         </div>
       )}
 
-      {/* Status Legend (always visible, full variant pills) */}
-      <div
-        className="rounded-xl border border-[rgba(148,163,184,0.15)] bg-[rgba(15,23,42,0.35)] p-4"
-        data-testid="payout-status-legend"
-      >
-        <h2 className="text-sm font-semibold text-text-main mb-2">Status Legend</h2>
+      {/* ── Status Legend (full variants, always visible) ── */}
+      <div className="rounded-xl border border-glass-border bg-[rgba(15,23,42,0.35)] p-4">
+        <h2 className="text-sm font-semibold text-text-main mb-2">
+          Status Legend
+        </h2>
         <p className="text-xs text-muted mb-3 max-w-lg">
-          Payouts move through these lifecycle stages. Each status has a distinct icon,
-          label, and colour so meaning is never conveyed by colour alone.
+          Payouts move through these lifecycle stages. Each status has a
+          distinct icon, label, and colour so meaning is never conveyed by
+          colour alone.
         </p>
         <ul className="flex flex-wrap gap-2" aria-label="Payout status definitions">
           {PAYOUT_STATUS_ORDER.map((status) => (

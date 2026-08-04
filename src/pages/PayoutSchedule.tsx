@@ -1,5 +1,5 @@
 /**
- * PayoutSchedule — Gantt-style timeline view with table alternative (Issue #219).
+ * PayoutSchedule — Gantt-style timeline view with table alternative (Issue #219, #444).
  *
  * RTL mirror pass (Issue #495):
  * - RTL detection via locale prop and i18n constants
@@ -379,14 +379,14 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
                               </div>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
 
           {/* Pattern key */}
           <div className="psp-pattern-key">

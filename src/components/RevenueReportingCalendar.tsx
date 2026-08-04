@@ -42,14 +42,14 @@ import {
   Minus,
   Download,
   Bell,
+  CheckSquare,
+  Columns3,
 } from "lucide-react";
 import {
   formatDate,
   formatCurrency,
   SupportedLocale,
-  LOCALE_FORMAT_SETTINGS,
 } from "../constants/i18n";
-import { TERMINOLOGY } from "../constants/terminology";
 import { Button } from "./Button";
 import {
   RevenueReportingCalendarProps,
@@ -62,8 +62,14 @@ import {
   OVERDUE_SEVERITY_COLORS,
   getOverdueDays,
   getOverdueSeverity,
+  CalendarPeriodView,
+  RevenueReport,
 } from './RevenueReportingCalendar.types';
 import RevenueCalendarCsvImport from './RevenueCalendarCsvImport';
+import { YearGridView, QuarterGridView } from './RevenueCalendarPeriodViews';
+import { AgendaView } from './RevenueCalendarAgendaView';
+import { UndoBanner } from './UndoBanner/UndoBanner';
+import { useUndoBanners } from '../hooks/useUndoBanners';
 import './RevenueReportingCalendar.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────── */
@@ -79,10 +85,6 @@ function parseISODate(iso: string): {
 } {
   const [y, m, d] = iso.split("-").map(Number);
   return { year: y, month: m - 1, day: d };
-}
-
-function isSameDay(a: string, b: string): boolean {
-  return a === b;
 }
 
 function isToday(iso: string): boolean {
@@ -257,10 +259,15 @@ function OverdueBadge({ dueDate }: { dueDate: string }) {
 /** Returns true if user prefers reduced motion */
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(() => {
-    if (typeof window === 'undefined') return false;
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return false;
+    }
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   });
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
     const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
     mq.addEventListener('change', handler);
@@ -582,6 +589,7 @@ const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
 
   const ariaLabel = [
     `${dateFormatted}.`,
+    cell.isToday ? 'Today.' : '',
     cell.primaryStatus === 'overdue'
       ? `Report overdue. ${severityLabel}. ${overdueDays} day${overdueDays !== 1 ? 's' : ''} overdue.`
       : `${statusLabel}.`,
@@ -660,6 +668,10 @@ interface CalendarGridComponentProps {
   ariaLabel: string;
   /** All reports — used to look up prior-period data for hover previews */
   allReports: RevenueReport[];
+  /** Jump focus/selection to today (T key) */
+  onJumpToToday?: () => void;
+  /** Navigate to previous/next month (PageUp / PageDown) */
+  onPageMonth?: (direction: -1 | 1) => void;
 }
 
 const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
@@ -672,6 +684,8 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
   locale,
   ariaLabel,
   allReports,
+  onJumpToToday,
+  onPageMonth,
 }) => {
   const gridRef = useRef<HTMLDivElement>(null);
   const dayNames = useMemo(() => {
@@ -762,52 +776,31 @@ const CalendarGridComponent: React.FC<CalendarGridComponentProps> = ({
       }
       case 'PageUp': {
         e.preventDefault();
-        // Move to same day in previous month
-        const currentDay = days[currentIndex].day;
-        const currentMonth = parseISODate(days[currentIndex].date).month;
-        const currentYear = parseISODate(days[currentIndex].date).year;
-        let prevMonth = currentMonth - 1;
-        let prevYear = currentYear;
-        if (prevMonth < 0) {
-          prevMonth = 11;
-          prevYear--;
-        }
-        const daysInPrev = getDaysInMonth(prevYear, prevMonth);
-        const targetDay = Math.min(currentDay, daysInPrev);
-        const targetDate = toISODate(prevYear, prevMonth, targetDay);
-        const targetIndex = days.findIndex((d) => d.date === targetDate);
-        if (targetIndex !== -1) {
-          newIndex = targetIndex;
-        }
-        break;
+        onPageMonth?.(-1);
+        return;
       }
       case "PageDown": {
         e.preventDefault();
-        // Move to same day in next month
-        const curDay = days[currentIndex].day;
-        const curMonth = parseISODate(days[currentIndex].date).month;
-        const curYear = parseISODate(days[currentIndex].date).year;
-        let nextMonth = curMonth + 1;
-        let nextYear = curYear;
-        if (nextMonth > 11) {
-          nextMonth = 0;
-          nextYear++;
-        }
-        const daysInNext = getDaysInMonth(nextYear, nextMonth);
-        const tDay = Math.min(curDay, daysInNext);
-        const tDate = toISODate(nextYear, nextMonth, tDay);
-        const tIndex = days.findIndex((d) => d.date === tDate);
-        if (tIndex !== -1) {
-          newIndex = tIndex;
-        }
-        break;
+        onPageMonth?.(1);
+        return;
+      }
+      case 't':
+      case 'T': {
+        e.preventDefault();
+        onJumpToToday?.();
+        return;
       }
       default:
         return;
     }
 
     if (newIndex !== currentIndex && newIndex >= 0 && newIndex < days.length) {
-      onFocusDate(days[newIndex].date);
+      const nextDate = days[newIndex].date;
+      onFocusDate(nextDate);
+      // Shift+Arrow extends the selection range (keyboard equivalent of Shift+Click)
+      if (e.shiftKey && ["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Home", "End"].includes(e.key)) {
+        onDateSelect(nextDate, e);
+      }
     }
   };
 
@@ -981,7 +974,7 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
     );
   };
 
-  const [monthLabel, yearStr] = viewMonth.split("-");
+  const [yearStr, monthLabel] = viewMonth.split("-");
   const monthName = new Date(
     Number(yearStr),
     Number(monthLabel) - 1,
@@ -1138,7 +1131,11 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
 interface BulkActionBarProps {
   selectedDates: string[];
   reports: RevenueReport[];
-  onClose: () => void;
+  confirmOpen: boolean;
+  onRequestClose: () => void;
+  onCancelConfirm: () => void;
+  onConfirmClose: () => void;
+  onClearSelection: () => void;
   onExport: () => void;
   onNudge: () => void;
 }
@@ -1146,37 +1143,105 @@ interface BulkActionBarProps {
 const BulkActionBar: React.FC<BulkActionBarProps> = ({
   selectedDates,
   reports,
-  onClose,
+  confirmOpen,
+  onRequestClose,
+  onCancelConfirm,
+  onConfirmClose,
+  onClearSelection,
   onExport,
   onNudge,
 }) => {
   if (selectedDates.length <= 1) return null;
 
-  const selectedReports = reports.filter(r => selectedDates.includes(r.date));
-  const canNudge = selectedReports.some(r => r.status === 'due' || r.status === 'overdue');
+  const selectedReports = reports.filter((r) => selectedDates.includes(r.date));
+  const canNudge = selectedReports.some(
+    (r) => r.status === "due" || r.status === "overdue",
+  );
+  const closableCount = selectedReports.filter(
+    (r) => r.status === "due" || r.status === "overdue" || r.status === "submitted",
+  ).length;
+  const mixedStatuses = new Set(selectedReports.map((r) => r.status)).size > 1;
 
   return (
     <div className="rc-bulk-action-bar" role="toolbar" aria-label="Bulk actions">
       <div className="rc-bulk-info">
-        <span className="rc-bulk-count">{selectedDates.length} period{selectedDates.length > 1 ? 's' : ''} selected</span>
+        <span className="rc-bulk-count">
+          {selectedDates.length} period{selectedDates.length > 1 ? "s" : ""} selected
+        </span>
+        {mixedStatuses && (
+          <span className="rc-bulk-mixed">Mixed statuses</span>
+        )}
       </div>
-      <div className="rc-bulk-actions">
-        <Button variant="secondary" size="sm" onClick={onExport} aria-label="Export selected reports">
-          <Download size={16} aria-hidden="true" /> Export
-        </Button>
-        <Button 
-          variant="primary" 
-          size="sm" 
-          onClick={onNudge} 
-          disabled={!canNudge}
-          aria-label={canNudge ? "Nudge owners for due/overdue reports" : "No due/overdue reports to nudge"}
+
+      {confirmOpen ? (
+        <div
+          className="rc-bulk-confirm"
+          role="alertdialog"
+          aria-labelledby="rc-bulk-confirm-title"
+          aria-describedby="rc-bulk-confirm-desc"
         >
-          <Bell size={16} aria-hidden="true" /> Nudge Owners
-        </Button>
-        <button type="button" className="rc-bulk-close" onClick={onClose} aria-label="Clear selection">
-          <X size={16} aria-hidden="true" />
-        </button>
-      </div>
+          <div className="rc-bulk-confirm-copy">
+            <p id="rc-bulk-confirm-title" className="rc-bulk-confirm-title">
+              Close {closableCount || selectedDates.length} selected period
+              {(closableCount || selectedDates.length) > 1 ? "s" : ""}?
+            </p>
+            <p id="rc-bulk-confirm-desc" className="rc-bulk-confirm-desc">
+              Closing marks due, overdue, and submitted periods as reconciled.
+              Accepted periods are left unchanged. You can undo from the banner
+              within a few seconds.
+            </p>
+          </div>
+          <div className="rc-bulk-actions">
+            <Button variant="secondary" onClick={onCancelConfirm}>
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={onConfirmClose}
+              aria-label="Confirm close selected periods"
+            >
+              <CheckSquare size={16} aria-hidden="true" /> Close periods
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="rc-bulk-actions">
+          <Button
+            variant="secondary"
+            onClick={onExport}
+            aria-label="Export selected reports"
+          >
+            <Download size={16} aria-hidden="true" /> Export
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={onNudge}
+            disabled={!canNudge}
+            aria-label={
+              canNudge
+                ? "Nudge owners for due/overdue reports"
+                : "No due/overdue reports to nudge"
+            }
+          >
+            <Bell size={16} aria-hidden="true" /> Nudge Owners
+          </Button>
+          <Button
+            variant="primary"
+            onClick={onRequestClose}
+            aria-label="Close selected periods"
+          >
+            <CheckSquare size={16} aria-hidden="true" /> Close
+          </Button>
+          <button
+            type="button"
+            className="rc-bulk-close"
+            onClick={onClearSelection}
+            aria-label="Clear selection"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -1199,6 +1264,12 @@ export const RevenueReportingCalendar: React.FC<
   onMonthChange,
   onSubmitReport,
   onReportAction,
+  onBulkClose,
+  onBulkCloseUndo,
+  onBulkExport,
+  onBulkNudge,
+  initialPeriodView = "month",
+  onOpenShortcuts,
   className = "",
 }) => {
   // Determine current month from reports or use today
@@ -1222,9 +1293,18 @@ export const RevenueReportingCalendar: React.FC<
   const [panelOpen, setPanelOpen] = useState(true);
   const [mobileView, setMobileView] = useState<"calendar" | "agenda">("agenda");
   const [showImportWizard, setShowImportWizard] = useState(false);
+  const [periodView, setPeriodView] = useState<CalendarPeriodView>(initialPeriodView);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
+  const { banners, registerUndo, undo, dismiss, undoAll, dismissAll } =
+    useUndoBanners();
 
   const viewMonth = controlledViewMonth ?? internalViewMonth;
-  const selectedDates = controlledSelectedDates ?? internalSelectedDates;
+  // Prefer explicit multi-select; else mirror controlled single date; else internal
+  const selectedDates =
+    controlledSelectedDates ??
+    (controlledSelectedDate !== undefined
+      ? [controlledSelectedDate]
+      : internalSelectedDates);
   
   // For backwards compatibility and single-date details panel
   const selectedDate = selectedDates.length === 1 ? selectedDates[0] : undefined;
@@ -1233,6 +1313,16 @@ export const RevenueReportingCalendar: React.FC<
     const [y, m] = viewMonth.split("-").map(Number);
     return [y, m - 1];
   }, [viewMonth]);
+
+  // Seed keyboard focus to the first in-month day (or selection) when unset
+  useEffect(() => {
+    if (focusedDate) return;
+    if (selectedDates.length > 0) {
+      setFocusedDate(selectedDates[selectedDates.length - 1]);
+      return;
+    }
+    setFocusedDate(toISODate(viewYear, viewMonthNum, 1));
+  }, [focusedDate, selectedDates, viewYear, viewMonthNum]);
 
   // Build day cells
   const dayCells = useMemo(
@@ -1253,6 +1343,14 @@ export const RevenueReportingCalendar: React.FC<
     [reports, viewYear, viewMonthNum],
   );
 
+  const setViewMonthStr = useCallback(
+    (newMonthStr: string) => {
+      setInternalViewMonth(newMonthStr);
+      onMonthChange?.(newMonthStr);
+    },
+    [onMonthChange],
+  );
+
   // Navigation handlers
   const goToPrevMonth = useCallback(() => {
     let newMonth = viewMonthNum - 1;
@@ -1261,10 +1359,8 @@ export const RevenueReportingCalendar: React.FC<
       newMonth = 11;
       newYear--;
     }
-    const newMonthStr = `${newYear}-${String(newMonth + 1).padStart(2, "0")}`;
-    setInternalViewMonth(newMonthStr);
-    onMonthChange?.(newMonthStr);
-  }, [viewMonthNum, viewYear, onMonthChange]);
+    setViewMonthStr(`${newYear}-${String(newMonth + 1).padStart(2, "0")}`);
+  }, [viewMonthNum, viewYear, setViewMonthStr]);
 
   const goToNextMonth = useCallback(() => {
     let newMonth = viewMonthNum + 1;
@@ -1273,10 +1369,24 @@ export const RevenueReportingCalendar: React.FC<
       newMonth = 0;
       newYear++;
     }
-    const newMonthStr = `${newYear}-${String(newMonth + 1).padStart(2, "0")}`;
-    setInternalViewMonth(newMonthStr);
-    onMonthChange?.(newMonthStr);
-  }, [viewMonthNum, viewYear, onMonthChange]);
+    setViewMonthStr(`${newYear}-${String(newMonth + 1).padStart(2, "0")}`);
+  }, [viewMonthNum, viewYear, setViewMonthStr]);
+
+  const goToPrevYear = useCallback(() => {
+    setViewMonthStr(`${viewYear - 1}-${String(viewMonthNum + 1).padStart(2, "0")}`);
+  }, [viewYear, viewMonthNum, setViewMonthStr]);
+
+  const goToNextYear = useCallback(() => {
+    setViewMonthStr(`${viewYear + 1}-${String(viewMonthNum + 1).padStart(2, "0")}`);
+  }, [viewYear, viewMonthNum, setViewMonthStr]);
+
+  const drillToMonth = useCallback(
+    (year: number, month: number) => {
+      setViewMonthStr(`${year}-${String(month + 1).padStart(2, "0")}`);
+      setPeriodView("month");
+    },
+    [setViewMonthStr],
+  );
 
   const handleDateSelect = useCallback(
     (date: string, e?: MouseEvent | KeyboardEvent) => {
@@ -1317,6 +1427,7 @@ export const RevenueReportingCalendar: React.FC<
 
       setInternalSelectedDates(newSelection);
       setLastSelectedDate(date);
+      setBulkConfirmOpen(false);
       
       onDateSelect?.(date);
       onDatesSelect?.(newSelection);
@@ -1347,11 +1458,82 @@ export const RevenueReportingCalendar: React.FC<
     [onReportAction],
   );
 
-  // Month label
+  const clearSelection = useCallback(() => {
+    setInternalSelectedDates([]);
+    setLastSelectedDate(undefined);
+    setBulkConfirmOpen(false);
+    onDatesSelect?.([]);
+  }, [onDatesSelect]);
+
+  const performBulkClose = useCallback(
+    (dates: string[]) => {
+      if (dates.length === 0) return;
+      onBulkClose?.(dates);
+      registerUndo({
+        message:
+          dates.length === 1
+            ? `Closed period ${dates[0]}`
+            : `Closed ${dates.length} periods`,
+        onUndo: () => onBulkCloseUndo?.(dates),
+      });
+      clearSelection();
+    },
+    [onBulkClose, onBulkCloseUndo, registerUndo, clearSelection],
+  );
+
+  const handleConfirmBulkClose = useCallback(() => {
+    performBulkClose(selectedDates);
+    setBulkConfirmOpen(false);
+  }, [performBulkClose, selectedDates]);
+
+  const handleAgendaSwipeClose = useCallback(
+    (report: RevenueReport) => {
+      performBulkClose([report.date]);
+    },
+    [performBulkClose],
+  );
+
+  const handleAgendaSwipeNudge = useCallback(
+    (report: RevenueReport) => {
+      onBulkNudge?.([report.date]);
+    },
+    [onBulkNudge],
+  );
+
+  const handleJumpToToday = useCallback(() => {
+    const now = new Date();
+    const todayStr = toISODate(now.getFullYear(), now.getMonth(), now.getDate());
+    const targetMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    if (targetMonth !== viewMonth) {
+      setViewMonthStr(targetMonth);
+    }
+    setPeriodView("month");
+    setFocusedDate(todayStr);
+    setInternalSelectedDates([todayStr]);
+    setLastSelectedDate(todayStr);
+    onDateSelect?.(todayStr);
+    onDatesSelect?.([todayStr]);
+  }, [viewMonth, setViewMonthStr, onDateSelect, onDatesSelect]);
+
+  const handlePageMonth = useCallback(
+    (direction: -1 | 1) => {
+      if (direction < 0) goToPrevMonth();
+      else goToNextMonth();
+    },
+    [goToPrevMonth, goToNextMonth],
+  );
+
+  // Month / year label
   const monthName = new Date(viewYear, viewMonthNum).toLocaleDateString(
     locale as SupportedLocale,
     { month: "long", year: "numeric" },
   );
+  const navTitle =
+    periodView === "year"
+      ? String(viewYear)
+      : periodView === "quarter"
+        ? `Q${Math.floor(viewMonthNum / 3) + 1} ${viewYear}`
+        : monthName;
 
   // Loading state
   if (isLoading) {
@@ -1410,62 +1592,132 @@ export const RevenueReportingCalendar: React.FC<
             <button
               type="button"
               className="rc-nav-btn"
-              onClick={goToPrevMonth}
-              aria-label={`Previous month: ${new Date(viewYear, viewMonthNum - 1).toLocaleDateString(locale as SupportedLocale, { month: "long", year: "numeric" })}`}
+              onClick={periodView === "month" ? goToPrevMonth : goToPrevYear}
+              aria-label={
+                periodView === "month"
+                  ? `Previous month: ${new Date(viewYear, viewMonthNum - 1).toLocaleDateString(locale as SupportedLocale, { month: "long", year: "numeric" })}`
+                  : `Previous year: ${viewYear - 1}`
+              }
             >
               <ChevronLeft size={20} aria-hidden="true" />
             </button>
-            <h2 className="rc-month-title">{monthName}</h2>
+            <h2 className="rc-month-title">{navTitle}</h2>
             <button
               type="button"
               className="rc-nav-btn"
-              onClick={goToNextMonth}
-              aria-label={`Next month: ${new Date(viewYear, viewMonthNum + 1).toLocaleDateString(locale as SupportedLocale, { month: "long", year: "numeric" })}`}
+              onClick={periodView === "month" ? goToNextMonth : goToNextYear}
+              aria-label={
+                periodView === "month"
+                  ? `Next month: ${new Date(viewYear, viewMonthNum + 1).toLocaleDateString(locale as SupportedLocale, { month: "long", year: "numeric" })}`
+                  : `Next year: ${viewYear + 1}`
+              }
             >
               <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
-          
-          <div className="rc-actions" style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 var(--spacing-6) var(--spacing-4)' }}>
-            <Button variant="secondary" onClick={() => setShowImportWizard(true)} aria-label="Import historical revenue from CSV">
-              <Upload size={16} aria-hidden="true" />
-              Import CSV
-            </Button>
-          </div>
 
-          {/* Mobile view toggle (calendar/agenda */}
+          {/* Period scale switcher: Month / Quarter / Year (#424) */}
           <div
-            className="rc-view-toggle"
+            className="rc-view-switcher"
             role="tablist"
-            aria-label="Calendar view mode"
+            aria-label="Calendar period scale"
           >
             <button
               type="button"
               role="tab"
-              aria-selected={mobileView === "calendar"}
-              className={`rc-view-toggle-btn ${mobileView === "calendar" ? "rc-view-toggle-btn--active" : ""}`}
-              onClick={() => setMobileView("calendar")}
-              aria-label="Calendar view"
+              aria-selected={periodView === "month"}
+              className={`rc-view-switcher-btn${periodView === "month" ? " rc-view-switcher-btn--active" : ""}`}
+              onClick={() => setPeriodView("month")}
+              aria-label="Month view"
             >
-              <Calendar size={16} aria-hidden="true" />
-              <span>Calendar</span>
+              <Calendar size={14} aria-hidden="true" />
+              Month
             </button>
             <button
               type="button"
               role="tab"
-              aria-selected={mobileView === "agenda"}
-              className={`rc-view-toggle-btn ${mobileView === "agenda" ? "rc-view-toggle-btn--active" : ""}`}
-              onClick={() => setMobileView("agenda")}
-              aria-label="Agenda view"
+              aria-selected={periodView === "quarter"}
+              className={`rc-view-switcher-btn${periodView === "quarter" ? " rc-view-switcher-btn--active" : ""}`}
+              onClick={() => setPeriodView("quarter")}
+              aria-label="Quarter view"
             >
-              <List size={16} aria-hidden="true" />
-              <span>Agenda</span>
+              <Columns3 size={14} aria-hidden="true" />
+              Quarter
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={periodView === "year"}
+              className={`rc-view-switcher-btn${periodView === "year" ? " rc-view-switcher-btn--active" : ""}`}
+              onClick={() => setPeriodView("year")}
+              aria-label="Year view"
+            >
+              <LayoutGrid size={14} aria-hidden="true" />
+              Year
             </button>
           </div>
+          
+          <div className="rc-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 var(--spacing-6) var(--spacing-4)' }}>
+            <div className="rc-shortcuts-hint" aria-label="Keyboard shortcuts hint">
+              <span className="rc-shortcuts-hint-text">
+                Press <kbd className="rc-shortcut-key">T</kbd> for today&ensp;·&ensp;
+                <kbd className="rc-shortcut-key">?</kbd> for shortcuts
+              </span>
+            </div>
+            <div style={{ display: 'flex', gap: 'var(--spacing-2)' }}>
+              {onOpenShortcuts && (
+                <button
+                  type="button"
+                  className="rc-shortcuts-btn"
+                  onClick={onOpenShortcuts}
+                  aria-label="Keyboard shortcuts"
+                  title="Keyboard shortcuts"
+                >
+                  <span aria-hidden="true">?</span>
+                </button>
+              )}
+              <Button variant="secondary" onClick={() => setShowImportWizard(true)} aria-label="Import historical revenue from CSV">
+                <Upload size={16} aria-hidden="true" />
+                Import CSV
+              </Button>
+            </div>
+          </div>
+
+          {/* Mobile view toggle (calendar/agenda) — only meaningful in month scale */}
+          {periodView === "month" && (
+            <div
+              className="rc-view-toggle"
+              role="tablist"
+              aria-label="Calendar view mode"
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobileView === "calendar"}
+                className={`rc-view-toggle-btn ${mobileView === "calendar" ? "rc-view-toggle-btn--active" : ""}`}
+                onClick={() => setMobileView("calendar")}
+                aria-label="Calendar view"
+              >
+                <Calendar size={16} aria-hidden="true" />
+                <span>Calendar</span>
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={mobileView === "agenda"}
+                className={`rc-view-toggle-btn ${mobileView === "agenda" ? "rc-view-toggle-btn--active" : ""}`}
+                onClick={() => setMobileView("agenda")}
+                aria-label="Agenda view"
+              >
+                <List size={16} aria-hidden="true" />
+                <span>Agenda</span>
+              </button>
+            </div>
+          )}
 
           {/* Legend */}
           <div
-            className={`rc-legend ${mobileView === "agenda" ? "rc-legend--hidden-on-agenda" : ""}`}
+            className={`rc-legend ${mobileView === "agenda" && periodView === "month" ? "rc-legend--hidden-on-agenda" : ""}`}
             aria-label="Status legend"
           >
             <span className="rc-legend-item">
@@ -1506,36 +1758,67 @@ export const RevenueReportingCalendar: React.FC<
             </span>
           </div>
 
-          {/* Calendar grid (shown on desktop, or when mobile view is calendar */}
-          <div
-            className={`rc-calendar-wrapper ${mobileView === "agenda" ? "rc-calendar-wrapper--hidden-on-agenda" : ""}`}
-          >
-            <CalendarGridComponent
-              days={dayCells}
-              selectedDates={selectedDates}
-              focusedDate={focusedDate}
-              weekStartsOn={weekStartsOn}
-              onDateSelect={handleDateSelect}
-              onFocusDate={handleFocusDate}
-              locale={locale}
-              allReports={reports}
-              ariaLabel={`Revenue reporting calendar for ${monthName}. Use arrow keys to navigate, Home and End for row edges, Page Up and Page Down for month navigation, Enter or Space to select.`}
-            />
-          </div>
+          {/* Month day grid */}
+          {periodView === "month" && (
+            <div
+              className={`rc-calendar-wrapper ${mobileView === "agenda" ? "rc-calendar-wrapper--hidden-on-agenda" : ""}`}
+            >
+              <CalendarGridComponent
+                days={dayCells}
+                selectedDates={selectedDates}
+                focusedDate={focusedDate}
+                weekStartsOn={weekStartsOn}
+                onDateSelect={handleDateSelect}
+                onFocusDate={handleFocusDate}
+                locale={locale}
+                allReports={reports}
+                onJumpToToday={handleJumpToToday}
+                onPageMonth={handlePageMonth}
+                ariaLabel={`Revenue reporting calendar for ${monthName}. Use arrow keys to navigate, Shift+Click or Shift+Arrow to range-select, Home and End for row edges, Page Up and Page Down for month navigation, Enter or Space to select, T for today.`}
+              />
+            </div>
+          )}
 
-          {/* Agenda view (shown when mobile view is agenda) */}
-          <div
-            className={`rc-agenda-wrapper ${mobileView === "calendar" ? "rc-agenda-wrapper--hidden-on-calendar" : ""}`}
-          >
-            <AgendaView
+          {/* Quarter overview (#424) */}
+          {periodView === "quarter" && (
+            <QuarterGridView
+              year={viewYear}
               reports={reports}
               selectedDate={selectedDate}
               locale={locale}
-              onSelect={handleDateSelect}
-              onSubmitReport={handleSubmitReport}
-              viewMonth={viewMonth}
+              onQuarterSelect={drillToMonth}
             />
-          </div>
+          )}
+
+          {/* Year overview (#424) */}
+          {periodView === "year" && (
+            <YearGridView
+              year={viewYear}
+              reports={reports}
+              selectedDate={selectedDate}
+              locale={locale}
+              onMonthSelect={drillToMonth}
+            />
+          )}
+
+          {/* Agenda view (mobile) — Issue #428 */}
+          {periodView === "month" && (
+            <div
+              className={`rc-agenda-wrapper ${mobileView === "calendar" ? "rc-agenda-wrapper--hidden-on-calendar" : ""}`}
+            >
+              <AgendaView
+                reports={reports}
+                selectedDate={selectedDate}
+                locale={locale}
+                onSelect={(date) => handleDateSelect(date)}
+                onSubmitReport={handleSubmitReport}
+                viewMonth={viewMonth}
+                groupByMonth
+                onSwipeClose={handleAgendaSwipeClose}
+                onSwipeNudge={handleAgendaSwipeNudge}
+              />
+            </div>
+          )}
         </section>
 
         {/* Details panel */}
@@ -1573,23 +1856,29 @@ export const RevenueReportingCalendar: React.FC<
         </div>
       )}
 
-      {/* Bulk Action Bar */}
+      {/* Bulk Action Bar (#426) */}
       <BulkActionBar
         selectedDates={selectedDates}
         reports={reports}
-        onClose={() => {
-          setInternalSelectedDates([]);
-          setLastSelectedDate(undefined);
-          onDatesSelect?.([]);
-        }}
+        confirmOpen={bulkConfirmOpen}
+        onRequestClose={() => setBulkConfirmOpen(true)}
+        onCancelConfirm={() => setBulkConfirmOpen(false)}
+        onConfirmClose={handleConfirmBulkClose}
+        onClearSelection={clearSelection}
         onExport={() => {
-          console.log('Export selected:', selectedDates);
-          // Trigger actual export
+          onBulkExport?.(selectedDates);
         }}
         onNudge={() => {
-          console.log('Nudging owners for:', selectedDates);
-          // Trigger actual nudge
+          onBulkNudge?.(selectedDates);
         }}
+      />
+
+      <UndoBanner
+        banners={banners}
+        onUndo={undo}
+        onDismiss={dismiss}
+        onUndoAll={undoAll}
+        onDismissAll={dismissAll}
       />
     </div>
   );

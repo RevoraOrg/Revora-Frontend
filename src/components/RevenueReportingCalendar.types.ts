@@ -77,7 +77,12 @@ export interface RevenueReport {
   locale?: string;
   /** Optional notes */
   notes?: string;
+  /** Optional issuer / owner label (agenda rows, nudge copy) */
+  issuer?: string;
 }
+
+/** Calendar period scale for the month / quarter / year switcher (#424) */
+export type CalendarPeriodView = 'month' | 'quarter' | 'year';
 
 /* ─── Calendar Props ────────────────────────────────────────────────── */
 
@@ -110,6 +115,20 @@ export interface RevenueReportingCalendarProps {
   onReportAction?: (reportId: string, action: string) => void;
   /** Callback to open keyboard shortcuts overlay */
   onOpenShortcuts?: () => void;
+  /**
+   * Bulk-close selected periods (#426). Parent should apply the close;
+   * the calendar shows an undo banner and calls `onBulkCloseUndo` if provided
+   * when the user undoes within the window.
+   */
+  onBulkClose?: (dates: string[]) => void;
+  /** Reverse a bulk-close when the undo banner is used */
+  onBulkCloseUndo?: (dates: string[]) => void;
+  /** Bulk export selected periods */
+  onBulkExport?: (dates: string[]) => void;
+  /** Bulk nudge owners for selected due/overdue periods */
+  onBulkNudge?: (dates: string[]) => void;
+  /** Initial period view scale (month | quarter | year) */
+  initialPeriodView?: CalendarPeriodView;
   /** Additional CSS class on root */
   className?: string;
 }

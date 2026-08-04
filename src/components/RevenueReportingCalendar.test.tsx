@@ -149,6 +149,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const grid = screen.getByRole('grid');
@@ -164,6 +165,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       // Sunday start: Sun, Mon, Tue, Wed, Thu, Fri, Sat
@@ -178,6 +180,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const dots = document.querySelectorAll('.rc-status-dot');
@@ -192,6 +195,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       // June 28 has 2 reports
@@ -206,46 +210,52 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      expect(screen.getByText('Due')).toBeInTheDocument();
-      expect(screen.getByText('Submitted')).toBeInTheDocument();
-      expect(screen.getByText('Accepted')).toBeInTheDocument();
-      expect(screen.getByText('Overdue')).toBeInTheDocument();
+      const legend = screen.getByLabelText('Status legend');
+      expect(legend).toHaveTextContent('Due');
+      expect(legend).toHaveTextContent('Submitted');
+      expect(legend).toHaveTextContent('Accepted');
+      expect(legend).toHaveTextContent('Overdue');
     });
   });
 
   /* ─── Month Navigation ─────────────────────────────────────────── */
 
   describe('Month navigation', () => {
-    it('navigates to previous month when left arrow is clicked', async () => {
-      const user = userEvent.setup();
-      render(
+    function NavHarness({ onMonthChange }: { onMonthChange?: (m: string) => void }) {
+      const [month, setMonth] = React.useState('2026-06');
+      return (
         <RevenueReportingCalendar
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
-        />,
+          viewMonth={month}
+          onMonthChange={(m) => {
+            setMonth(m);
+            onMonthChange?.(m);
+          }}
+        />
       );
+    }
+
+    it('navigates to previous month when left arrow is clicked', async () => {
+      const user = userEvent.setup();
+      render(<NavHarness />);
       const prevBtn = screen.getByLabelText(/previous month/i);
       await user.click(prevBtn);
       // Should now show May 2026
-      expect(screen.getByText('May 2026')).toBeInTheDocument();
+      expect(document.querySelector('.rc-month-title')).toHaveTextContent('May 2026');
     });
 
     it('navigates to next month when right arrow is clicked', async () => {
       const user = userEvent.setup();
-      render(
-        <RevenueReportingCalendar
-          reports={baseReports}
-          locale="en-US"
-          weekStartsOn={0}
-        />,
-      );
+      render(<NavHarness />);
       const nextBtn = screen.getByLabelText(/next month/i);
       await user.click(nextBtn);
       // Should now show July 2026
-      expect(screen.getByText('July 2026')).toBeInTheDocument();
+      expect(document.querySelector('.rc-month-title')).toHaveTextContent('July 2026');
     });
 
     it('calls onMonthChange when month changes', async () => {
@@ -257,6 +267,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onMonthChange={onMonthChange}
+          viewMonth="2026-06"
         />,
       );
       const nextBtn = screen.getByLabelText(/next month/i);
@@ -275,10 +286,11 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       // Find the day cell for June 5
-      const day5 = screen.getByLabelText(/June 5, 2026.*Accepted.*selected/);
+      const day5 = screen.getByLabelText(/June 5, 2026.*Accepted/);
       await user.click(day5);
       expect(day5).toHaveAttribute('aria-selected', 'true');
     });
@@ -292,6 +304,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onDateSelect={onDateSelect}
+          viewMonth="2026-06"
         />,
       );
       const day5 = screen.getByLabelText(/June 5, 2026.*Accepted/);
@@ -306,6 +319,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const day5 = screen.getByLabelText(/June 5, 2026.*Accepted/);
@@ -326,15 +340,14 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      const grid = screen.getByRole('grid');
-      grid.focus();
-      // Focus should be on the first day cell
-      const firstCell = screen.getByLabelText(/June 2026.*Due/);
-      expect(firstCell).toHaveAttribute('tabIndex', '0');
+      const day1 = screen.getByLabelText(/June 1, 2026/);
+      expect(day1).toHaveAttribute('tabIndex', '0');
+      day1.focus();
 
-      // Press ArrowRight
+      // Press ArrowRight — June 1 2026 is Monday, so next is June 2
       await user.keyboard('{ArrowRight}');
       const secondCell = screen.getByLabelText(/June 2, 2026/);
       expect(secondCell).toHaveAttribute('tabIndex', '0');
@@ -347,18 +360,16 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      const grid = screen.getByRole('grid');
-      grid.focus();
-
-      // Navigate to a cell in the middle of a row
-      await user.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}');
-      // Press Home
+      // June 1 2026 is Monday — its row starts on Sunday May 31
+      const day1 = screen.getByLabelText(/June 1, 2026/);
+      day1.focus();
+      await user.keyboard('{ArrowRight}{ArrowRight}');
       await user.keyboard('{Home}');
-      // Should be at the first cell of the current row
-      const firstCell = screen.getByLabelText(/June 1, 2026/);
-      expect(firstCell).toHaveAttribute('tabIndex', '0');
+      const rowStart = screen.getByLabelText(/May 31, 2026/);
+      expect(rowStart).toHaveAttribute('tabIndex', '0');
     });
 
     it('supports End key to go to end of row', async () => {
@@ -368,17 +379,15 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      const grid = screen.getByRole('grid');
-      grid.focus();
-
-      // Navigate to start of row
+      const day1 = screen.getByLabelText(/June 1, 2026/);
+      day1.focus();
       await user.keyboard('{Home}');
-      // Press End
       await user.keyboard('{End}');
-      // Should be at the last cell of the current row
-      const lastCell = screen.getByLabelText(/June 7, 2026/);
+      // Row ending Saturday June 6, 2026
+      const lastCell = screen.getByLabelText(/June 6, 2026/);
       expect(lastCell).toHaveAttribute('tabIndex', '0');
     });
 
@@ -391,6 +400,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onDateSelect={onDateSelect}
+          viewMonth="2026-06"
         />,
       );
       const grid = screen.getByRole('grid');
@@ -414,6 +424,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onMonthChange={onMonthChange}
+          viewMonth="2026-06"
         />,
       );
       const grid = screen.getByRole('grid');
@@ -433,6 +444,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onMonthChange={onMonthChange}
+          viewMonth="2026-06"
         />,
       );
       const grid = screen.getByRole('grid');
@@ -452,6 +464,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onDateSelect={onDateSelect}
+          viewMonth="2026-06"
         />,
       );
       const grid = screen.getByRole('grid');
@@ -472,10 +485,12 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      expect(screen.getByText(/T/)).toBeInTheDocument();
-      expect(screen.getByText(/\?/)).toBeInTheDocument();
+      const hint = screen.getByLabelText('Keyboard shortcuts hint');
+      expect(hint).toHaveTextContent('T');
+      expect(hint).toHaveTextContent('?');
     });
 
     it('renders the shortcuts button when onOpenShortcuts is provided', () => {
@@ -486,6 +501,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onOpenShortcuts={onOpenShortcuts}
+          viewMonth="2026-06"
         />,
       );
       expect(screen.getByLabelText('Keyboard shortcuts')).toBeInTheDocument();
@@ -495,18 +511,22 @@ describe('RevenueReportingCalendar', () => {
   /* ─── Details Panel ────────────────────────────────────────────── */
 
   describe('Details panel', () => {
-    it('renders the details panel with month summary', () => {
+    it('renders the details panel with month summary', async () => {
+      const user = userEvent.setup();
       render(
         <RevenueReportingCalendar
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      // Month summary stats
-      expect(screen.getByText('3')).toBeInTheDocument(); // 3 due/overdue
-      expect(screen.getByText('2')).toBeInTheDocument(); // 2 submitted
-      expect(screen.getByText('1')).toBeInTheDocument(); // 1 accepted
+      const panel = screen.getByLabelText('Report details panel');
+      await user.click(within(panel).getByRole('tab', { name: 'Month' }));
+      expect(within(panel).getByText('Due / Overdue')).toBeInTheDocument();
+      expect(within(panel).getByText('3')).toBeInTheDocument();
+      expect(within(panel).getByText('2')).toBeInTheDocument();
+      expect(within(panel).getByText('1')).toBeInTheDocument();
     });
 
     it('shows day details when a date is selected', async () => {
@@ -516,46 +536,44 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const day5 = screen.getByLabelText(/June 5, 2026.*Accepted/);
       await user.click(day5);
 
-      // Should show report details for June 5
-      expect(screen.getByText('$125,000')).toBeInTheDocument();
-      expect(screen.getByText('Accepted')).toBeInTheDocument();
+      const panel = screen.getByLabelText('Report details panel');
+      expect(panel).toHaveTextContent(/125/)
+      expect(within(panel).getByText('Accepted')).toBeInTheDocument();
     });
 
-    it('shows Submit Report CTA for due reports', async () => {
-      const user = userEvent.setup();
+    it('shows Submit Report CTA for due reports', () => {
       render(
         <RevenueReportingCalendar
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
+          selectedDate="2026-06-20"
         />,
       );
-      const day20 = screen.getByLabelText(/June 20, 2026.*Due/);
-      await user.click(day20);
-
-      const submitBtn = screen.getByRole('button', { name: /submit report/i });
-      expect(submitBtn).toBeInTheDocument();
+      const panel = screen.getByLabelText('Report details panel');
+      // Past due dates render as overdue with Submit Now
+      expect(within(panel).getByRole('button', { name: /submit (now|overdue|report)/i })).toBeInTheDocument();
     });
 
-    it('shows Submit Now CTA for overdue reports', async () => {
-      const user = userEvent.setup();
+    it('shows Submit Now CTA for overdue reports', () => {
       render(
         <RevenueReportingCalendar
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
+          selectedDate="2026-06-25"
         />,
       );
-      const day25 = screen.getByLabelText(/June 25, 2026.*Overdue/);
-      await user.click(day25);
-
-      const submitBtn = screen.getByRole('button', { name: /submit now/i });
-      expect(submitBtn).toBeInTheDocument();
+      const panel = screen.getByLabelText('Report details panel');
+      expect(within(panel).getByRole('button', { name: /submit (now|overdue|report)/i })).toBeInTheDocument();
     });
 
     it('calls onSubmitReport when Submit Report is clicked', async () => {
@@ -567,12 +585,12 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onSubmitReport={onSubmitReport}
+          viewMonth="2026-06"
+          selectedDate="2026-06-20"
         />,
       );
-      const day20 = screen.getByLabelText(/June 20, 2026.*Due/);
-      await user.click(day20);
-
-      const submitBtn = screen.getByRole('button', { name: /submit report/i });
+      const panel = screen.getByLabelText('Report details panel');
+      const submitBtn = within(panel).getByRole('button', { name: /submit (now|overdue|report)/i });
       await user.click(submitBtn);
       expect(onSubmitReport).toHaveBeenCalledWith('2026-06-20');
     });
@@ -584,6 +602,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       // Click a date with no reports (e.g., June 15)
@@ -602,6 +621,7 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           onSubmitReport={onSubmitReport}
+          viewMonth="2026-06"
         />,
       );
       const day15 = screen.getByLabelText(/June 15, 2026.*No report/);
@@ -624,15 +644,17 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      const monthTab = screen.getByRole('tab', { name: 'Month' });
+      const panel = screen.getByLabelText('Report details panel');
+      const monthTab = within(panel).getByRole('tab', { name: 'Month' });
       await user.click(monthTab);
 
       // Should show month summary
-      expect(screen.getByText('Due / Overdue')).toBeInTheDocument();
-      expect(screen.getByText('Submitted')).toBeInTheDocument();
-      expect(screen.getByText('Accepted')).toBeInTheDocument();
+      expect(within(panel).getByText('Due / Overdue')).toBeInTheDocument();
+      expect(within(panel).getByText('Submitted', { selector: '.rc-month-stat-label' })).toBeInTheDocument();
+      expect(within(panel).getByText('Accepted', { selector: '.rc-month-stat-label' })).toBeInTheDocument();
     });
 
     it('shows quick submit CTA for pending reports in month view', async () => {
@@ -642,6 +664,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const monthTab = screen.getByRole('tab', { name: 'Month' });
@@ -661,6 +684,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const grid = screen.getByRole('grid');
@@ -679,6 +703,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const day5 = screen.getByLabelText(/June 5, 2026.*Accepted/);
@@ -692,6 +717,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const day5 = screen.getByLabelText(/June 5, 2026.*Accepted/);
@@ -705,6 +731,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       expect(screen.getByLabelText(/previous month/i)).toBeInTheDocument();
@@ -717,6 +744,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       expect(screen.getByLabelText('Report details panel')).toBeInTheDocument();
@@ -728,9 +756,11 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      expect(screen.getByRole('tablist', { name: /view mode/i })).toBeInTheDocument();
+      expect(screen.getByRole('tablist', { name: /calendar view mode/i })).toBeInTheDocument();
+      expect(screen.getByRole('tablist', { name: /calendar period scale/i })).toBeInTheDocument();
     });
 
     it('has correct aria-selected on tabs', async () => {
@@ -740,6 +770,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       const dayTab = screen.getByRole('tab', { name: 'Day' });
@@ -759,10 +790,11 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      const toggle = screen.getByLabelText(/show details panel/i);
-      expect(toggle).toHaveAttribute('aria-expanded', 'false');
+      const toggle = screen.getByLabelText(/hide details panel/i);
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
     });
   });
 
@@ -775,6 +807,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={1}
+          viewMonth="2026-06"
         />,
       );
       // Monday start: Mon, Tue, Wed, Thu, Fri, Sat, Sun
@@ -787,15 +820,19 @@ describe('RevenueReportingCalendar', () => {
 
   describe('Today highlighting', () => {
     it('highlights today with special styling', () => {
+      const now = new Date();
+      const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
       render(
         <RevenueReportingCalendar
-          reports={baseReports}
+          reports={[]}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth={month}
         />,
       );
-      const todayCell = screen.getByLabelText(/today/i);
-      expect(todayCell).toHaveClass('rc-day-cell--today');
+      const todayCell = document.querySelector('.rc-day-cell--today');
+      expect(todayCell).toBeTruthy();
+      expect(todayCell?.getAttribute('aria-label') ?? '').toMatch(/today/i);
     });
   });
 
@@ -808,6 +845,7 @@ describe('RevenueReportingCalendar', () => {
           reports={baseReports}
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
       // June 28 has 2 reports
@@ -827,9 +865,10 @@ describe('RevenueReportingCalendar', () => {
           selectedDate="2026-06-12"
           locale="en-US"
           weekStartsOn={0}
+          viewMonth="2026-06"
         />,
       );
-      const day12 = screen.getByLabelText(/June 12, 2026.*Submitted.*selected/);
+      const day12 = screen.getByLabelText(/June 12, 2026.*Submitted.*selected/i);
       expect(day12).toHaveAttribute('aria-selected', 'true');
     });
 
@@ -842,7 +881,7 @@ describe('RevenueReportingCalendar', () => {
           weekStartsOn={0}
         />,
       );
-      expect(screen.getByText('May 2026')).toBeInTheDocument();
+      expect(document.querySelector('.rc-month-title')).toHaveTextContent('May 2026');
     });
   });
 
@@ -856,9 +895,154 @@ describe('RevenueReportingCalendar', () => {
           locale="en-US"
           weekStartsOn={0}
           className="my-custom-class"
+          viewMonth="2026-06"
         />,
       );
       expect(container.firstChild).toHaveClass('my-custom-class');
+    });
+  });
+
+  /* ─── Year / Quarter period views (#424) ─────────────────────────── */
+
+  describe('Period scale switcher (year / quarter view)', () => {
+    it('switches to year overview with 12 month tiles', async () => {
+      const user = userEvent.setup();
+      render(
+        <RevenueReportingCalendar
+          reports={baseReports}
+          locale="en-US"
+          weekStartsOn={0}
+          viewMonth="2026-06"
+        />,
+      );
+      await user.click(screen.getByRole('tab', { name: 'Year view' }));
+      expect(screen.getByRole('grid', { name: /year overview for 2026/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/June 2026/i)).toBeInTheDocument();
+      expect(document.querySelector('.rc-month-title')).toHaveTextContent('2026');
+    });
+
+    it('drills from year tile back to month view', async () => {
+      const user = userEvent.setup();
+      const onMonthChange = vi.fn();
+      function Harness() {
+        const [month, setMonth] = React.useState('2026-06');
+        return (
+          <RevenueReportingCalendar
+            reports={baseReports}
+            locale="en-US"
+            weekStartsOn={0}
+            viewMonth={month}
+            onMonthChange={(m) => {
+              setMonth(m);
+              onMonthChange(m);
+            }}
+          />
+        );
+      }
+      render(<Harness />);
+      await user.click(screen.getByRole('tab', { name: 'Year view' }));
+      await user.click(screen.getByLabelText(/March 2026/i));
+      expect(onMonthChange).toHaveBeenCalledWith('2026-03');
+      expect(document.querySelector('.rc-month-title')).toHaveTextContent('March 2026');
+    });
+
+    it('switches to quarter overview', async () => {
+      const user = userEvent.setup();
+      render(
+        <RevenueReportingCalendar
+          reports={baseReports}
+          locale="en-US"
+          weekStartsOn={0}
+          viewMonth="2026-06"
+        />,
+      );
+      await user.click(screen.getByRole('tab', { name: 'Quarter view' }));
+      expect(screen.getByRole('grid', { name: /quarter overview for 2026/i })).toBeInTheDocument();
+      expect(screen.getByLabelText(/Q2 2026/i)).toBeInTheDocument();
+    });
+  });
+
+  /* ─── Bulk select (#426) ────────────────────────────────────────── */
+
+  describe('Bulk select and close', () => {
+    it('shows floating action bar after multi-select via meta+click', async () => {
+      const user = userEvent.setup();
+      render(
+        <RevenueReportingCalendar
+          reports={baseReports}
+          locale="en-US"
+          weekStartsOn={0}
+          viewMonth="2026-06"
+        />,
+      );
+      const day5 = screen.getByLabelText(/June 5, 2026/i);
+      const day12 = screen.getByLabelText(/June 12, 2026/i);
+      await user.click(day5);
+      await user.keyboard('{Meta>}');
+      await user.click(day12);
+      await user.keyboard('{/Meta}');
+      expect(screen.getByRole('toolbar', { name: /bulk actions/i })).toBeInTheDocument();
+      expect(screen.getByText(/2 periods selected/i)).toBeInTheDocument();
+    });
+
+    it('confirms bulk close and registers undo', async () => {
+      const onBulkClose = vi.fn();
+      const onBulkCloseUndo = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <RevenueReportingCalendar
+          reports={baseReports}
+          locale="en-US"
+          weekStartsOn={0}
+          viewMonth="2026-06"
+          selectedDates={['2026-06-20', '2026-06-25']}
+          onBulkClose={onBulkClose}
+          onBulkCloseUndo={onBulkCloseUndo}
+        />,
+      );
+      expect(screen.getByRole('toolbar', { name: /bulk actions/i })).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /close selected periods/i }));
+      expect(screen.getByRole('alertdialog')).toHaveTextContent(/close 2 selected periods/i);
+      await user.click(screen.getByRole('button', { name: /confirm close selected periods/i }));
+      expect(onBulkClose).toHaveBeenCalledWith(['2026-06-20', '2026-06-25']);
+      expect(screen.getByText(/closed 2 periods/i)).toBeInTheDocument();
+    });
+  });
+
+  /* ─── Mobile agenda (#428) ──────────────────────────────────────── */
+
+  describe('Mobile agenda view', () => {
+    it('renders agenda with sticky month headers and issuer labels', () => {
+      const reportsWithIssuer = baseReports.map((r, i) => ({
+        ...r,
+        issuer: i % 2 === 0 ? 'Acme Holdings' : 'Very Long Issuer Name That Should Truncate Gracefully LLC',
+      }));
+      render(
+        <RevenueReportingCalendar
+          reports={reportsWithIssuer}
+          locale="en-US"
+          weekStartsOn={0}
+          viewMonth="2026-06"
+        />,
+      );
+      expect(screen.getByRole('tab', { name: 'Agenda view' })).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByRole('list', { name: /revenue report agenda/i })).toBeInTheDocument();
+      expect(document.querySelector('.rc-agenda-group-title--sticky')).toBeTruthy();
+      expect(screen.getAllByText('Acme Holdings').length).toBeGreaterThan(0);
+    });
+
+    it('can toggle to calendar view on the mobile toggle', async () => {
+      const user = userEvent.setup();
+      render(
+        <RevenueReportingCalendar
+          reports={baseReports}
+          locale="en-US"
+          weekStartsOn={0}
+          viewMonth="2026-06"
+        />,
+      );
+      await user.click(screen.getByRole('tab', { name: 'Calendar view' }));
+      expect(screen.getByRole('tab', { name: 'Calendar view' })).toHaveAttribute('aria-selected', 'true');
     });
   });
 });

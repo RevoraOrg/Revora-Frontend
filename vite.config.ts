@@ -44,6 +44,10 @@ export default defineConfig({
         // Issue #449 – Document replacement flow with version diff
         'src/components/DocumentReplacementFlow.tsx',
         'src/components/DocumentReplacementFlow/VersionHistoryDropdown.tsx',
+        // Issue #472 – Governance vote receipt
+        'src/components/GovernanceVoteReceipt/GovernanceVoteReceipt.tsx',
+        // Issue #493 – Notification bell reduced-motion
+        'src/components/Notifications/NotificationBell.tsx',
         // Command Palette
         'src/components/CommandPalette/CommandPalette.tsx',
         'src/components/CommandPalette/commandPaletteData.ts',
@@ -72,6 +76,12 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/DocumentReplacementFlow/VersionHistoryDropdown.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/GovernanceVoteReceipt/GovernanceVoteReceipt.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/Notifications/NotificationBell.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/DensityProvider/DensityProvider.tsx': {

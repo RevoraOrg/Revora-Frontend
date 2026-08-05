@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Bell, BellRing, X, Clock } from "lucide-react";
 import { useCountdown } from "../hooks/useCountdown";
+import "./PreOpenBanner.css";
 
 export interface PreOpenBannerProps {
   targetDate: Date;

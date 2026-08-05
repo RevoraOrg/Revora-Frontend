@@ -15,6 +15,7 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
+import { PreOpenBanner } from '../components/PreOpenBanner';
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
 import { UploadQueue } from '../components/UploadQueue/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
@@ -242,6 +243,21 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const [, setReminderOptIn] = useState(false);
+
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
 
 
   const handleUploadAll = useCallback(() => {
@@ -426,6 +442,7 @@ export const DistributionDashboard: React.FC = () => {
   }, [filteredPayouts]);
 
   const handlePreopenOptIn = useCallback(() => {
+    setReminderOptIn(true);
     console.log('User opted in for redemption window reminder');
   }, []);
 
@@ -434,7 +451,7 @@ export const DistributionDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       <AdminHero
         tiles={SAMPLE_TILES}
         incident={SAMPLE_INCIDENT}
@@ -442,7 +459,6 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}

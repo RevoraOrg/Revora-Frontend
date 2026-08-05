@@ -16,6 +16,7 @@ import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
 import { DocumentReplacementDemo } from "./pages/DocumentReplacementDemo";
+import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
 
 export function App() {
   return (
@@ -46,6 +47,11 @@ export function App() {
           <Route
             path="/startup/document-replacement"
             element={<DocumentReplacementDemo />}
+          />
+          {/* Issue #472 – Governance vote receipt with on-chain link */}
+          <Route
+            path="/startup/governance/vote-receipt"
+            element={<GovernanceVoteReceiptDemo />}
           />
           {/* Issue #247 – Governance proposal creation multi-step form */}
           <Route

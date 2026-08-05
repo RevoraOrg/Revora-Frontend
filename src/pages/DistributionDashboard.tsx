@@ -243,7 +243,7 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
-  const [reminderOptIn, setReminderOptIn] = useState(false);
+  const [, setReminderOptIn] = useState(false);
 
   const {
     queue,

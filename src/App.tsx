@@ -16,7 +16,6 @@ import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
 import { DocumentReplacementDemo } from "./pages/DocumentReplacementDemo";
-import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
 
 export function App() {
   return (
@@ -47,11 +46,6 @@ export function App() {
           <Route
             path="/startup/document-replacement"
             element={<DocumentReplacementDemo />}
-          />
-          {/* Issue #472 – Governance vote receipt */}
-          <Route
-            path="/startup/governance/vote-receipt"
-            element={<GovernanceVoteReceiptDemo />}
           />
           {/* Issue #247 – Governance proposal creation multi-step form */}
           <Route
@@ -126,10 +120,10 @@ function Home() {
               <li>
                 • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
-              <li>
-                • <Link to="/startup/document-replacement" className="link-styled">Document replacement & version diff</Link>
-              </li>
               <li>• Track on-chain RevenueShare payouts</li>
+              <li>
+                • <Link to="/startup/document-replacement" className="link-styled">Document replacement &amp; version diff</Link>
+              </li>
             </ul>
           </section>
 

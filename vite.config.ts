@@ -49,6 +49,9 @@ export default defineConfig({
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Issue #437 – Filter toolbar focus trap & RTL hardening
+        'src/components/DistributionFilterToolbar/DistributionFilterToolbar.tsx',
+        'src/hooks/useFocusTrap.ts',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -156,6 +159,13 @@ export default defineConfig({
           statements: 95,
         },
         'src/components/Notifications/NotificationBell.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        // Issue #437 – Filter toolbar focus trap & RTL hardening
+        'src/components/DistributionFilterToolbar/DistributionFilterToolbar.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/hooks/useFocusTrap.ts': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

@@ -8,7 +8,9 @@ import { EmptyState } from '../components/designSystem/EmptyState';
 import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
 import { DocumentUploadStatus } from '../components/DocumentUploadStatus';
+import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar/DistributionFilterToolbar';
 import type { DistributionFilterState } from '../components/DistributionFilterToolbar/DistributionFilterToolbar.types';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel';
 import type { PayoutDetail, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
 import { ErrorRateSparklineTile } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
 import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/ErrorRateSparklineTile';
@@ -18,6 +20,10 @@ import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/Blackl
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
 import { UploadQueue } from '../components/UploadQueue/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { PreOpenBanner } from '../components/PreOpenBanner';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { FinancialTermsForm } from '../components/FinancialTermsForm/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -242,7 +248,56 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(
+    searchParams.get('payoutId') || null
+  );
 
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
+
+  // Keeps filterState and the URL query params in sync (so filter/segment/
+  // compare selections are shareable and survive a refresh).
+  const updateFiltersAndUrl = useCallback(
+    (next: DistributionFilterState) => {
+      setFilterState(next);
+
+      const newParams = new URLSearchParams(searchParams);
+      const setOrDelete = (key: string, value: string, defaultValue: string) => {
+        if (value && value !== defaultValue) {
+          newParams.set(key, value);
+        } else {
+          newParams.delete(key);
+        }
+      };
+
+      setOrDelete('search', next.searchQuery, '');
+      setOrDelete('date', next.dateRange, 'all');
+      setOrDelete('issuer', next.issuer, 'all');
+      setOrDelete('region', next.region, 'all');
+      setOrDelete('status', next.status, 'all');
+      setOrDelete('segment', next.segmentBy, 'none');
+      if (next.compareMode) {
+        newParams.set('compare', 'true');
+      } else {
+        newParams.delete('compare');
+      }
+
+      setSearchParams(newParams);
+    },
+    [searchParams, setSearchParams]
+  );
 
   const handleUploadAll = useCallback(() => {
     uploadFiles(mockUploader);
@@ -442,7 +497,6 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       {!bannerDismissed && (
         <PreOpenBanner
           targetDate={preopenTargetDate}
@@ -507,7 +561,7 @@ export const DistributionDashboard: React.FC = () => {
             </h2>
           </div>
           <p className="text-sm text-muted max-w-2xl">
-            Track each document’s progress, retry failures, and remove completed or cancelled files.
+            Track each document's progress, retry failures, and remove completed or cancelled files.
           </p>
         </div>
         <UploadQueue
@@ -567,6 +621,59 @@ export const DistributionDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* ── Segmented / Compare Breakdown ──
+          Renders `segmentedData`, which is computed from the toolbar's
+          segmentBy / compareMode selections. Previously this data was
+          computed but never rendered anywhere, so picking a segment or
+          toggling Compare had no visible effect (issue #437). */}
+      {segmentedData && (
+        <section
+          aria-labelledby="segmented-breakdown-heading"
+          data-testid="segmented-breakdown-section"
+          className="glass-card p-6 md:p-8"
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 id="segmented-breakdown-heading" className="text-xl font-semibold text-white">
+              Breakdown by {filterState.segmentBy !== 'none' ? filterState.segmentBy : 'region'}
+            </h2>
+            {filterState.compareMode && (
+              <span className="text-xs text-primary uppercase tracking-wide" data-testid="compare-mode-badge">
+                Compare mode
+              </span>
+            )}
+          </div>
+
+          <div
+            className={`grid gap-4 ${
+              filterState.compareMode
+                ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
+                : 'grid-cols-2 md:grid-cols-4'
+            }`}
+            role="list"
+            aria-label="Segmented payout totals"
+            data-testid="segmented-breakdown-groups"
+          >
+            {Object.entries(segmentedData).map(([groupKey, group]) => (
+              <div role="listitem" key={groupKey} data-testid={`segment-group-${groupKey}`}>
+                <div className="glass-card p-5 flex flex-col gap-2">
+                  <span className="text-muted text-xs font-medium uppercase tracking-wide">{groupKey}</span>
+                  <span className="text-2xl font-bold tracking-tight">
+                    $
+                    {group.totalDistributed.toLocaleString('en-US', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                  <span className="text-muted text-xs">
+                    {group.count} payout{group.count === 1 ? '' : 's'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* ── Revenue vs Payouts Chart ── */}
       <div className="mt-8">

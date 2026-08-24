@@ -155,7 +155,7 @@ RECENT_LIMIT: 5
 | `Enter` | Activate highlighted item |
 | `Tab` / `Shift+Tab` | Cycle focusable elements inside dialog (focus trap) |
 
-Arrow navigation updates `aria-selected` on the highlighted `role="option"` button, and the `aria-activedescendant` on the `role="combobox"` input.
+Arrow navigation updates `aria-selected` on the highlighted `role="option"` button, and the `aria-activedescendant` on the `role="combobox"` input. Each option button carries a stable id (`cp-item-<flatIndex>`) so the combobox's `aria-activedescendant` always resolves to a real element.
 
 ---
 
@@ -163,7 +163,7 @@ Arrow navigation updates `aria-selected` on the highlighted `role="option"` butt
 
 - `role="dialog" aria-modal="true"` on the overlay
 - `role="combobox" aria-autocomplete="list" aria-controls aria-expanded aria-activedescendant` on the input
-- `role="listbox" aria-label="Commands"` on the scrollable body
+- `role="listbox"` + `aria-label="<GroupName> commands"` on each section's result list (one listbox per group; the Recent section's is labelled "Recent commands")
 - `role="group" aria-label="<GroupName>"` on each section
 - `role="option" aria-selected` on each result button
 - `role="status" aria-live="polite" aria-atomic="true"` for result-count announcements

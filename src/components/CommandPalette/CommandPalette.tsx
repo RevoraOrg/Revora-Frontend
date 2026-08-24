@@ -21,7 +21,8 @@
  *  - role="combobox" on the search <input> with aria-controls pointing at the
  *    result listbox
  *  - role="listbox" + aria-label on the results wrapper
- *  - role="option" aria-selected on each result item
+ *  - role="option" aria-selected on each result item (each carries a stable
+ *    id "cp-item-<index>" so the combobox's aria-activedescendant resolves)
  *  - role="status" aria-live="polite" for announcements (result count)
  *  - role="group" aria-label on each section within the listbox
  */
@@ -518,6 +519,7 @@ export function CommandPalette({
         <button
           type="button"
           role="option"
+          id={`cp-item-${index}`}
           aria-selected={isActive}
           className="cp-result-item"
           data-cp-index={index}

@@ -424,6 +424,41 @@ describe('CommandPalette', () => {
       expect(options.length).toBe(RECENT_ITEMS.length);
     });
 
+    it('active option carries an id matching aria-activedescendant', () => {
+      renderPalette({ recentCommands: RECENT_ITEMS });
+      const dialog = screen.getByTestId('command-palette-dialog');
+      const input = screen.getByRole('combobox');
+
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+
+      expect(input).toHaveAttribute('aria-activedescendant', 'cp-item-0');
+      expect(document.getElementById('cp-item-0')).not.toBeNull();
+      const options = screen.getAllByRole('option');
+      expect(options[0]).toHaveAttribute('id', 'cp-item-0');
+    });
+
+    it('aria-activedescendant follows keyboard navigation across groups', () => {
+      renderPalette();
+      const dialog = screen.getByTestId('command-palette-dialog');
+      const input = screen.getByRole('combobox');
+
+      // Query matching multiple groups produces a flat index across sections
+      fireEvent.change(input, { target: { value: 'e' } });
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+
+      expect(input).toHaveAttribute('aria-activedescendant', 'cp-item-1');
+      expect(document.getElementById('cp-item-1')).toBe(
+        screen.getAllByRole('option')[1],
+      );
+    });
+
+    it('clears aria-activedescendant when no item is active', () => {
+      renderPalette({ recentCommands: RECENT_ITEMS });
+      const input = screen.getByRole('combobox');
+      expect(input).not.toHaveAttribute('aria-activedescendant');
+    });
+
     it('live status region has role="status" aria-live="polite"', () => {
       renderPalette();
       // The sr-only status div
@@ -550,6 +585,52 @@ describe('CommandPalette', () => {
       renderPalette({ recentCommands: [item] });
       expect(screen.getByText('/some/path')).toBeInTheDocument();
     });
+
+    it('renders items whose icon name is not registered in ICON_MAP', () => {
+      const item: CommandItem = { id: 'bad-icon', group: 'actions', label: 'Bad Icon Item', icon: 'NotARealIcon' };
+      renderPalette({ recentCommands: [item] });
+      expect(screen.getByText('Bad Icon Item')).toBeInTheDocument();
+    });
+
+    it('ArrowDown then ArrowUp returns to the previous item', () => {
+      renderPalette({ recentCommands: RECENT_ITEMS });
+      const dialog = screen.getByTestId('command-palette-dialog');
+      const options = screen.getAllByRole('option');
+
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+      expect(options[0]).toHaveAttribute('aria-selected', 'true');
+
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+      expect(options[1]).toHaveAttribute('aria-selected', 'true');
+
+      fireEvent.keyDown(dialog, { key: 'ArrowUp' });
+      expect(options[0]).toHaveAttribute('aria-selected', 'true');
+    });
+
+    it('Enter is a no-op when the active index points past the visible items', () => {
+      const onCommandExecute = vi.fn();
+      const { rerender } = renderPalette({ recentCommands: RECENT_ITEMS, onCommandExecute });
+      const dialog = screen.getByTestId('command-palette-dialog');
+
+      // Highlight the second item…
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+      fireEvent.keyDown(dialog, { key: 'ArrowDown' });
+
+      // …then shrink the item list without changing the query (stale index)
+      rerender(
+        <CommandPalette
+          isOpen={true}
+          onClose={noop}
+          isMac={false}
+          recentCommands={[]}
+          onCommandExecute={onCommandExecute}
+          onClearRecent={noop}
+        />,
+      );
+      fireEvent.keyDown(dialog, { key: 'Enter' });
+
+      expect(onCommandExecute).not.toHaveBeenCalled();
+    });
   });
 
   // ─── Tab focus trap ──────────────────────────────────────────────────────────
@@ -560,6 +641,39 @@ describe('CommandPalette', () => {
       renderPalette({ onClose });
       fireEvent.keyDown(screen.getByTestId('command-palette-dialog'), { key: 'Tab' });
       expect(onClose).not.toHaveBeenCalled();
+    });
+
+    // Note: with an empty recent list the search input is the dialog's only
+    // focusable element (result rows are tabIndex={-1}), so first === last and
+    // both wrap-around branches of the trap are exercised deterministically.
+    it('Shift+Tab from the first focusable wraps (prevented) to the last', () => {
+      renderPalette({ recentCommands: [] });
+      const dialog = screen.getByTestId('command-palette-dialog');
+      const input = screen.getByRole('combobox');
+      input.focus();
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, cancelable: true });
+      const spy = vi.spyOn(event, 'preventDefault');
+      dialog.dispatchEvent(event);
+
+      expect(spy).toHaveBeenCalled();
+      expect(document.activeElement).toBe(input);
+      spy.mockRestore();
+    });
+
+    it('Tab from the last focusable wraps (prevented) back to the first', () => {
+      renderPalette({ recentCommands: [] });
+      const dialog = screen.getByTestId('command-palette-dialog');
+      const input = screen.getByRole('combobox');
+      input.focus();
+
+      const event = new KeyboardEvent('keydown', { key: 'Tab', cancelable: true });
+      const spy = vi.spyOn(event, 'preventDefault');
+      dialog.dispatchEvent(event);
+
+      expect(spy).toHaveBeenCalled();
+      expect(document.activeElement).toBe(input);
+      spy.mockRestore();
     });
   });
 
@@ -779,6 +893,33 @@ describe('CommandPalette', () => {
 
       // Should be back to normal rows
       expect(screen.queryByTestId('cp-confirm-row-action:delete-offering')).not.toBeInTheDocument();
+    });
+
+    it('falls back to item.label when destructive item has no confirmLabel', async () => {
+      vi.useFakeTimers();
+      const onCommandExecute = vi.fn();
+      const bare: CommandItem = {
+        id: 'action:wipe-data',
+        group: 'actions',
+        label: 'Wipe Data',
+        destructive: true,
+        // no confirmLabel / confirmDescription
+      };
+      renderPalette({ recentCommands: [bare], onCommandExecute });
+
+      fireEvent.click(screen.getAllByRole('option')[0]);
+
+      // Row + buttons keyed off the raw label
+      expect(screen.getByTestId('cp-confirm-row-action:wipe-data')).toBeInTheDocument();
+      expect(screen.getByTestId('cp-confirm-btn-action:wipe-data')).toHaveTextContent(/Please wait/i);
+
+      act(() => { vi.advanceTimersByTime(500); });
+      expect(screen.getByTestId('cp-confirm-btn-action:wipe-data')).toHaveTextContent('Confirm');
+
+      fireEvent.click(screen.getByTestId('cp-confirm-btn-action:wipe-data'));
+      expect(onCommandExecute).toHaveBeenCalledWith(bare);
+
+      vi.useRealTimers();
     });
 
     it('has no axe violations in confirmation state', async () => {

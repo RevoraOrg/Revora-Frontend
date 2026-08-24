@@ -9,6 +9,7 @@ Ensure the interface respects `prefers-reduced-motion: reduce` while keeping sta
 - `.animate-fade-in` is disabled so content appears without motion.
 - `.animate-shake` is disabled for error feedback.
 - Hover translate/lift effects on `.glass-card-interactive`, `.btn-primary`, and `.btn-secondary` are removed.
+- KPI counters skip numeric ticking entirely and present the final value immediately with a subtle opacity fade — see [kpi-counter-reduced-motion.md](./kpi-counter-reduced-motion.md).
 
 ## Error feedback fallback
 

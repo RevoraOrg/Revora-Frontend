@@ -7,8 +7,12 @@ import {
   ResumeRecoveryBanner,
   readRecoveryFrame,
   saveRecoveryFrame,
+  clearRecoveryFrame,
   dismissRecoveryForever,
+  isDismissedForever,
+  resetDismissedForever,
   variantFromPage,
+  formatRelativeAge,
 } from "./ResumeRecoveryBanner";
 import type { RecoveryFrame } from "./ResumeRecoveryBanner";
 
@@ -55,10 +59,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// ---------------------------------------------------------------------------
-// readRecoveryFrame / saveRecoveryFrame / dismissRecoveryForever
-// ---------------------------------------------------------------------------
-
 describe("localStorage helpers", () => {
   it("saves and reads a recovery frame", () => {
     const frame = makeFrame();
@@ -71,11 +71,10 @@ describe("localStorage helpers", () => {
     expect(readRecoveryFrame("/nonexistent", 7)).toBeNull();
   });
 
-  it("returns null when expired", () => {
+  it("returns null when expired and cleans up the slot", () => {
     const frame = makeFrame({ timestamp: Date.now() - 8 * MS_PER_DAY });
     saveRecoveryFrame(frame);
     expect(readRecoveryFrame(frame.page, 7)).toBeNull();
-    // Expired slot should be cleaned up.
     expect(localStorage.getItem(`recovery_state_${frame.page}`)).toBeNull();
   });
 
@@ -85,9 +84,28 @@ describe("localStorage helpers", () => {
     dismissRecoveryForever(frame.page);
     expect(readRecoveryFrame(frame.page, 7)).toBeNull();
     expect(localStorage.getItem(`recovery_state_${frame.page}`)).toBeNull();
-    expect(localStorage.getItem(`recovery_dismissed_${frame.page}`)).toBe(
-      "true",
-    );
+    expect(isDismissedForever(frame.page)).toBe(true);
+  });
+
+  it("clearRecoveryFrame removes only the frame, not the dismissal flag", () => {
+    const frame = makeFrame();
+    saveRecoveryFrame(frame);
+    clearRecoveryFrame(frame.page);
+    expect(readRecoveryFrame(frame.page, 7)).toBeNull();
+    expect(isDismissedForever(frame.page)).toBe(false);
+  });
+
+  it("resetDismissedForever re-enables recovery after a permanent dismissal", () => {
+    const frame = makeFrame();
+    saveRecoveryFrame(frame);
+    dismissRecoveryForever(frame.page);
+    expect(isDismissedForever(frame.page)).toBe(true);
+
+    resetDismissedForever(frame.page);
+    expect(isDismissedForever(frame.page)).toBe(false);
+    // Frame was removed by dismissRecoveryForever; saving again works.
+    saveRecoveryFrame(frame);
+    expect(readRecoveryFrame(frame.page, 7)).toEqual(frame);
   });
 
   it("handles corrupt JSON gracefully", () => {
@@ -116,7 +134,7 @@ describe("localStorage helpers", () => {
 });
 
 // ---------------------------------------------------------------------------
-// variantFromPage
+// variantFromPage / formatRelativeAge
 // ---------------------------------------------------------------------------
 
 describe("variantFromPage", () => {
@@ -133,6 +151,28 @@ describe("variantFromPage", () => {
   it("returns 'form' by default", () => {
     expect(variantFromPage("/startup/report-revenue")).toBe("form");
     expect(variantFromPage("/anything")).toBe("form");
+  });
+});
+
+describe("formatRelativeAge", () => {
+  it("formats minutes ago", () => {
+    const now = Date.now();
+    expect(formatRelativeAge(now - 5 * 60_000, now)).toMatch(/5 minutes ago/);
+  });
+
+  it("formats hours ago", () => {
+    const now = Date.now();
+    expect(formatRelativeAge(now - 2 * 3_600_000, now)).toMatch(/2 hours ago/);
+  });
+
+  it("formats days ago", () => {
+    const now = Date.now();
+    expect(formatRelativeAge(now - 3 * MS_PER_DAY, now)).toMatch(/3 days ago/);
+  });
+
+  it("uses a present-tense phrase for very recent timestamps", () => {
+    const now = Date.now();
+    expect(formatRelativeAge(now, now)).toMatch(/(now|this minute)/i);
   });
 });
 
@@ -175,7 +215,7 @@ describe("ResumeRecoveryBanner", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders upload variant copy when page matches", () => {
+  it("renders upload variant copy and CTA when page matches", () => {
     saveRecoveryFrame(
       makeFrame({ page: "/startup/offering-registration/upload" }),
     );
@@ -184,14 +224,42 @@ describe("ResumeRecoveryBanner", () => {
     expect(
       screen.getByText("Your upload was interrupted"),
     ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /resume upload/i })).toBeInTheDocument();
   });
 
-  it("renders payout variant copy when page matches", () => {
+  it("renders payout variant copy and CTA when page matches", () => {
     saveRecoveryFrame(makeFrame({ page: "/investor/payouts" }));
 
     renderBanner(["/investor/payouts"]);
     expect(
       screen.getByText("Your payout setup was interrupted"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /resume setup/i })).toBeInTheDocument();
+  });
+
+  it("prefers a frame-declared variant over URL inference", () => {
+    // Page path would infer "form", but the frame declares an upload context.
+    saveRecoveryFrame(
+      makeFrame({ page: "/startup/offering-registration", variant: "upload" }),
+    );
+
+    renderBanner(["/startup/offering-registration"]);
+    expect(
+      screen.getByText("Your upload was interrupted"),
+    ).toBeInTheDocument();
+  });
+
+  it("falls back to URL inference when the declared variant is invalid", () => {
+    saveRecoveryFrame(
+      makeFrame({
+        page: "/startup/report-revenue",
+        variant: "nonsense" as unknown as RecoveryFrame["variant"],
+      }),
+    );
+
+    renderBanner(["/startup/report-revenue"]);
+    expect(
+      screen.getByText("Your form draft was saved"),
     ).toBeInTheDocument();
   });
 
@@ -202,7 +270,7 @@ describe("ResumeRecoveryBanner", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("calls onResume with page and payload when Resume Session is clicked", () => {
+  it("calls onResume with page and payload, then consumes the frame", () => {
     const payload = { step: 3, formData: { name: "Acme" } };
     saveRecoveryFrame(
       makeFrame({ page: "/startup/report-revenue", payload }),
@@ -212,18 +280,56 @@ describe("ResumeRecoveryBanner", () => {
     fireEvent.click(screen.getByTestId("resume-recovery-resume"));
 
     expect(onResume).toHaveBeenCalledWith("/startup/report-revenue", payload);
+    // Resuming consumes the recovery point.
+    expect(
+      localStorage.getItem("recovery_state_/startup/report-revenue"),
+    ).toBeNull();
+    expect(screen.queryByTestId("resume-recovery-banner")).not.toBeInTheDocument();
   });
 
-  it("dismisses recovery permanently when Dismiss is clicked", () => {
+  it("soft-dismiss (✕) removes the current frame without opting out forever", () => {
     saveRecoveryFrame(makeFrame({ page: "/startup/report-revenue" }));
 
     const { container } = renderBanner(["/startup/report-revenue"]);
     fireEvent.click(screen.getByTestId("resume-recovery-dismiss"));
 
+    expect(container.firstChild).toBeNull();
+    expect(isDismissedForever("/startup/report-revenue")).toBe(false);
+    expect(
+      localStorage.getItem("recovery_state_/startup/report-revenue"),
+    ).toBeNull();
+  });
+
+  it("'Don't show again' permanently opts out of recovery prompts", () => {
+    saveRecoveryFrame(makeFrame({ page: "/startup/report-revenue" }));
+
+    const { container } = renderBanner(["/startup/report-revenue"]);
+    fireEvent.click(screen.getByTestId("resume-recovery-dismiss-forever"));
+
+    expect(container.firstChild).toBeNull();
+    expect(isDismissedForever("/startup/report-revenue")).toBe(true);
     expect(
       localStorage.getItem("recovery_dismissed_/startup/report-revenue"),
     ).toBe("true");
-    expect(container.firstChild).toBeNull();
+    expect(
+      localStorage.getItem("recovery_state_/startup/report-revenue"),
+    ).toBeNull();
+
+    // A brand-new frame will still not be shown.
+    saveRecoveryFrame(makeFrame({ page: "/startup/report-revenue" }));
+    renderBanner(["/startup/report-revenue"]);
+    expect(screen.queryByTestId("resume-recovery-banner")).not.toBeInTheDocument();
+  });
+
+  it("shows relative saved time in the context line", () => {
+    const frame = makeFrame({
+      timestamp: Date.now() - 2 * 3_600_000,
+      page: "/startup/report-revenue",
+    });
+    saveRecoveryFrame(frame);
+
+    renderBanner(["/startup/report-revenue"]);
+    expect(screen.getByText(/Saved 2 hours ago/)).toBeInTheDocument();
   });
 
   it("shows remaining days when frame is within expiration", () => {
@@ -234,7 +340,7 @@ describe("ResumeRecoveryBanner", () => {
     saveRecoveryFrame(frame);
 
     renderBanner(["/startup/report-revenue"]);
-    expect(screen.getByText(/available for 4 days/)).toBeInTheDocument();
+    expect(screen.getByText(/Available for 4 more days/)).toBeInTheDocument();
   });
 
   it("shows 1 day remaining (singular)", () => {
@@ -245,7 +351,7 @@ describe("ResumeRecoveryBanner", () => {
     saveRecoveryFrame(frame);
 
     renderBanner(["/startup/report-revenue"]);
-    expect(screen.getByText(/available for 1 day/)).toBeInTheDocument();
+    expect(screen.getByText(/Available for 1 more day\b/)).toBeInTheDocument();
   });
 
   it("supports custom expirationDays", () => {
@@ -278,12 +384,12 @@ describe("ResumeRecoveryBanner", () => {
 // ---------------------------------------------------------------------------
 
 describe("Accessibility", () => {
-  it("has role=alert and aria-live=polite", () => {
+  it("uses role=status with polite live region (consistent with UndoBanner)", () => {
     saveRecoveryFrame(makeFrame());
     renderBanner();
 
     const banner = screen.getByTestId("resume-recovery-banner");
-    expect(banner).toHaveAttribute("role", "alert");
+    expect(banner).toHaveAttribute("role", "status");
     expect(banner).toHaveAttribute("aria-live", "polite");
     expect(banner).toHaveAttribute("aria-atomic", "true");
   });
@@ -299,21 +405,36 @@ describe("Accessibility", () => {
     );
   });
 
-  it("Resume button has explicit aria-label", () => {
+  it("primary CTA has an explicit contextual accessible name", () => {
     saveRecoveryFrame(makeFrame());
     renderBanner();
 
     expect(
-      screen.getByRole("button", { name: /resume session/i }),
+      screen.getByRole("button", {
+        name: /resume form: your form draft was saved/i,
+      }),
     ).toBeInTheDocument();
   });
 
-  it("Dismiss button has explicit aria-label", () => {
+  it("'Don't show again' has an explicit accessible name", () => {
     saveRecoveryFrame(makeFrame());
     renderBanner();
 
     expect(
-      screen.getByRole("button", { name: /dismiss recovery banner/i }),
+      screen.getByRole("button", {
+        name: /don't show recovery suggestions for this page again/i,
+      }),
+    ).toBeInTheDocument();
+  });
+
+  it("soft-dismiss button has an explicit accessible name", () => {
+    saveRecoveryFrame(makeFrame());
+    renderBanner();
+
+    expect(
+      screen.getByRole("button", {
+        name: /dismiss for now: your form draft was saved/i,
+      }),
     ).toBeInTheDocument();
   });
 
@@ -321,10 +442,10 @@ describe("Accessibility", () => {
     saveRecoveryFrame(makeFrame());
     renderBanner();
 
-    const icon = screen
+    const icons = screen
       .getByTestId("resume-recovery-banner")
-      .querySelector("svg[aria-hidden='true']");
-    expect(icon).toBeInTheDocument();
+      .querySelectorAll("svg[aria-hidden='true']");
+    expect(icons.length).toBeGreaterThan(0);
   });
 
   it("has no axe-detectable accessibility violations", async () => {

@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StatusTimeline } from '../components/StatusTimeline';
 import { getOfferingRegistrationMilestones } from '../components/StatusTimeline/presets';
@@ -7,11 +7,27 @@ import type { UploadableFile } from '../components/DocumentUploader';
 import { SaveAsDraft } from '../components/designSystem/SaveAsDraft';
 import { HelpDrawer, HelpTrigger, OFFERING_HELP_CONTENT } from '../components/HelpDrawer';
 import type { OfferingStep } from '../components/HelpDrawer';
+import {
+  ResumeRecoveryBanner,
+  clearRecoveryFrame,
+  saveRecoveryFrame,
+} from '../components/ResumeRecoveryBanner';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ACCEPT = '.pdf,.png,.jpg,.jpeg';
 const SIMULATED_TICK_MS = 250;
 const SIMULATED_STEP = 20;
+
+/** Storage key for the recovery frame saved when uploads are interrupted. */
+const RECOVERY_PAGE = '/startup/offering-registration';
+
+/** Names of files whose upload did not finish (in flight or failed). */
+function interruptedNames(files: UploadableFile[]): string[] {
+  return files
+    .filter((file) => file.status === 'uploading' || file.status === 'error')
+    .map((file) => file.name);
+}
 
 /**
  * OfferingRegistrationDemo — demonstrates the inline document uploader
@@ -25,10 +41,67 @@ export const OfferingRegistrationDemo: React.FC = () => {
   const [files, setFiles] = useState<UploadableFile[]>([]);
   const nextId = useRef(0);
   const timers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());
+  const reducedMotion = useReducedMotion();
 
   // Help drawer state
   const [helpStep, setHelpStep] = useState<OfferingStep | null>(null);
   const helpTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // -----------------------------------------------------------------------
+  // Resume-recovery bookkeeping (upload variant)
+  // -----------------------------------------------------------------------
+
+  // Mirror of the files list for the unmount-only effect below.
+  const filesRef = useRef(files);
+  filesRef.current = files;
+
+  // Signature of the last persisted interrupted-set, so progress ticks
+  // don't rewrite storage every 250 ms.
+  const lastSavedSignature = useRef('');
+
+  // Persist a recovery frame while uploads are unfinished; clear it once
+  // every file has completed or been removed.
+  useEffect(() => {
+    const signature = interruptedNames(files).join('|');
+    if (signature === lastSavedSignature.current) return;
+
+    if (signature) {
+      saveRecoveryFrame({
+        page: RECOVERY_PAGE,
+        timestamp: Date.now(),
+        variant: 'upload',
+        payload: { fileNames: interruptedNames(files) },
+      });
+      lastSavedSignature.current = signature;
+    } else {
+      clearRecoveryFrame(RECOVERY_PAGE);
+      lastSavedSignature.current = '';
+    }
+  }, [files]);
+
+  // Session ended mid-upload — save what was in flight so the banner can
+  // offer a resume point on the user's next visit.
+  useEffect(
+    () => () => {
+      const names = interruptedNames(filesRef.current);
+      if (names.length > 0) {
+        saveRecoveryFrame({
+          page: RECOVERY_PAGE,
+          timestamp: Date.now(),
+          variant: 'upload',
+          payload: { fileNames: names },
+        });
+      }
+    },
+    [],
+  );
+
+  /** Continue the interrupted task: bring the documents step into view. */
+  const handleResumeUpload = useCallback(() => {
+    const heading = document.getElementById('kyc-documents-heading');
+    heading?.scrollIntoView({ block: 'center', behavior: reducedMotion ? 'auto' : 'smooth' });
+    if (heading instanceof HTMLElement) heading.focus({ preventScroll: true });
+  }, [reducedMotion]);
 
   const simulateUpload = useCallback((id: string, name: string, shouldFail: boolean) => {
     const timer = setInterval(() => {
@@ -102,6 +175,9 @@ export const OfferingRegistrationDemo: React.FC = () => {
         </p>
       </div>
 
+      {/* Inline resume-recovery point for interrupted uploads */}
+      <ResumeRecoveryBanner onResume={handleResumeUpload} />
+
       <StatusTimeline
         milestones={getOfferingRegistrationMilestones('kyc-check')}
         ariaLabel="Offering registration progress"
@@ -109,7 +185,12 @@ export const OfferingRegistrationDemo: React.FC = () => {
 
       <section aria-labelledby="kyc-documents-heading" className="space-y-3">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <h2 id="kyc-documents-heading" className="text-xl font-semibold" style={{ margin: 0 }}>
+          <h2
+            id="kyc-documents-heading"
+            tabIndex={-1}
+            className="text-xl font-semibold outline-none"
+            style={{ margin: 0 }}
+          >
             Verification documents
           </h2>
           <HelpTrigger

@@ -2,6 +2,12 @@ import { FormEvent, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { LocalizedText } from "./LocalizedText";
 import {
+  ResumeRecoveryBanner,
+  clearRecoveryFrame,
+  saveRecoveryFrame,
+} from "./ResumeRecoveryBanner";
+import type { RecoveryFrame } from "./ResumeRecoveryBanner";
+import {
   formatCurrency,
   formatDate,
   LOCALE_FORMAT_SETTINGS,
@@ -28,6 +34,33 @@ const reportPeriods = [
   { value: "2026-03", label: "March 2026" },
 ];
 
+/** Storage key for the recovery frame saved when a submission fails. */
+const RECOVERY_PAGE = "/startup/report-revenue";
+
+/**
+ * Demo-only failure trigger: very large amounts simulate a gateway timeout so
+ * the error → leave → return → resume flow is reachable without a backend.
+ */
+const GATEWAY_LIMIT = 100_000_000;
+
+interface ReportRecoveryPayload {
+  reportPeriod: string;
+  grossRevenue: string;
+  currency: string;
+  notes: string;
+}
+
+function isReportRecoveryPayload(payload: unknown): payload is ReportRecoveryPayload {
+  if (typeof payload !== "object" || payload === null) return false;
+  const p = payload as Record<string, unknown>;
+  return (
+    typeof p.reportPeriod === "string" &&
+    typeof p.grossRevenue === "string" &&
+    typeof p.currency === "string" &&
+    typeof p.notes === "string"
+  );
+}
+
 export function RevenueReportForm() {
   const [reportPeriod, setReportPeriod] = useState(reportPeriods[0].value);
   const [grossRevenue, setGrossRevenue] = useState("");
@@ -48,6 +81,21 @@ export function RevenueReportForm() {
     return Math.round(revenueValue * 0.08);
   }, [revenueError, revenueValue]);
 
+  /** Continue the interrupted task: restore the saved entries and land focus on the form. */
+  const handleResumeRecovery = (_page: string, payload: unknown) => {
+    if (!isReportRecoveryPayload(payload)) return;
+    if (reportPeriods.some((option) => option.value === payload.reportPeriod)) {
+      setReportPeriod(payload.reportPeriod);
+    }
+    setGrossRevenue(payload.grossRevenue);
+    setCurrency(payload.currency);
+    setNotes(payload.notes);
+    setSubmissionState("idle");
+    setErrorMessage("");
+    // Land keyboard users back inside the resumed task.
+    window.setTimeout(() => document.getElementById("grossRevenue")?.focus(), 0);
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setSubmissionState("idle");
@@ -61,8 +109,27 @@ export function RevenueReportForm() {
 
     setIsSubmitting(true);
     await new Promise((resolve) => setTimeout(resolve, 650));
+
+    if (revenueValue >= GATEWAY_LIMIT) {
+      // Simulated server failure — preserve the user's entries so the
+      // resume-recovery banner can offer them back on their next visit.
+      setIsSubmitting(false);
+      setErrorMessage(
+        "We couldn't reach the reporting service. Your entries were saved and will be offered here next time you visit.",
+      );
+      setSubmissionState("error");
+      saveRecoveryFrame({
+        page: RECOVERY_PAGE,
+        timestamp: Date.now(),
+        variant: "form",
+        payload: { reportPeriod, grossRevenue, currency, notes } satisfies ReportRecoveryPayload,
+      } satisfies RecoveryFrame);
+      return;
+    }
+
     setIsSubmitting(false);
     setSubmissionState("success");
+    clearRecoveryFrame(RECOVERY_PAGE);
   };
 
   const hasSubmitted = submissionState === "success";
@@ -70,7 +137,10 @@ export function RevenueReportForm() {
 
   return (
     <div className="min-h-screen p-6 bg-slate-950 text-main">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-6xl mx-auto space-y-4">
+        {/* Inline resume-recovery point (Issue: resume where you left off) */}
+        <ResumeRecoveryBanner onResume={handleResumeRecovery} />
+
         <div className="glass-card p-8 md:p-10 space-y-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>

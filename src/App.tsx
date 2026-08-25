@@ -15,6 +15,8 @@ import { notificationsMock } from "./components/Notifications/notificationsData"
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
+import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
+import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 
 export function App() {
   return (

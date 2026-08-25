@@ -7,6 +7,10 @@ export type {
 export {
   readRecoveryFrame,
   saveRecoveryFrame,
+  clearRecoveryFrame,
   dismissRecoveryForever,
+  isDismissedForever,
+  resetDismissedForever,
   variantFromPage,
+  formatRelativeAge,
 } from "./ResumeRecoveryBanner";

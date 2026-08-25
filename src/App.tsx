@@ -4,6 +4,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
+import TwoFactorBackupCodesPage from "./pages/TwoFactorBackupCodesPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
@@ -17,6 +18,7 @@ import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
 import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
+import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
 
 export function App() {
   return (
@@ -28,6 +30,7 @@ export function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/recover-2fa" element={<TwoFactorRecoveryPage />} />
+          <Route path="/settings/2fa/backup-codes" element={<TwoFactorBackupCodesPage />} />
 
           {/* Startup routes */}
           <Route
@@ -47,6 +50,11 @@ export function App() {
           <Route
             path="/startup/governance/proposals/create"
             element={<GovernanceProposalCreatePage />}
+          />
+          {/* Issue #472 – Governance vote receipt with on-chain link */}
+          <Route
+            path="/startup/governance/vote-receipt"
+            element={<GovernanceVoteReceiptDemo />}
           />
 
           {/* Investor routes */}
@@ -117,6 +125,9 @@ function Home() {
                 • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
               <li>• Track on-chain RevenueShare payouts</li>
+              <li>
+                • <Link to="/startup/governance/vote-receipt" className="link-styled">Governance vote receipt</Link>
+              </li>
             </ul>
           </section>
 

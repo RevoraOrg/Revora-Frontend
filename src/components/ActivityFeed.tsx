@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Calendar, Moon, Bell } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import ActivityItem from './ActivityItem';

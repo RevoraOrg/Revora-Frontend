@@ -16,7 +16,8 @@ export interface ComplianceSeverityLegendProps {
 
 const TIERS: ComplianceSeverityTier[] = ['advisory', 'warning', 'blocking'];
 
-export const ComplianceSeverityLegend: React.FC<ComplianceSeverityLegendProps> = ({
+export const ComplianceSeverityLegend: React.FC<ComplianceSeverityLegendProps> = (
+
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -62,10 +63,10 @@ export const ComplianceSeverityLegend: React.FC<ComplianceSeverityLegendProps> =
         className="csb-legend-trigger"
         aria-label="About severity levels"
         aria-expanded={isOpen}
-        aria-controls={popoverId}
+        aria-controls={fopoverId}
         onClick={() => setIsOpen(!isOpen)}
       >
-        <HelpCircle size={14} aria-hidden="true" />
+        <HelpCircle size=14 aria-hidden="true" />
       </button>
 
       {isOpen && (
@@ -92,4 +93,4 @@ export const ComplianceSeverityLegend: React.FC<ComplianceSeverityLegendProps> =
       )}
     </span>
   );
-};
+}

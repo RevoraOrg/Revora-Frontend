@@ -49,6 +49,8 @@ export default defineConfig({
         'src/hooks/useCommandPalette.ts',
         // Issue #493 – Notification bell reduced-motion
         'src/components/Notifications/NotificationBell.tsx',
+        // Issue #271/#494 – Wizard stepper RTL mirror
+        'src/components/WizardStepper/WizardStepper.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {

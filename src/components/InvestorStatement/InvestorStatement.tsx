@@ -104,11 +104,13 @@ export const InvestorStatement: React.FC<InvestorStatementProps> = ({
             <dd>{formattedDate}</dd>
           </div>
         </dl>
-        <p className="statement-disclaimer">
-          This statement is generated for informational purposes only. All values
-          are denominated in {currency} and subject to market fluctuations.
-          Past performance is not indicative of future results.
-        </p>
+        <aside className="statement-disclaimer" aria-label="Cover page disclaimer">
+          <p>
+            This statement is generated for informational purposes only. All values
+            are denominated in {currency} and subject to market fluctuations.
+            Past performance is not indicative of future results.
+          </p>
+        </aside>
       </div>
 
       {/* Main Statement Content */}
@@ -138,11 +140,13 @@ export const InvestorStatement: React.FC<InvestorStatementProps> = ({
       </header>
 
       {/* ── Platform Branding / Disclaimer ── */}
-      <p className="statement-disclaimer" role="doc-note">
-        This statement is generated for informational purposes only. All values
-        are denominated in {currency} and subject to market fluctuations.
-        Past performance is not indicative of future results.
-      </p>
+      <aside className="statement-disclaimer" aria-label="Statement disclaimer">
+        <p>
+          This statement is generated for informational purposes only. All values
+          are denominated in {currency} and subject to market fluctuations.
+          Past performance is not indicative of future results.
+        </p>
+      </aside>
 
       {/* ═══════════════════════════════════════════════════
           SECTION 1: Portfolio Summary (KPI Metrics)
@@ -364,7 +368,7 @@ export const InvestorStatement: React.FC<InvestorStatementProps> = ({
       {/* ═══════════════════════════════════════════════════
           SECTION 4: Footer / Disclaimers
           ═══════════════════════════════════════════════════ */}
-      <footer className="statement-footer" role="doc-endnotes">
+      <footer className="statement-footer" aria-label="Important information and disclaimers">
         <h2 className="statement-footer-heading">Important Information</h2>
         <ul className="statement-disclaimer-list">
           <li>

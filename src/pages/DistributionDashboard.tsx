@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
+import { useSearchParams, Link } from 'react-router-dom';
 import { AdminHero } from '../components/AdminHero';
 import type { AdminTileData, IncidentData } from '../components/AdminHero';
 import { Button } from '../components/Button';
 import { LockupClaimModal } from '../components/LockupClaimModal';
-import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
 import { EmptyState } from '../components/designSystem/EmptyState';
 import { KycResubmissionTimeline } from '../components/KycResubmissionTimeline';
 import { GovernanceResults } from '../components/designSystem/GovernanceResults';
@@ -17,7 +15,8 @@ import type { ErrorRateDataPoint } from '../components/ErrorRateSparklineTile/Er
 import { GovernanceDelegation } from '../components/GovernanceDelegation/GovernanceDelegation';
 import { RevenuePayoutChart, RevenuePayoutDataPoint } from '../components/RevenuePayoutChart/RevenuePayoutChart';
 import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/BlacklistBulkRemoveConfirm/BlacklistBulkRemoveConfirm';
-import { RedemptionPostCloseBanner } from '../components/RedemptionPostCloseBanner';
+import { GovernanceVoteReceiptModal } from '../components/GovernanceVoteReceiptModal';
+import { PreOpenBanner } from '../components/PreOpenBanner';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -181,15 +180,8 @@ const SAMPLE_INCIDENT: IncidentData | null = null;
 export const DistributionDashboard: React.FC = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const [bannerDismissed, setBannerDismissed] = useState(false);
-  const preopenTargetDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 3);
-    d.setHours(9, 0, 0, 0);
-    return d;
-  }, []);
 
   const [filterState, setFilterState] = useState<DistributionFilterState>(() => {
     return {
@@ -407,7 +399,7 @@ export const DistributionDashboard: React.FC = () => {
   }, []);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       <AdminHero
         tiles={SAMPLE_TILES}
         incident={SAMPLE_INCIDENT}
@@ -415,14 +407,6 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
-      {!bannerDismissed && (
-        <PreOpenBanner
-          targetDate={preopenTargetDate}
-          onOptIn={handlePreopenOptIn}
-          onDismiss={handlePreopenDismiss}
-        />
-      )}
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -630,6 +614,16 @@ export const DistributionDashboard: React.FC = () => {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }}
       />
+      <GovernanceVoteReceiptModal
+        isOpen={isReceiptModalOpen}
+        onClose={() => setIsReceiptModalOpen(false)}
+        proposalTitle="Nexus Cloud Series A Fee Structure"
+        voteChoice="For"
+        timestamp="2026-08-26 14:30 UTC"
+        txHash="0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
+        status="confirmed"
+      />
+      <Button onClick={() => setIsReceiptModalOpen(true)}>Cast Vote (Mock)</Button>
     </div>
   );
 };

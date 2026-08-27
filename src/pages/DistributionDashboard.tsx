@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { Link, useSearchParams, useBlocker, useNavigate } from 'react-router-dom';
 import { AdminHero } from '../components/AdminHero';
 import type { AdminTileData, IncidentData } from '../components/AdminHero';
 import { Button } from '../components/Button';
@@ -18,6 +18,8 @@ import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/Blackl
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
 import { UploadQueue } from '../components/UploadQueue/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
@@ -41,7 +43,7 @@ const MOCK_PAYOUTS: ExtendedPayoutDetail[] = [
     status: 'completed', grossAmount: 105000, netAmount: 100000, protocolFeeUsd: 5000,
     currency: 'USDC', offeringName: 'Nexus Cloud Series A', offeringId: 'off-nexus-001',
     gasFeeUsd: 42.50, gasFeeEth: 0.018, gasPriceGwei: 22, estimatedGasUsd: 45, estimatedGasPriceGwei: 24,
-    executionNetwork: 'Stellar', blockNumber: 8912345, contractAddress: '0x…789A', transactionHash: '0x…DEF0',
+    executionNetwork: 'Stellar', blockNumber: 8912345, contractAddress: '0x…789A', transactionHash: '0x…DEF2',
     recipientsCount: 4, recipients: MOCK_RECIPIENTS_BASE, retries: [],
     region: 'North America', nextPayoutDate: '2026-08-15', nextPayoutEstimateUsd: 105000, nextPayoutLink: '/startup/distributions?payoutId=PO-2026-005',
   },
@@ -89,7 +91,7 @@ const ERROR_RATE_BY_ISSUER: Array<{
     id: 'issuer-aero', title: 'ERROR RATE', value: '1.2%', rate: 1.2, delta: -0.3,
     sparklineData: [
       { label: 'W1', value: 1.5 }, { label: 'W2', value: 1.8 },
-      { label: 'W3', value: 1.3 }, { label: 'W4', value: 1.2 },
+      { label: 'W2', value: 1.3 }, { label: 'W4', value: 1.2 },
     ],
     filterValue: 'StellarTech Ventures',
   },
@@ -97,16 +99,18 @@ const ERROR_RATE_BY_ISSUER: Array<{
     id: 'issuer-stellar', title: 'ERROR RATE', value: '3.7%', rate: 3.7, delta: 0.5,
     sparklineData: [
       { label: 'W1', value: 3.2 }, { label: 'W2', value: 3.4 },
-      { label: 'W3', value: 3.6 }, { label: 'W4', value: 3.7 },
+      { label: 'W2', value: 3.6 }, { label: 'W4', value: 3.7 },
     ],
     filterValue: 'Quantum Labs',
   },
 ];
 
-const ERROR_RATE_BY_REGION: Array<{
-  id: string; title: string; value: string; rate: number; delta: number;
-  sparklineData: ErrorRateDataPoint[]; filterValue: string;
-}> = [
+const ERROR_RATE_BY_REGION: Array<[
+  {
+    id: string; title: string; value: string; rate: number; delta: number;
+    sparklineData: ErrorRateDataPoint[]; filterValue: string;
+  }
+]> = [
   {
     id: 'region-na', title: 'ERROR RATE', value: '2.8%', rate: 2.8, delta: 0.4,
     sparklineData: [
@@ -119,7 +123,7 @@ const ERROR_RATE_BY_REGION: Array<{
     id: 'region-eu', title: 'ERROR RATE', value: '1.9%', rate: 1.9, delta: -0.6,
     sparklineData: [
       { label: 'W1', value: 2.5 }, { label: 'W2', value: 2.3 },
-      { label: 'W3', value: 2.0 }, { label: 'W4', value: 1.9 },
+      { label: 'W2', value: 2.0 }, { label: 'W4', value: 1.9 },
     ],
     filterValue: 'Europe',
   },
@@ -147,7 +151,7 @@ const SAMPLE_TILES: AdminTileData[] = [
     label: 'API Latency',
     value: '42ms',
     status: 'healthy',
-    detail: 'Avg response time – p95 under 100ms',
+    detail: 'Avg response time - p95 under 100ms',
     href: '/admin/api-latency',
   },
   {
@@ -185,10 +189,10 @@ const GOVERNANCE_PROPOSAL: ProposalData = {
     'A proposal to allocate an additional 500,000 tokens to the developer grant program to support ecosystem growth and accelerate protocol contributor onboarding.',
   proposer: '0x1234...abcd',
   status: 'active',
-  endTime: Date.now() + 86_400_000 * 3,
-  quorumRequired: 4_000_000,
-  quorumReached: 2_500_000,
-  results: { for: 2_000_000, against: 450_000, abstain: 50_000 },
+  endTime: Date.now() + 864000000 * 3,
+  quorumRequired: 4,000,000,
+  quorumReached: 2,500,000,
+  results: { for: 2,000,000, against: 450,000, abstain: 50,000 },
   participation: { turnout: 68.4, uniqueVoters: 142, delegates: 12 },
   userVote: null,
 };
@@ -217,6 +221,16 @@ const mockUploader: Uploader = (file, onProgress) => {
   });
 };
 
+const DEFAULT_FILTER_STATE: DistributionFilterState = {
+  searchQuery: '',
+  dateRange: 'all',
+  issuer: 'all',
+  region: 'all',
+  status: 'all',
+  segmentBy: 'none',
+  compareMode: false,
+};
+
 export const DistributionDashboard: React.FC = () => {
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(true);
   const [isBulkRemoveModalOpen, setIsBulkRemoveModalOpen] = useState(false);
@@ -242,7 +256,35 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(null);
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+  const { files, uploadFiles, retryFile } = useUploadQueue();
+  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const navigate = useNavigate();
+  const blocker = useBlocker(hasUnsavedChanges);
 
+  const dialogRef = useRef<HTMLDivRef>(null);
+  const stayButtonRef = useRef<HTMLButtonElement>(null);
+
+  const updateFiltersAndUrl = useCallback((newState: DistributionFilterState) => {
+    setFilterState(newState);
+    const params = new URLSearchParams();
+    if (newState.searchQuery) params.set('search', newState.searchQuery);
+    if (newState.dateRange !== 'all') params.set('date', newState.dateRange);
+    if (newState.issuer !== 'all') params.set('issuer', newState.issuer);
+    if (newState.region !== 'all') params.set('region', newState.region);
+    if (newState.status !== 'all') params.set('status', newState.status);
+    if (newState.segmentBy !== 'none') params.set('segment', newState.segmentBy);
+    if (newState.compareMode) params.set('compare', 'true');
+    setSearchParams(params);
+    setHasUnsavedChanges(JSON.stringify(newState) !== JSON.stringify(DEFAULT_FILTER_STATE));
+  }, [setSearchParams ]);
+
+  const handleFilterChange = useCallback((patch: Partial<DistributionFilterState>) => {
+    const newState = { ...filterState, ...patch };
+    updateFiltersAndUrl(newState);
+  }, [filterState, updateFiltersAndUrl]);
 
   const handleUploadAll = useCallback(() => {
     uploadFiles(mockUploader);
@@ -256,16 +298,7 @@ export const DistributionDashboard: React.FC = () => {
   );
 
   const handleResetFilters = useCallback(() => {
-    const defaultState: DistributionFilterState = {
-      searchQuery: '',
-      dateRange: 'all',
-      issuer: 'all',
-      region: 'all',
-      status: 'all',
-      segmentBy: 'none',
-      compareMode: false,
-    };
-    updateFiltersAndUrl(defaultState);
+    updateFiltersAndUrl(DEFAULT_FILTER_STATE);
   }, [updateFiltersAndUrl]);
 
   const handleOpenPanel = (id: string) => {
@@ -293,7 +326,7 @@ export const DistributionDashboard: React.FC = () => {
               ...p.retries,
               {
                 id: `ret-${Date.now()}`,
-                timestamp: new Date().toISOString(),
+                timestamp: new Date().toISSString(),
                 attemptNumber: p.retries.length + 1,
                 status: 'success',
                 reason: 'Ops staff triggered retry dispatch.',
@@ -310,406 +343,195 @@ export const DistributionDashboard: React.FC = () => {
   const handleExportCsv = (payoutId: string) => {
     const payout = payoutsList.find((p) => p.id === payoutId);
     if (!payout) return;
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      ['Wallet,Name,Tier,Share%,Amount,Status']
-        .concat(
-          payout.recipients.map(
-            (r) =>
-              `${r.walletAddress},${r.name || ''},${r.tier},${r.sharePercentage},${r.amount},${r.status}`
-          )
-        )
-        .join('\n');
-    const encodedUri = encodeURI(csvContent);
+    const csvContent = [
+      ['Field', 'Value'],
+      ['Payout ID', payout.id],
+      ['Date', payout.date],
+      ['Time', payout.time],
+      ['Status', payout.status],
+      ['Gross Amount', String(payout.grossAmount)],
+      ['Net Amount', String(payout.netAmount)],
+      ['Protocol Fee (USD)', String(payout.protocolFeeUsd)],
+      ['Currency', payout.currency],
+      ['Offering Name', payout.offeringName],
+      ['Execution Network', payout.executionNetwork],
+      ['Block Number', String(payout.blockNumber)],
+      ['Transaction Hash', payout.transactionHash],
+      ['Recipients Count', String(payout.recipientsCount)],
+    ]
+      .map((row) => row.join(','))
+      .join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectUUL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `${payout.id}_recipients.csv`);
-    document.body.appendChild(link);
+    link.href = url;
+    link.download = `payout-${payoutId}.csv`;
     link.click();
-    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  const filteredPayouts = useMemo(() => {
-    return payoutsList.filter((p) => {
-      const search = filterState.searchQuery.toLowerCase();
-      if (
-        search &&
-        !p.id.toLowerCase().includes(search) &&
-        !p.offeringName.toLowerCase().includes(search) &&
-        !p.payoutNumber.toLowerCase().includes(search)
-      ) {
-        return false;
+  // Effect for browser refresh/close with unsaved changes
+  useEffect(() => {
+    const handler = (event: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        event.preventDefault();
+        event.returnValue = '';
       }
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasUnsavedChanges]);
 
-      if (
-        filterState.issuer !== 'all' &&
-        filterState.issuer !== 'All Issuers' &&
-        p.offeringName !== filterState.issuer
-      ) {
-        return false;
-      }
+  // Open modal when blocked by router
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      setIsExitConfirmOpen(true);
+    }
+  }, [blocker.state]);
 
-      if (
-        filterState.region !== 'all' &&
-        filterState.region !== 'All Regions' &&
-        p.region !== filterState.region
-      ) {
-        return false;
-      }
+  // Focus trap for the dialog
+  useEffect(() => {
+    if (isExitConfirmOpen) {
+      const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      const first = focusableElements?[0];
+      const last = focusableElements?[focusableElements.length - 1];
+      stayButtonRef.current?.focus();
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Tab') {
+          if (!focusableElements || focusableElements.length === 0) return;
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last?.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first?.focus();
+          }
+        }
+        if (e.key === 'Escape') {
+          handleStay();
+        }
+      };
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [isExitConfirmOpen]);
 
-      if (
-        filterState.status !== 'all' &&
-        filterState.status !== 'All Statuses' &&
-        p.status !== filterState.status
-      ) {
-        return false;
-      }
+  const handleSaveAndExit = () => {
+    // Mock save action. In a real implementation, this would persist the wizard state.
+    setHasUnsavedChanges(false);
+    setIsExitConfirmOpen(false);
+    if (blocker.proceed) blocker.proceed();
+  };
 
-      return true;
-    });
-  }, [payoutsList, filterState]);
+  const handleDiscard = () => {
+    setHasUnsavedChanges(false);
+    setIsExitConfirmOpen(false);
+    if (blocker.proceed) blocker.proceed();
+  };
 
-  const segmentedData = useMemo(() => {
-    const effectiveSegment =
-      filterState.segmentBy !== 'none'
-        ? filterState.segmentBy
-        : filterState.compareMode
-        ? 'region'
-        : 'none';
-
-    if (effectiveSegment === 'none') return null;
-
-    const groups: {
-      [key: string]: { count: number; totalDistributed: number; payouts: ExtendedPayoutDetail[] };
-    } = {};
-
-    filteredPayouts.forEach((p) => {
-      let key = 'Other';
-      if (effectiveSegment === 'region') key = p.region || 'Other';
-      if (effectiveSegment === 'offering') key = p.offeringName;
-      if (effectiveSegment === 'status') key = p.status.toUpperCase();
-      if (effectiveSegment === 'tier') key = p.tier || 'Standard';
-
-      if (!groups[key]) {
-        groups[key] = { count: 0, totalDistributed: 0, payouts: [] };
-      }
-      groups[key].count += 1;
-      groups[key].totalDistributed += p.netAmount;
-      groups[key].payouts.push(p);
-    });
-
-    return groups;
-  }, [filteredPayouts, filterState.segmentBy, filterState.compareMode]);
-
-  const selectedPayoutData = useMemo(() => {
-    return payoutsList.find((p) => p.id === selectedPayoutId) || null;
-  }, [payoutsList, selectedPayoutId]);
-
-  const totalDistributed = useMemo(() => {
-    return filteredPayouts.reduce((sum, p) => sum + p.netAmount, 0);
-  }, [filteredPayouts]);
-
-  const totalGasSpent = useMemo(() => {
-    return filteredPayouts.reduce((sum, p) => sum + p.gasFeeUsd, 0);
-  }, [filteredPayouts]);
-
-  const failedCount = useMemo(() => {
-    return filteredPayouts.filter((p) => p.status === 'failed').length;
-  }, [filteredPayouts]);
-
-  const activePayouts = useMemo(() => {
-    return filteredPayouts.filter((p) => p.status === 'processing' || p.status === 'scheduled').length;
-  }, [filteredPayouts]);
-
-  const pendingRetries = useMemo(() => {
-    return filteredPayouts.reduce((sum, p) => sum + p.retries.filter((r) => r.status === 'failed').length, 0);
-  }, [filteredPayouts]);
-
-  const handlePreopenOptIn = useCallback(() => {
-    console.log('User opted in for redemption window reminder');
-  }, []);
-
-  const handlePreopenDismiss = useCallback(() => {
-    setBannerDismissed(true);
-  }, []);
+  const handleStay = () => {
+    setIsExitConfirmOpen(false);
+    if (blocker.reset) blocker.reset();
+  };
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
+    <div className="distribution-dashboard">
+      {!bannerDismissed && (
+        <div className="banner" role="status">
+          <span>Pre-open target: {preopenTargetDate.toLocaleString()}</span>
+          <Button variant="ghost" onClick={() => setBannerDismissed(true)}>Dismiss</Button>
+        </div>
+      )}
       <AdminHero
+        title="Distribution Dashboard"
+        subtitle="Monitor and manage distributions"
         tiles={SAMPLE_TILES}
         incident={SAMPLE_INCIDENT}
-        onDismissIncident={(id) => {
-          console.log('Dismissed incident:', id);
-        }}
       />
-    <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
-      {!bannerDismissed && (
-        <PreOpenBanner
-          targetDate={preopenTargetDate}
-          onOptIn={handlePreopenOptIn}
-          onDismiss={handlePreopenDismiss}
+      <DistributionFilterToolbar
+        filterState={filterState}
+        onFilterChange={handleFilterChange}
+        onReset={handleResetFilters}
+      />
+      <div className="metrics-grid">
+        <div className="error-rate-grid">
+          {ERROR_RATE_BY_ISSUER.map((tile) => (
+            <ErrorRateSparklineTile
+              key={tile.id}
+              title={tile.title}
+              value={tile.value}
+              rate={tile.rate}
+              delta={tile.delta}
+              sparklineData={tile.sparklineData}
+            />
+          ))}
+        </div>
+        <RevenuePayoutChart data={MOCK_REVENUE_PAYOUT_DATA} />
+      </div>
+      <div className="governance-panels">
+        <GovernanceDelegation />
+        <GovernanceResults />
+        <KycResubmissionTimeline />
+        <DocumentUploadStatus />
+      </div>
+      <UploadQueue
+        files={files}
+        onUploadAll={handleUploadAll}
+        onRetry={handleRetry}
+      />
+      {isBulkRemoveModalOpen && (
+        <BlacklistBulkRemoveConfirm
+          isOpen={isBulkRemoveModalOpen}
+          onClose={() => setIsBulkRemoveModalOpen(false)}
         />
       )}
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Distribution Dashboard</h1>
-          <p className="text-muted text-sm mt-1">
-            Monitor and audit on-chain RevenueShare payout cycles across your portfolio.
-          </p>
-        </div>
-
-        <div className="flex flex-col sm:flex-row items-center gap-4 self-start md:self-auto">
-          <div className="glass-card px-4 py-2 flex flex-col items-end">
-            <span className="text-xs text-muted uppercase">Delegated Power</span>
-            <span className="text-sm font-bold text-white">0 VP</span>
-          </div>
-          <button 
-            onClick={() => setIsBulkRemoveModalOpen(true)}
-            className="rounded px-4 py-2 text-sm font-semibold bg-rose-600 text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
-          >
-            Bulk Remove Test
-          </button>
-          <a href="/startup/report-revenue" className="payout-btn-primary">
-            + Report Monthly Revenue
-          </a>
-        </div>
-      </div>
-
-      {/* Filter Toolbar */}
-      <DistributionFilterToolbar
-        filters={filterState}
-        onFilterChange={updateFiltersAndUrl}
-        onResetFilters={handleResetFilters}
-      />
-
-      <section aria-labelledby="governance-proposal-heading" className="glass-card p-6 md:p-8">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Governance</p>
-            <h2 id="governance-proposal-heading" className="text-xl font-semibold text-white">
-              Proposal Detail
-            </h2>
-          </div>
-          <p className="text-sm text-muted max-w-2xl">
-            Review quorum, support, and the latest vote distribution before casting your decision.
-          </p>
-        </div>
-        <GovernanceProposalDetail proposal={GOVERNANCE_PROPOSAL} />
-      </section>
-
-      <section aria-labelledby="upload-queue-heading" className="glass-card p-6 md:p-8">
-        <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between mb-6">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Documents</p>
-            <h2 id="upload-queue-heading" className="text-xl font-semibold text-white">
-              Batch Upload Queue
-            </h2>
-          </div>
-          <p className="text-sm text-muted max-w-2xl">
-            Track each document’s progress, retry failures, and remove completed or cancelled files.
-          </p>
-        </div>
-        <UploadQueue
-          queue={queue}
-          onAddFiles={addFiles}
-          onRemove={removeFile}
-          onRetry={handleRetry}
-          onUploadAll={handleUploadAll}
-          onClearComplete={clearComplete}
-          totalCount={totalCount}
-          successCount={successCount}
-          errorCount={errorCount}
-          uploadingCount={uploadingCount}
-          overallProgress={overallProgress}
-          uploader={undefined}
-          accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+      {selectedPayoutId && (
+        <PayoutDrillDownPanel
+          payout={payoutsList.find((p) => p.id === selectedPayoutId)}
+          onClose={handleClosePanel}
+          onRetryBatch={handleRetryBatch}
+          onExportCsv={handleExportCsv}
         />
-      </section>
-
-      {/* Token Supply Configuration */}
-      <div className="mt-8">
-        <TokenSupplyBlock />
-      </div>
-
-      {/* KPI Summary Cards */}
-      <div
-        className="grid grid-cols-2 md:grid-cols-4 gap-4"
-        role="list"
-        aria-label="Distribution key metrics"
-      >
-        <div role="listitem" data-testid="kpi-total-distributed">
-          <div className="glass-card p-5 flex flex-col gap-2">
-            <span className="text-muted text-xs font-medium uppercase tracking-wide">Total Distributed</span>
-            <span className="text-2xl font-bold tracking-tight">
-              ${totalDistributed.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        </div>
-        <div role="listitem" data-testid="kpi-active-payouts">
-          <div className="glass-card p-5 flex flex-col gap-2">
-            <span className="text-muted text-xs font-medium uppercase tracking-wide">Active Payouts</span>
-            <span className="text-2xl font-bold tracking-tight">{activePayouts}</span>
-          </div>
-        </div>
-        <div role="listitem" data-testid="kpi-gas-spent">
-          <div className="glass-card p-5 flex flex-col gap-2">
-            <span className="text-muted text-xs font-medium uppercase tracking-wide">Gas Spent</span>
-            <span className="text-2xl font-bold tracking-tight">
-              ${totalGasSpent.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-          </div>
-        </div>
-        <div role="listitem" data-testid="kpi-pending-retries">
-          <div className="glass-card p-5 flex flex-col gap-2">
-            <span className="text-muted text-xs font-medium uppercase tracking-wide">Pending Retries</span>
-            <span className="text-2xl font-bold tracking-tight">{pendingRetries}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Revenue vs Payouts Chart ── */}
-      <div className="mt-8">
-        <RevenuePayoutChart data={MOCK_REVENUE_PAYOUT_DATA} revenueCurrency="USD" payoutCurrency="USD" />
-      </div>
-
-      {/* ── Payout Error Rate Sparkline Tiles ── */}
-      <section aria-labelledby="error-rate-heading" data-testid="error-rate-section">
-        <div className="flex items-center justify-between mb-4">
-          <h2 id="error-rate-heading" className="text-xl font-semibold">
-            Payout Error Rates
-          </h2>
-          <Link
-            to="/startup/distributions?status=failed"
-            className="text-xs text-primary hover:text-primary-hover transition-colors"
-            data-testid="error-rate-view-all"
-          >
-            View all failed →
-          </Link>
-        </div>
-
-        <div className="space-y-6">
-          {/* By Issuer */}
-          <div data-testid="error-rate-by-issuer">
-            <h3 className="text-sm font-medium text-muted mb-3 uppercase tracking-wide">
-              By Issuer
-            </h3>
-            <div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4"
-              role="list"
-              aria-label="Error rates by issuer"
-            >
-              {ERROR_RATE_BY_ISSUER.map((item) => (
-                <div role="listitem" key={item.id}>
-                  <ErrorRateSparklineTile
-                    id={item.id}
-                    title={item.title}
-                    value={item.value}
-                    rate={item.rate}
-                    delta={item.delta}
-                    sparklineData={item.sparklineData}
-                    groupBy="issuer"
-                    filterValue={item.filterValue}
-                    href={`/startup/distributions?issuer=${encodeURIComponent(item.filterValue)}&status=failed`}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* By Region */}
-          <div data-testid="error-rate-by-region">
-            <h3 className="text-sm font-medium text-muted mb-3 uppercase tracking-wide">
-              By Region
-            </h3>
-            <div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4"
-              role="list"
-              aria-label="Error rates by region"
-            >
-              {ERROR_RATE_BY_REGION.map((item) => (
-                <div role="listitem" key={item.id}>
-                  <ErrorRateSparklineTile
-                    id={item.id}
-                    title={item.title}
-                    value={item.value}
-                    rate={item.rate}
-                    delta={item.delta}
-                    sparklineData={item.sparklineData}
-                    groupBy="region"
-                    filterValue={item.filterValue}
-                    href={`/startup/distributions?region=${encodeURIComponent(item.filterValue)}&status=failed`}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Governance Delegation */}
-      <div className="mt-8">
-        <GovernanceDelegation />
-      </div>
-
-      {/* Governance Results Breakdown */}
-      <div className="mt-12">
-        <GovernanceResults
-          results={{ for: 124, against: 58, abstain: 18 }}
-          participation={{ turnout: 63.5, uniqueVoters: 200, delegates: 12 }}
-          status="passed"
-        />
-      </div>
-
-      {/* Financial terms wizard step */}
-      <section aria-labelledby="financial-terms-heading">
-        <h2
-          id="financial-terms-heading"
-          style={{ fontSize: 'var(--font-size-xl)', fontWeight: 'var(--font-weight-semibold)', marginBottom: 'var(--spacing-md)' }}
-        >
-          Configure Offering Terms
-        </h2>
-        <div className="glass-card" style={{ padding: 'var(--spacing-xl)' }}>
-          <FinancialTermsForm
-            onSubmit={(values: Record<FinancialTermsField, number>) => {
-              // Replace with real API call
-              console.log('Financial terms submitted:', values);
-            }}
-          />
-        </div>
-      </section>
-
-      {/* Drill-down Panel */}
-      <PayoutDrillDownPanel
-        isOpen={selectedPayoutId !== null}
-        payoutId={selectedPayoutId}
-        payoutData={selectedPayoutData}
-        onClose={handleClosePanel}
-        onRetryBatch={handleRetryBatch}
-        onExportCsv={handleExportCsv}
-      />
-
+      )}
       <LockupClaimModal
         isOpen={isClaimModalOpen}
         onClose={() => setIsClaimModalOpen(false)}
-        unlockedAmount="$12,480.00"
-        gasEstimate={22}
       />
-
-      <BlacklistBulkRemoveConfirm
-        isOpen={isBulkRemoveModalOpen}
-        onClose={() => setIsBulkRemoveModalOpen(false)}
-        entries={[
-          { id: '1', value: '0x1234567890abcdef1234567890abcdef12345678', type: 'Wallet' },
-          { id: '2', value: '192.168.1.100', type: 'IP' },
-          { id: '3', value: 'bad-actor@example.com', type: 'Email' }
-        ]}
-        onConfirm={async (reason, initials) => {
-          console.log('Confirmed bulk remove:', { reason, initials });
-          // Mock API call
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-        }}
-      />
+      <GovernanceProposalDetail proposal={GOVERNANCE_PROPOSAL} />
+      {isExitConfirmOpen && (
+        <div className="modal-overlay" role="presentation">
+          <div
+            className="confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="exit-confirm-title"
+            aria-describedby="exit-confirm-description"
+            ref={dialogRef}
+          >
+            <h2 id="exit-confirm-title">Unsaved changes</h2>
+            <p id="exit-confirm-description">
+              You have unsaved changes. If you leave, your progress may be lost.
+            </p>
+            <div className="confirm-actions">
+              <Button variant="primary" onClick={handleSaveAndExit}>
+                Save and Exit
+              </Button>
+              <Button variant="danger" onClick={handleDiscard}>
+                Discard
+              </Button>
+              <button
+                ref={stayButtonRef}
+                className="button-secondary"
+                onClick={handleStay}
+              ~
+                Stay
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

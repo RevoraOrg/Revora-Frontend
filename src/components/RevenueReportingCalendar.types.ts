@@ -182,3 +182,40 @@ export interface CalendarGridProps {
   /** Callback when user presses T to jump to today */
   onJumpToToday?: () => void;
 }
+
+/* ─── Keyboard Model ────────────────────────────────────────────────── */
+
+/** Available calendar shortcut actions */
+export type CalendarShortcutAction =
+  | 'previous-day'
+  | 'next-day'
+  | 'previous-week'
+  | 'next-week'
+  | 'previous-month'
+  | 'next-month'
+  | 'today'
+  | 'open-shortcuts';
+
+/** Describes a keyboard shortcut used for calendar navigation */
+export interface CalendarShortcut {
+  /** Keyboard key(s) that trigger the shortcut (e.g. 'ArrowLeft', 'PageUp', 'T') */
+  keys: string[];
+  /** Action identifier */
+  action: CalendarShortcutAction;
+  /** Short human-readable description (used in overlays/hints) */
+  description: string;
+  /** Accessible label (e.g. for buttons) */
+  ariaLabel: string;
+}
+
+/** Canonical list of keyboard shortcuts for the revenue calendar */
+export const CALENDAR_SHORTCUTS: CalendarShortcut[] = [
+  { keys: ['ArrowLeft'], action: 'previous-day', description: 'Go to previous day', ariaLabel: 'Previous day' },
+  { keys: ['ArrowRight'], action: 'next-day', description: 'Go to next day', ariaLabel: 'Next day' },
+  { keys: ['ArrowUp'], action: 'previous-week', description: 'Go to previous week', ariaLabel: 'Previous week' },
+  { keys: ['ArrowDown'], action: 'next-week', description: 'Go to next week', ariaLabel: 'Next week' },
+  { keys: ['PageUp'], action: 'previous-month', description: 'Go to previous month', ariaLabel: 'Previous month' },
+  { keys: ['PageDown'], action: 'next-month', description: 'Go to next month', ariaLabel: 'Next month' },
+  { keys: ['T'], action: 'today', description: 'Jump to today', ariaLabel: 'Today' },
+  { keys: ['?'], action: 'open-shortcuts', description: 'Show keyboard shortcuts', ariaLabel: 'Show shortcuts' },
+];

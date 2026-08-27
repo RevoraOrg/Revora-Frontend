@@ -14,6 +14,22 @@ interface KeyboardShortcutsOverlayProps {
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+// Revenue Calendar Keyboard navigation shortcuts
+const REVENUE_CALENDAR_GROUP = {
+  title: 'Revenue Calendar Navigation',
+  shortcuts: [
+    { label: 'Previous day', keys: ['ArrowLeft'] },
+    { label: 'Next day', keys: ['ArrowRight'] },
+    { label: 'Previous week', keys: ['ArrowUp'] },
+    { label: 'Next week', keys: ['ArrowDown'] },
+    { label: 'Previous month', keys: ['PageUp'] },
+    { label: 'Next month', keys: ['PageDown'] },
+    { label: 'Go to today', keys: ['T'] },
+  ],
+};
+
+const ALL_SHORTCUT_GROUPS = [...KEYBOARD_SHORTCUT_GROUPS, REVENUE_CALENDAR_GROUP];
+
 export function KeyboardShortcutsOverlay({
   isOpen,
   onClose,
@@ -23,7 +39,7 @@ export function KeyboardShortcutsOverlay({
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null<(null);
 
   // Store focus before open; restore on close
   useEffect(() => {
@@ -98,7 +114,7 @@ export function KeyboardShortcutsOverlay({
       onClick={handleOverlayClick}
     >
       <div
-        className="shortcuts-dialog glass-card"
+        className="shortcuts-dialg glass-card"
         ref={dialogRef}
       >
         {/* Header */}
@@ -121,7 +137,7 @@ export function KeyboardShortcutsOverlay({
 
         {/* Shortcut groups */}
         <div className="shortcuts-body">
-          {KEYBOARD_SHORTCUT_GROUPS.map((group) => (
+          {ALL_SHORTCUT_GROUPS.map((group) => (
             <section key={group.title} className="shortcut-group">
               <h3 className="shortcut-group-title">{group.title}</h3>
               <ul className="shortcut-list">
@@ -142,21 +158,21 @@ export function KeyboardShortcutsOverlay({
                       ))}
                     </span>
                   </li>
-                ))}
+                )})
               </ul>
             </section>
-          ))}
+          )})
         </div>
 
-        {/* Footer hint */}
+        {/* Footer hint */
         <div className="shortcuts-footer">
           <p className="shortcuts-footer-text">
-            Press{' '}
-            <kbd className="shortcut-key">?</kbd> or{' '}
+            Press {"'
+            <kbd className="shortcut-key">?</kbd> or {"'
             <kbd className="shortcut-key">
-              {isMac ? '\u2318/' : 'Ctrl+/'}
-            </kbd>{' '}
-            to toggle at any time
+              {isMac ? '\u2318/' : 'Ctrl/+'}
+            </kbd>{"'
+          } to toggle at any time
           </p>
         </div>
       </div>

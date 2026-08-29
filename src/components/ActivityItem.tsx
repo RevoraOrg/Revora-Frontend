@@ -3,16 +3,60 @@ import { Copy, Check, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react'
 import payoutIcon from '../assets/icons/payout.svg';
 import offeringIcon from '../assets/icons/offering.svg';
 import blacklistIcon from '../assets/icons/blacklist.svg';
+import { OnchainBadge, type OnchainBadgeVariant } from './OnchainBadge/OnchainBadge';
 import './ActivityItem.css';
+
+export type TxStatus =
+  | 'pending'
+  | 'confirming'
+  | 'confirmed'
+  | 'failed'
+  | 'reorged'
+  | 'success'
+  | 'completed'
+  | 'error';
+
+/**
+ * Normalise a legacy/raw status string to a canonical on-chain badge variant.
+ * `completed`/`success` map to `confirmed`; `error` maps to `failed`.
+ * Unknown or empty values return `undefined` so the caller can render a
+ * neutral placeholder.
+ */
+export function normalizeTxStatus(status?: string): OnchainBadgeVariant | undefined {
+  if (!status) return undefined;
+  switch (status.trim().toLowerCase()) {
+    case 'pending':
+      return 'pending';
+    case 'confirming':
+      return 'confirming';
+    case 'confirmed':
+    case 'completed':
+    case 'success':
+      return 'confirmed';
+    case 'failed':
+    case 'error':
+      return 'failed';
+    case 'reorged':
+    case 'reorg':
+      return 'reorged';
+    default:
+      return undefined;
+  }
+}
 
 export interface TransactionReceiptProps {
   transactionHash?: string;
   fromAddress?: string;
   toAddress?: string;
   value?: string;
-  status?: 'pending' | 'completed' | 'failed' | 'success';
+  status?: TxStatus;
   gas?: string;
   explorerUrl?: string;
+  confirmations?: number;
+  targetConfirmations?: number;
+  blockNumber?: number | string;
+  confirmedAt?: string;
+  network?: 'testnet' | 'public';
   className?: string;
 }
 
@@ -24,6 +68,11 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
   status,
   gas = '',
   explorerUrl = '',
+  confirmations = 0,
+  targetConfirmations = 0,
+  blockNumber,
+  confirmedAt,
+  network,
   className = '',
 }) => {
   const [copied, setCopied] = useState(false);
@@ -82,9 +131,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
   };
 
   const resolvedStatus = status ? status.toLowerCase() : '';
-  const statusDisplay = resolvedStatus
-    ? resolvedStatus.charAt(0).toUpperCase() + resolvedStatus.slice(1)
-    : '—';
+  const badgeVariant = normalizeTxStatus(resolvedStatus);
 
   // Fallback Explorer URL construction
   const resolvedExplorerUrl = explorerUrl.trim()
@@ -107,7 +154,19 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             className={`tx-receipt-value status-badge status-${resolvedStatus || 'unknown'}`} 
             data-testid="tx-status"
           >
-            {statusDisplay}
+            {badgeVariant ? (
+              <OnchainBadge
+                variant={badgeVariant}
+                size="sm"
+                currentConfirmations={confirmations}
+                targetConfirmations={targetConfirmations}
+                transactionHash={transactionHash}
+                explorerUrl={explorerUrl}
+                metadata={{ blockNumber, confirmedAt, network }}
+              />
+            ) : (
+              '—'
+            )}
           </span>
         </div>
 
@@ -215,9 +274,14 @@ export interface ActivityItemProps {
       fromAddress?: string;
       toAddress?: string;
       value?: string;
-      status?: 'pending' | 'completed' | 'failed' | 'success';
+      status?: TxStatus;
       gas?: string;
       explorerUrl?: string;
+      confirmations?: number;
+      targetConfirmations?: number;
+      blockNumber?: number | string;
+      confirmedAt?: string;
+      network?: 'testnet' | 'public';
     };
   };
   onMarkRead?: (id: string) => void;

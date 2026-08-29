@@ -157,6 +157,14 @@
   --ocb-badge-focus-ring: rgba(16, 185, 129, 0.25);
   --ocb-panel-width: 18rem;
 
+  /* On-chain status badge variants (Issue #632) */
+  --ob-failed-bg: rgba(239, 68, 68, 0.12);
+  --ob-failed-border: rgba(239, 68, 68, 0.45);
+  --ob-failed-fg: #f87171;
+  --ob-reorged-bg: rgba(167, 139, 250, 0.12);
+  --ob-reorged-border: rgba(167, 139, 250, 0.45);
+  --ob-reorged-fg: #a78bfa;
+
   /* Density Mode Tokens (Issue #174) */
   --density-row-height: 3.5rem;
   --density-pad-y: 0.875rem;

@@ -52,6 +52,8 @@ export default defineConfig({
         // Issue #642 – Canonical status-timeline pattern
         'src/components/StatusTimeline/StatusTimeline.tsx',
         'src/components/StatusTimeline/presets.ts',
+        // Issue #630 – Lockup status display with countdown and unlock timeline
+        'src/components/LockupStatusCard/LockupStatusCard.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -165,6 +167,9 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/StatusTimeline/presets.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/LockupStatusCard/LockupStatusCard.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

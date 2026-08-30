@@ -15,6 +15,7 @@ import {
 } from '../NetworkSwitcher';
 import { ErrorRecoveryPanel } from '../ErrorRecoveryPanel';
 import { useErrorSnapshots } from '../../hooks/useErrorSnapshots';
+import { RedemptionBanner, RedemptionStatus } from '../RedemptionBanner';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -61,6 +62,27 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
   }, [window.location.pathname]);
 
   const [activeNetwork, setActiveNetwork] = useState('');
+  
+  // Mock redemption windows for demonstration
+  const [redemptionWindows] = useState([
+    {
+      id: 'window-1',
+      status: 'upcoming' as RedemptionStatus,
+      endDate: new Date(Date.now() + 86400000 * 5),
+      eligibilityHint: 'Check eligibility',
+    },
+    {
+      id: 'window-2',
+      status: 'active' as RedemptionStatus,
+      endDate: new Date(Date.now() + 86400000 * 2),
+      eligibilityHint: 'You are eligible',
+    },
+    {
+      id: 'window-3',
+      status: 'closing-soon' as RedemptionStatus,
+      endDate: new Date(Date.now() + 3600000 * 4),
+    }
+  ]);
 
   const networks = [
     { id: 'ethereum', name: 'Ethereum' },
@@ -83,6 +105,20 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
 
   return (
     <div className="app-shell">
+      {/* Banners */}
+      <div className="app-shell-banners">
+        {redemptionWindows.map(win => (
+          <RedemptionBanner
+            key={win.id}
+            windowId={win.id}
+            status={win.status}
+            endDate={win.endDate}
+            eligibilityHint={win.eligibilityHint}
+            onCtaClick={() => console.log('CTA clicked for', win.id)}
+          />
+        ))}
+      </div>
+      
       {/* Header */}
       <header className="app-header">
         <div className="header-container">

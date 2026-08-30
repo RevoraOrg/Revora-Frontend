@@ -4,6 +4,7 @@ import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
+import TwoFactorBackupCodesPage from "./pages/TwoFactorBackupCodesPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
@@ -15,6 +16,7 @@ import { notificationsMock } from "./components/Notifications/notificationsData"
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
+import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
 
 export function App() {
   return (
@@ -26,6 +28,7 @@ export function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/recover-2fa" element={<TwoFactorRecoveryPage />} />
+          <Route path="/settings/2fa/backup-codes" element={<TwoFactorBackupCodesPage />} />
 
           {/* Startup routes */}
           <Route
@@ -45,6 +48,11 @@ export function App() {
           <Route
             path="/startup/governance/proposals/create"
             element={<GovernanceProposalCreatePage />}
+          />
+          {/* Issue #472 – Governance vote receipt with on-chain link */}
+          <Route
+            path="/startup/governance/vote-receipt"
+            element={<GovernanceVoteReceiptDemo />}
           />
 
           {/* Investor routes */}
@@ -93,11 +101,11 @@ function Home() {
       </div>
       <div className="home-card glass-card">
         <h1 className="home-title">
-          Stellar RevenueShare – Revora
+          Revora on <span className="text-primary">Stellar</span>
         </h1>
         <p className="home-description">
-          Tokenized revenue-sharing infrastructure on Stellar. Bridge the gap
-          between visionaries and supporters.
+          Tokenized revenue-sharing infrastructure. Bridge the gap
+          between visionaries and supporters with secure, on-chain execution.
         </p>
 
         <div className="home-grid">
@@ -115,6 +123,9 @@ function Home() {
                 • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
               <li>• Track on-chain RevenueShare payouts</li>
+              <li>
+                • <Link to="/startup/governance/vote-receipt" className="link-styled">Governance vote receipt</Link>
+              </li>
             </ul>
           </section>
 
@@ -131,13 +142,25 @@ function Home() {
           </section>
         </div>
 
-        <div className="home-actions">
-          <Link to="/signup" className="btn btn--primary">
-            Get Started
+        <div className="home-actions" style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+          <Link to="/signup" className="btn btn-primary" style={{ width: '100%' }}>
+            Connect Stellar Wallet
           </Link>
-          <Link to="/login" className="btn btn--secondary">
-            Sign In
-          </Link>
+          <div className="relative flex items-center w-full my-2">
+            <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
+            <span className="flex-shrink mx-4 text-muted text-xs uppercase tracking-wider font-medium">
+              Or continue with email
+            </span>
+            <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', width: '100%' }}>
+            <Link to="/signup" className="btn btn-secondary" style={{ flex: 1 }}>
+              Sign Up
+            </Link>
+            <Link to="/login" className="btn btn-secondary" style={{ flex: 1 }}>
+              Sign In
+            </Link>
+          </div>
         </div>
 
         <div className="home-footer">

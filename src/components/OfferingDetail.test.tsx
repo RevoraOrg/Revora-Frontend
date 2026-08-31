@@ -41,6 +41,15 @@ describe('OfferingDetail settings tabs', () => {
     expect(screen.getByRole('tab', { name: /documents/i })).toHaveAttribute('aria-selected', 'true');
   });
 
+  it('renders the lockup status card inside the distributions tab', () => {
+    renderComponent('#general');
+
+    fireEvent.click(screen.getByRole('tab', { name: /distributions/i }));
+
+    expect(screen.getByTestId('lockup-status-card')).toBeInTheDocument();
+    expect(screen.getByTestId('lockup-status-label')).toHaveTextContent(/cliff/i);
+  });
+
   it('requires the exact DELETE phrase before the destructive action can run', () => {
     renderComponent('#danger');
 

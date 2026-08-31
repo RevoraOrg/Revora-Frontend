@@ -1,4 +1,5 @@
 .onchain-badge {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: var(--ob-gap, 0.375rem);
@@ -10,6 +11,11 @@
   white-space: nowrap;
   user-select: none;
   transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.onchain-badge:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
 }
 
 .ob-icon {
@@ -147,6 +153,129 @@
   color: var(--ob-confirmed-fg, #10b981);
 }
 
+/* ─── Variant: Failed ────────────────────────────────── */
+
+.onchain-badge--failed {
+  background: var(--ob-failed-bg, rgba(239, 68, 68, 0.12));
+  border: 1px solid var(--ob-failed-border, rgba(239, 68, 68, 0.45));
+  color: var(--ob-failed-fg, #f87171);
+}
+
+/* ─── Variant: Reorged ───────────────────────────────── */
+
+.onchain-badge--reorged {
+  background: var(--ob-reorged-bg, rgba(167, 139, 250, 0.12));
+  border: 1px solid var(--ob-reorged-border, rgba(167, 139, 250, 0.45));
+  color: var(--ob-reorged-fg, #a78bfa);
+}
+
+.onchain-badge--reorged .ob-icon {
+  animation: ob-warn 1.6s ease-in-out infinite;
+}
+
+@keyframes ob-warn {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* ─── Confirmation tooltip ───────────────────────────── */
+
+.ob-tooltip {
+  position: absolute;
+  z-index: 20;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  width: min(16rem, 70vw);
+  padding: var(--spacing-xs, 0.5rem) var(--spacing-sm, 0.75rem);
+  border-radius: var(--radius-md, 8px);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.25));
+  background: var(--glass-bg, rgba(15, 23, 42, 0.95));
+  color: var(--text-main, #e5e7eb);
+  font-weight: 400;
+  text-align: start;
+  line-height: 1.4;
+  white-space: normal;
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0, 0, 0, 0.35));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.ob-tooltip--open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ob-tooltip::after {
+  content: '';
+  position: absolute;
+  inset-block-end: 100%;
+  inset-inline-start: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-block-end-color: var(--glass-border, rgba(148, 163, 184, 0.25));
+}
+
+[dir='rtl'] .ob-tooltip {
+  transform: translateX(50%);
+}
+
+[dir='rtl'] .ob-tooltip::after {
+  transform: translateX(50%);
+}
+
+.ob-tooltip-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  align-items: baseline;
+}
+
+.ob-tooltip-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted, #cbd5e1);
+}
+
+.ob-tooltip-value {
+  font-size: var(--font-size-xs, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main, #e5e7eb);
+  overflow-wrap: anywhere;
+  text-align: end;
+}
+
+.ob-tooltip-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-block-start: var(--spacing-xs, 0.5rem);
+  padding-block-start: var(--spacing-xs, 0.5rem);
+  border-block-start: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  font-size: var(--font-size-xs, 0.75rem);
+  font-weight: 600;
+  color: var(--primary, #3b82f6);
+  text-decoration: none;
+}
+
+.ob-tooltip-link:hover,
+.ob-tooltip-link:focus-visible {
+  text-decoration: underline;
+  outline: none;
+}
+
+.ob-tooltip-link--disabled {
+  color: var(--text-muted, #cbd5e1);
+  cursor: default;
+}
+
 /* ─── Reduced Motion ─────────────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
@@ -154,7 +283,8 @@
     transition: none;
   }
 
-  .onchain-badge--pending .ob-icon {
+  .onchain-badge--pending .ob-icon,
+  .onchain-badge--reorged .ob-icon {
     animation: none;
     opacity: 0.6;
   }
@@ -167,12 +297,13 @@
     transform: rotate(45deg);
   }
 
-  .onchain-badge--confirming .ob-icon {
+  .onchain-badge--confirming .ob-icon,
+  .onchain-badge--confirming .ob-counter {
     animation: none;
   }
 
-  .onchain-badge--confirming .ob-counter {
-    animation: none;
+  .ob-tooltip {
+    transition: none;
   }
 }
 
@@ -197,5 +328,17 @@
 
   .onchain-badge--confirmed {
     border-color: #10b981;
+  }
+
+  .onchain-badge--failed {
+    border-color: #ef4444;
+  }
+
+  .onchain-badge--reorged {
+    border-color: #a78bfa;
+  }
+
+  .ob-tooltip {
+    border-width: 2px;
   }
 }

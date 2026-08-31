@@ -7,6 +7,14 @@
   flex-direction: column;
 }
 
+/* Banners container */
+.app-shell-banners {
+  position: sticky;
+  top: 0;
+  z-index: 101; /* Above header */
+  width: 100%;
+}
+
 /* Header */
 .app-header {
   position: sticky;

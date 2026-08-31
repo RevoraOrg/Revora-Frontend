@@ -17,6 +17,8 @@ import {
   ArrowRight
 } from "lucide-react";
 import { EmptyState } from "./designSystem/EmptyState";
+import { LedgerTable } from "./LedgerTable";
+import type { Column } from "./LedgerTable";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
@@ -158,6 +160,156 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts }) => {
     </section>
   );
 };
+
+// ─── Ledger Entries Section (Issue #628) ──────────────────────────────────────
+
+/** A single distribution/disbursement row in the investor ledger. */
+export interface LedgerEntry {
+  id: string;
+  /** The offering the distribution belongs to. */
+  offering: string;
+  /** Gross amount disbursed in USD. */
+  amount: number;
+  status: PayoutStatus;
+  /** ISO date of the expected (or paid) distribution. */
+  date: string;
+}
+
+const LEDGER_OFFERINGS = [
+  'Helios Solar',
+  'Arctic Freight',
+  'Tidewater Bio',
+  'Vertex Robotics',
+  'Brightline Media',
+  'Atlas Mining',
+];
+
+/** Deterministic pseudo-random dollar amount (no Math.random) so the mock
+ *  ledger is stable across renders and tests. */
+function seededAmount(index: number): number {
+  const n = ((index * 9301 + 49297) % 233280) / 233280;
+  return Math.round((250 + n * 4750) * 100) / 100;
+}
+
+/** Build `count` deterministic ledger entries. Exported for tests/demos. */
+export function generateLedgerEntries(count: number): LedgerEntry[] {
+  const statuses: PayoutStatus[] = ['Paid', 'Processing', 'Upcoming'];
+  const entries: LedgerEntry[] = [];
+  for (let i = 0; i < count; i += 1) {
+    entries.push({
+      id: `LED-${String(i + 1).padStart(4, '0')}`,
+      offering: LEDGER_OFFERINGS[i % LEDGER_OFFERINGS.length],
+      amount: seededAmount(i + 1),
+      status: statuses[i % statuses.length],
+      date: new Date(Date.UTC(2026, (i * 7) % 12, (i + 1) % 28 + 1)).toISOString().slice(0, 10),
+    });
+  }
+  return entries;
+}
+
+const LEDGER_COLUMNS: Column<LedgerEntry>[] = [
+  { key: 'entry', label: 'Entry', width: '9rem', render: (r) => r.id },
+  { key: 'offering', label: 'Offering', width: '15rem', render: (r) => r.offering },
+  {
+    key: 'amount',
+    label: 'Amount',
+    width: '10rem',
+    render: (r) => `$${r.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  },
+  { key: 'status', label: 'Status', width: '8rem', render: (r) => r.status },
+  {
+    key: 'date',
+    label: 'Expected Distribution',
+    width: '12rem',
+    render: (r) => new Date(`${r.date}T00:00:00Z`).toLocaleDateString(),
+  },
+];
+
+const formatEntryAmount = (r: LedgerEntry) =>
+  `$${r.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const renderLedgerDetail = (entry: LedgerEntry) => (
+  <div className="space-y-4" data-testid="ledger-entry-detail">
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Entry ID</p>
+      <p className="font-mono">{entry.id}</p>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Offering</p>
+      <p className="font-medium">{entry.offering}</p>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Amount</p>
+      <p className="text-xl font-bold">{formatEntryAmount(entry)}</p>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Status</p>
+      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border items-center gap-1.5 ${getStatusColor(entry.status)}`}>
+        {getStatusIcon(entry.status)}
+        {entry.status}
+      </span>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Expected Distribution</p>
+      <p>{new Date(`${entry.date}T00:00:00Z`).toLocaleDateString()}</p>
+    </div>
+  </div>
+);
+
+export interface LedgerEntriesSectionProps {
+  entries: LedgerEntry[];
+  entriesPerPage?: number;
+}
+
+/**
+ * Virtualized investor ledger with a configurable-column header, density
+ * toggle, and a row-detail side drawer opened via deep-link permalinks.
+ * Issue #628.
+ */
+export const LedgerEntriesSection: React.FC<LedgerEntriesSectionProps> = ({
+  entries,
+  entriesPerPage = 50,
+}) => {
+  if (!entries || entries.length === 0) {
+    return (
+      <div className="glass-card p-8 text-center" role="region" aria-label="Ledger Entries">
+        <h3 className="text-lg font-semibold mb-2">No Ledger Entries Yet</h3>
+        <p className="text-muted text-sm">Distributions on your invested offerings will appear here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <section aria-labelledby="ledger-entries-heading" className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h2 id="ledger-entries-heading" className="text-2xl font-bold tracking-tight">Ledger Entries</h2>
+          <p className="text-muted text-sm mt-1">
+            Every distribution on your invested offerings, newest first.
+          </p>
+        </div>
+        <p className="text-xs text-muted" aria-live="polite" data-testid="ledger-entry-count">
+          {entries.length.toLocaleString()} entries
+        </p>
+      </div>
+      <LedgerTable<LedgerEntry>
+        data={entries}
+        columns={LEDGER_COLUMNS}
+        rowKey={(r) => r.id}
+        rowDetail={renderLedgerDetail}
+        detailMode="drawer"
+        drawer={{
+          deepLinkParam: 'entry',
+          title: (r) => `Ledger entry ${r.id}`,
+        }}
+        pageSize={entriesPerPage}
+        ariaLabel="Investor ledger entries"
+      />
+    </section>
+  );
+};
+
+const DEFAULT_LEDGER_ENTRIES = generateLedgerEntries(50);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -689,6 +841,11 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── Ledger Entries (virtualized table, Issue #628) ── */}
+      {!isLoading && state.kind === 'loaded' && (
+        <LedgerEntriesSection entries={DEFAULT_LEDGER_ENTRIES} />
       )}
 
       {/* ── Payout Schedule ── */}

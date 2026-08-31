@@ -11,7 +11,7 @@
  *   - Mobile layout: state containers render at narrow widths
  */
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { InvestorDiscovery, PayoutSchedule, type Payout } from './InvestorDiscovery';
@@ -522,5 +522,104 @@ describe('PayoutSchedule', () => {
     expect(screen.getAllByText('Processing')).toHaveLength(2);
     expect(screen.getByText('Paid')).toBeInTheDocument();
     expect(screen.getByText('Missed')).toBeInTheDocument();
+  });
+});
+
+// ─── Ledger Entries Section Tests (Issue #628) ──────────────────────────────
+
+import { LedgerEntriesSection, generateLedgerEntries, LedgerEntry } from './InvestorDiscovery';
+
+describe('LedgerEntriesSection – Issue #628', () => {
+  const entries = generateLedgerEntries(12);
+
+  beforeEach(() => {
+    // Reset any deep-link param left by previous tests (history.replaceState
+    // persists across tests in the same file).
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('generates deterministic ledger entries', () => {
+    const again = generateLedgerEntries(12);
+    expect(again.map((e) => e.id)).toEqual(entries.map((e) => e.id));
+    expect(entries[0].id).toBe('LED-0001');
+    expect(entries[11].id).toBe('LED-0012');
+    // amounts are stable (no Math.random)
+    expect(entries.map((e) => e.amount)).toEqual(again.map((e) => e.amount));
+  });
+
+  it('renders the virtualized ledger table with entry rows in loaded state', () => {
+    render(<LedgerEntriesSection entries={entries} />);
+    expect(screen.getByRole('heading', { name: 'Ledger Entries' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: 'Investor ledger entries' })).toBeInTheDocument();
+    expect(screen.getByText('LED-0001')).toBeInTheDocument();
+    expect(screen.getByText('LED-0012')).toBeInTheDocument();
+    // 12 entries over 6 offerings → each offering appears exactly twice.
+    expect(screen.getAllByText('Helios Solar')).toHaveLength(2);
+    expect(screen.getByTestId('ledger-entry-count')).toHaveTextContent('12 entries');
+  });
+
+  it('opens the row-detail side drawer with the entry detail', async () => {
+    const user = userEvent.setup();
+    render(<LedgerEntriesSection entries={entries} />);
+    await user.click(screen.getByText('LED-0001'));
+    const drawer = screen.getByRole('dialog', { name: 'Ledger entry LED-0001' });
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByTestId('ledger-entry-detail')).toBeInTheDocument();
+    expect(within(drawer).getByText('Helios Solar')).toBeInTheDocument();
+  });
+
+  it('writes the deep-link permalink on open and removes it on close', async () => {
+    const user = userEvent.setup();
+    render(<LedgerEntriesSection entries={entries} />);
+    await user.click(screen.getByText('LED-0001'));
+    expect(new URLSearchParams(window.location.search).get('entry')).toBe('LED-0001');
+    await user.click(screen.getByRole('button', { name: 'Close row detail' }));
+    expect(new URLSearchParams(window.location.search).has('entry')).toBe(false);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('copies the deep-link permalink to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<LedgerEntriesSection entries={entries} />);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    await user.click(screen.getByText('LED-0002'));
+    await user.click(screen.getByRole('button', { name: /Copy link/ }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('?entry=LED-0002'));
+    expect(screen.getByRole('button', { name: /Copy link/ })).toHaveTextContent('Copied');
+  });
+
+  it('renders an empty state when no entries are provided', () => {
+    const { unmount } = render(<LedgerEntriesSection entries={[]} />);
+    expect(screen.getByText('No Ledger Entries Yet')).toBeInTheDocument();
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+    unmount();
+
+    // Also cover the "entries prop absent/undefined" branch.
+    render(<LedgerEntriesSection />);
+    expect(screen.getByText('No Ledger Entries Yet')).toBeInTheDocument();
+  });
+
+  it('does NOT render the ledger section outside the loaded state', () => {
+    const { unmount } = render(<LedgerEntriesSection entries={entries} />);
+    unmount();
+    const states: Parameters<typeof InvestorDiscovery>[0]['__simulateState'][] = [
+      { kind: 'filtered-empty', query: 'zzz', hasFilters: false },
+      { kind: 'truly-empty' },
+      { kind: 'error', retryCount: 0 },
+    ];
+    for (const simState of states) {
+      const view = render(<InvestorDiscovery __simulateState={simState} />);
+      expect(view.container.querySelector('#ledger-entries-heading')).toBeNull();
+      expect(view.queryByRole('grid')).toBeNull();
+      view.unmount();
+    }
+  });
+
+  it('renders the ledger inside the loaded InvestorDiscovery page', () => {
+    renderLoaded();
+    expect(screen.getByRole('heading', { name: 'Ledger Entries' })).toBeInTheDocument();
+    expect(screen.getByText('LED-0001')).toBeInTheDocument();
   });
 });

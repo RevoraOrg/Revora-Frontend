@@ -17,8 +17,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { EmptyState } from "./designSystem/EmptyState";
-import { LedgerTable } from "./LedgerTable";
-import type { Column } from "./LedgerTable";
+import { AccessibleChart } from "./designSystem/AccessibleChart";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
@@ -733,25 +732,17 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
                       <h3 className="font-semibold text-lg">{offering.name}</h3>
                       <p className="text-xs text-muted">{offering.category}</p>
                     </div>
-                    <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-muted">Target</span>
-                        <span>{target}</span>
-                      </div>
-                      <div
-                        className="w-full bg-slate-800 rounded-full h-1.5"
-                        role="progressbar"
-                        aria-valuenow={progress}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`${progress}% funded`}
-                      >
-                        <div
-                          className="bg-primary h-1.5 rounded-full"
-                          style={{ width: `${progress}%` }}
+                      <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                        <AccessibleChart
+                          title={`${offering.name} Funding Progress`}
+                          data={[
+                            { label: 'Raised', value: offering.raised, patternId: 'pattern-stripe' },
+                            { label: 'Target', value: offering.target, patternId: 'pattern-dots' }
+                          ]}
+                          width={240}
+                          height={120}
                         />
                       </div>
-                    </div>
                     <button className="btn-primary py-2 text-xs">
                       View Prospectus
                     </button>

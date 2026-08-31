@@ -1,2 +1,6 @@
 export { OnchainBadge } from './OnchainBadge';
-export type { OnchainBadgeVariant, OnchainBadgeProps } from './OnchainBadge';
+export type {
+  OnchainBadgeVariant,
+  OnchainBadgeMetadata,
+  OnchainBadgeProps,
+} from './OnchainBadge';

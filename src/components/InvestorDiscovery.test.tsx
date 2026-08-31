@@ -11,11 +11,12 @@
  *   - Mobile layout: state containers render at narrow widths
  */
 
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import {
-  InvestorDiscovery,
-} from './InvestorDiscovery';
+import { axe, toHaveNoViolations } from 'jest-axe';
+import { InvestorDiscovery, PayoutSchedule, type Payout } from './InvestorDiscovery';
+
+expect.extend(toHaveNoViolations);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -271,18 +272,18 @@ describe('InvestorDiscovery – loaded state', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('InvestorDiscovery – search filtering', () => {
-  it('filters offerings by name (case-insensitive)', () => {
+  it('filters offerings by name (case-insensitive)', async () => {
     renderLoaded();
     const search = screen.getByRole('searchbox', { name: /Search startup offerings/i });
-    userEvent.type(search, 'techflow');
+    await userEvent.type(search, 'techflow');
     expect(screen.getByText('TechFlow AI')).toBeInTheDocument();
     expect(screen.queryByText('Nexus Pay')).toBeNull();
   });
 
-  it('shows filtered-empty when search matches nothing', () => {
+  it('shows filtered-empty when search matches nothing', async () => {
     renderLoaded();
     const search = screen.getByRole('searchbox', { name: /Search startup offerings/i });
-    userEvent.type(search, 'zzzz-not-a-real-startup');
+    await userEvent.type(search, 'zzzz-not-a-real-startup');
     expect(screen.getByRole('heading', { level: 2, name: /No offerings match your search/i })).toBeInTheDocument();
   });
 
@@ -415,9 +416,78 @@ describe('InvestorDiscovery – result area accessibility', () => {
   });
 });
 
-// ─── PayoutSchedule Tests ──────────────────────────────────────────────────
+describe('InvestorDiscovery distribution dashboard', () => {
+  it('renders payout KPIs and a labelled chart for confirmed distribution history', () => {
+    renderLoaded();
 
-import { PayoutSchedule, Payout } from './InvestorDiscovery';
+    expect(screen.getByRole('heading', { level: 2, name: /Distribution dashboard/i })).toBeInTheDocument();
+    expect(screen.getByText(/Total distributed/i)).toBeInTheDocument();
+    expect(screen.getByText(/Last payout/i)).toBeInTheDocument();
+    expect(screen.getByText(/Projected next payout/i)).toBeInTheDocument();
+    expect(screen.getByText('Jun 30, 2026')).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /Past distribution amounts and cumulative total/i })).toBeInTheDocument();
+  });
+
+  it('switches to the same payout data in an accessible table', async () => {
+    const user = userEvent.setup();
+    renderLoaded();
+
+    const toggle = screen.getByRole('button', { name: /View as table/i });
+    await user.click(toggle);
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('table', { name: /Distribution payout history/i })).toBeInTheDocument();
+    expect(screen.getByText('Jan 31, 2026')).toBeInTheDocument();
+  });
+
+  it('drops malformed and duplicate distribution records before computing KPI totals', () => {
+    render(
+      <InvestorDiscovery
+        __simulateState={{ kind: 'loaded', offerings: MOCK_OFFERINGS }}
+        __simulateDistributionState={{
+          kind: 'loaded',
+          distributions: [
+            { id: 'valid', date: '2026-02-01', amount: 100, currency: 'USD' },
+            { id: 'valid', date: '2026-02-02', amount: 900, currency: 'USD' },
+            { id: 'invalid-date', date: 'not-a-date', amount: 200, currency: 'USD' },
+            { id: 'negative', date: '2026-02-03', amount: -1, currency: 'USD' },
+          ],
+        }}
+      />,
+    );
+
+    expect(screen.getAllByText('$100')).toHaveLength(2);
+    expect(screen.queryByText('$1,000')).not.toBeInTheDocument();
+  });
+
+  it('makes empty and failure states explicit and retryable', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(
+      <InvestorDiscovery
+        __simulateState={{ kind: 'loaded', offerings: MOCK_OFFERINGS }}
+        __simulateDistributionState={{ kind: 'empty' }}
+      />,
+    );
+    expect(screen.getByText(/No distributions have been paid yet/i)).toBeInTheDocument();
+
+    rerender(
+      <InvestorDiscovery
+        __simulateState={{ kind: 'loaded', offerings: MOCK_OFFERINGS }}
+        __simulateDistributionState={{ kind: 'error' }}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /Try again/i }));
+    expect(screen.getByTestId('distribution-dashboard')).toBeInTheDocument();
+  });
+
+  it('has no axe-detectable violations in chart and table views', async () => {
+    const chart = renderLoaded();
+    expect(await axe(chart.container)).toHaveNoViolations();
+
+    await userEvent.click(screen.getByRole('button', { name: /View as table/i }));
+    expect(await axe(chart.container)).toHaveNoViolations();
+  });
+});
 
 describe('PayoutSchedule', () => {
   const mockPayouts: Payout[] = [
@@ -435,9 +505,9 @@ describe('PayoutSchedule', () => {
 
   it('renders next expected payout hero card', () => {
     render(<PayoutSchedule payouts={mockPayouts} />);
-    expect(screen.getByText('Next Expected Payout')).toBeInTheDocument();
-    // Next payout should be the Processing one (earliest of Upcoming/Processing)
-    expect(screen.getByText('$1,200')).toBeInTheDocument();
+    const nextPayout = screen.getByLabelText('Next expected payout');
+    expect(within(nextPayout).getByText('Next Expected Payout')).toBeInTheDocument();
+    expect(within(nextPayout).getByText('$1,200')).toBeInTheDocument();
   });
 
   it('groups payouts by month and year', () => {
@@ -449,8 +519,107 @@ describe('PayoutSchedule', () => {
   it('renders all payout statuses', () => {
     render(<PayoutSchedule payouts={mockPayouts} />);
     expect(screen.getAllByText('Upcoming').length).toBe(2);
-    expect(screen.getByText('Processing')).toBeInTheDocument();
+    expect(screen.getAllByText('Processing')).toHaveLength(2);
     expect(screen.getByText('Paid')).toBeInTheDocument();
     expect(screen.getByText('Missed')).toBeInTheDocument();
+  });
+});
+
+// ─── Ledger Entries Section Tests (Issue #628) ──────────────────────────────
+
+import { LedgerEntriesSection, generateLedgerEntries, LedgerEntry } from './InvestorDiscovery';
+
+describe('LedgerEntriesSection – Issue #628', () => {
+  const entries = generateLedgerEntries(12);
+
+  beforeEach(() => {
+    // Reset any deep-link param left by previous tests (history.replaceState
+    // persists across tests in the same file).
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('generates deterministic ledger entries', () => {
+    const again = generateLedgerEntries(12);
+    expect(again.map((e) => e.id)).toEqual(entries.map((e) => e.id));
+    expect(entries[0].id).toBe('LED-0001');
+    expect(entries[11].id).toBe('LED-0012');
+    // amounts are stable (no Math.random)
+    expect(entries.map((e) => e.amount)).toEqual(again.map((e) => e.amount));
+  });
+
+  it('renders the virtualized ledger table with entry rows in loaded state', () => {
+    render(<LedgerEntriesSection entries={entries} />);
+    expect(screen.getByRole('heading', { name: 'Ledger Entries' })).toBeInTheDocument();
+    expect(screen.getByRole('grid', { name: 'Investor ledger entries' })).toBeInTheDocument();
+    expect(screen.getByText('LED-0001')).toBeInTheDocument();
+    expect(screen.getByText('LED-0012')).toBeInTheDocument();
+    // 12 entries over 6 offerings → each offering appears exactly twice.
+    expect(screen.getAllByText('Helios Solar')).toHaveLength(2);
+    expect(screen.getByTestId('ledger-entry-count')).toHaveTextContent('12 entries');
+  });
+
+  it('opens the row-detail side drawer with the entry detail', async () => {
+    const user = userEvent.setup();
+    render(<LedgerEntriesSection entries={entries} />);
+    await user.click(screen.getByText('LED-0001'));
+    const drawer = screen.getByRole('dialog', { name: 'Ledger entry LED-0001' });
+    expect(drawer).toBeInTheDocument();
+    expect(within(drawer).getByTestId('ledger-entry-detail')).toBeInTheDocument();
+    expect(within(drawer).getByText('Helios Solar')).toBeInTheDocument();
+  });
+
+  it('writes the deep-link permalink on open and removes it on close', async () => {
+    const user = userEvent.setup();
+    render(<LedgerEntriesSection entries={entries} />);
+    await user.click(screen.getByText('LED-0001'));
+    expect(new URLSearchParams(window.location.search).get('entry')).toBe('LED-0001');
+    await user.click(screen.getByRole('button', { name: 'Close row detail' }));
+    expect(new URLSearchParams(window.location.search).has('entry')).toBe(false);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('copies the deep-link permalink to the clipboard', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(<LedgerEntriesSection entries={entries} />);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    await user.click(screen.getByText('LED-0002'));
+    await user.click(screen.getByRole('button', { name: /Copy link/ }));
+    await waitFor(() => expect(writeText).toHaveBeenCalled());
+    expect(writeText).toHaveBeenCalledWith(expect.stringContaining('?entry=LED-0002'));
+    expect(screen.getByRole('button', { name: /Copy link/ })).toHaveTextContent('Copied');
+  });
+
+  it('renders an empty state when no entries are provided', () => {
+    const { unmount } = render(<LedgerEntriesSection entries={[]} />);
+    expect(screen.getByText('No Ledger Entries Yet')).toBeInTheDocument();
+    expect(screen.queryByRole('grid')).not.toBeInTheDocument();
+    unmount();
+
+    // Also cover the "entries prop absent/undefined" branch.
+    render(<LedgerEntriesSection />);
+    expect(screen.getByText('No Ledger Entries Yet')).toBeInTheDocument();
+  });
+
+  it('does NOT render the ledger section outside the loaded state', () => {
+    const { unmount } = render(<LedgerEntriesSection entries={entries} />);
+    unmount();
+    const states: Parameters<typeof InvestorDiscovery>[0]['__simulateState'][] = [
+      { kind: 'filtered-empty', query: 'zzz', hasFilters: false },
+      { kind: 'truly-empty' },
+      { kind: 'error', retryCount: 0 },
+    ];
+    for (const simState of states) {
+      const view = render(<InvestorDiscovery __simulateState={simState} />);
+      expect(view.container.querySelector('#ledger-entries-heading')).toBeNull();
+      expect(view.queryByRole('grid')).toBeNull();
+      view.unmount();
+    }
+  });
+
+  it('renders the ledger inside the loaded InvestorDiscovery page', () => {
+    renderLoaded();
+    expect(screen.getByRole('heading', { name: 'Ledger Entries' })).toBeInTheDocument();
+    expect(screen.getByText('LED-0001')).toBeInTheDocument();
   });
 });

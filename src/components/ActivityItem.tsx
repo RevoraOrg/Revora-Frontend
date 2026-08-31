@@ -1,18 +1,64 @@
+import React from 'react';
+import { DollarSign, FileText, Shield, CheckCircle2, User } from 'lucide-react';
 import React, { useState } from 'react';
 import { Copy, Check, ExternalLink, ChevronDown, ChevronUp } from 'lucide-react';
 import payoutIcon from '../assets/icons/payout.svg';
 import offeringIcon from '../assets/icons/offering.svg';
 import blacklistIcon from '../assets/icons/blacklist.svg';
+import { OnchainBadge, type OnchainBadgeVariant } from './OnchainBadge/OnchainBadge';
 import './ActivityItem.css';
+
+export type TxStatus =
+  | 'pending'
+  | 'confirming'
+  | 'confirmed'
+  | 'failed'
+  | 'reorged'
+  | 'success'
+  | 'completed'
+  | 'error';
+
+/**
+ * Normalise a legacy/raw status string to a canonical on-chain badge variant.
+ * `completed`/`success` map to `confirmed`; `error` maps to `failed`.
+ * Unknown or empty values return `undefined` so the caller can render a
+ * neutral placeholder.
+ */
+export function normalizeTxStatus(status?: string): OnchainBadgeVariant | undefined {
+  if (!status) return undefined;
+  switch (status.trim().toLowerCase()) {
+    case 'pending':
+      return 'pending';
+    case 'confirming':
+      return 'confirming';
+    case 'confirmed':
+    case 'completed':
+    case 'success':
+      return 'confirmed';
+    case 'failed':
+    case 'error':
+      return 'failed';
+    case 'reorged':
+    case 'reorg':
+      return 'reorged';
+    default:
+      return undefined;
+  }
+}
 
 export interface TransactionReceiptProps {
   transactionHash?: string;
   fromAddress?: string;
   toAddress?: string;
   value?: string;
-  status?: 'pending' | 'completed' | 'failed' | 'success';
+  status?: TxStatus;
   gas?: string;
   explorerUrl?: string;
+  confirmations?: number;
+  targetConfirmations?: number;
+  blockNumber?: number | string;
+  confirmedAt?: string;
+  network?: 'testnet' | 'public';
   className?: string;
 }
 
@@ -24,6 +70,11 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
   status,
   gas = '',
   explorerUrl = '',
+  confirmations = 0,
+  targetConfirmations = 0,
+  blockNumber,
+  confirmedAt,
+  network,
   className = '',
 }) => {
   const [copied, setCopied] = useState(false);
@@ -82,9 +133,7 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
   };
 
   const resolvedStatus = status ? status.toLowerCase() : '';
-  const statusDisplay = resolvedStatus
-    ? resolvedStatus.charAt(0).toUpperCase() + resolvedStatus.slice(1)
-    : '—';
+  const badgeVariant = normalizeTxStatus(resolvedStatus);
 
   // Fallback Explorer URL construction
   const resolvedExplorerUrl = explorerUrl.trim()
@@ -107,7 +156,19 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
             className={`tx-receipt-value status-badge status-${resolvedStatus || 'unknown'}`} 
             data-testid="tx-status"
           >
-            {statusDisplay}
+            {badgeVariant ? (
+              <OnchainBadge
+                variant={badgeVariant}
+                size="sm"
+                currentConfirmations={confirmations}
+                targetConfirmations={targetConfirmations}
+                transactionHash={transactionHash}
+                explorerUrl={explorerUrl}
+                metadata={{ blockNumber, confirmedAt, network }}
+              />
+            ) : (
+              '—'
+            )}
           </span>
         </div>
 
@@ -205,31 +266,42 @@ export const TransactionReceipt: React.FC<TransactionReceiptProps> = ({
 export interface ActivityItemProps {
   activity: {
     id?: string;
-    type: 'payout' | 'offering' | 'blacklist';
+    type: string;
     title: string;
     description: string;
     timestamp: string;
     isRead?: boolean;
+    actor?: string;
     transactionDetails?: {
       transactionHash?: string;
       fromAddress?: string;
       toAddress?: string;
       value?: string;
-      status?: 'pending' | 'completed' | 'failed' | 'success';
+      status?: TxStatus;
       gas?: string;
       explorerUrl?: string;
+      confirmations?: number;
+      targetConfirmations?: number;
+      blockNumber?: number | string;
+      confirmedAt?: string;
+      network?: 'testnet' | 'public';
     };
   };
   onMarkRead?: (id: string) => void;
 }
 
-const iconMap: Record<string, string> = {
-  payout: payoutIcon,
-  offering: offeringIcon,
-  blacklist: blacklistIcon,
+const typeIcon: Record<string, React.ReactNode> = {
+  payout:     <DollarSign size={20} aria-hidden="true" />,
+  offering:   <FileText  size={20} aria-hidden="true" />,
+  blacklist:  <Shield    size={20} aria-hidden="true" />,
+  compliance: <CheckCircle2 size={20} aria-hidden="true" />,
+  kyc:        <User      size={20} aria-hidden="true" />,
 };
 
 const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onMarkRead }) => {
+  const { id = '', type, title, description, timestamp, isRead = true, actor } = activity;
+  const icon = typeIcon[type] ?? <FileText size={20} aria-hidden="true" />;
+  const time = new Date(timestamp).toLocaleTimeString(undefined, {
   const { id = '', type, title, description, timestamp, isRead = true, transactionDetails } = activity;
   const [isExpanded, setIsExpanded] = useState(false);
   const Icon = iconMap[type];
@@ -239,6 +311,37 @@ const ActivityItem: React.FC<ActivityItemProps> = ({ activity, onMarkRead }) => 
   });
 
   return (
+    <div
+      className={`activity-item glass-card-interactive ${!isRead ? 'unread' : ''}`}
+      aria-current={!isRead ? 'true' : 'false'}
+    >
+      <div className="activity-item-indicator" aria-hidden="true">
+        {!isRead && <span className="unread-dot" title="Unread" />}
+      </div>
+      <div className="activity-icon">{icon}</div>
+      <div className="activity-content">
+        <h3 className="activity-title text-primary">{title}</h3>
+        {actor && <p className="activity-actor text-muted">{actor}</p>}
+        <p className="activity-description text-muted">{description}</p>
+      </div>
+      <div className="activity-meta">
+        <time
+          className="activity-time text-muted"
+          dateTime={timestamp}
+          aria-label={`Occurred at ${time}`}
+        >
+          {time}
+        </time>
+        {!isRead && onMarkRead && (
+          <button
+            className="mark-read-btn"
+            onClick={() => onMarkRead(id)}
+            aria-label="Mark item as read"
+            title="Mark as read"
+          >
+            Mark read
+          </button>
+        )}
     <div 
       className={`activity-item-wrapper ${transactionDetails ? 'has-receipt' : ''}`}
       data-testid="activity-item-wrapper"

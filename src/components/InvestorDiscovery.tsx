@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Search,
   Filter,
@@ -7,6 +7,9 @@ import {
   ShieldCheck,
   X,
   SlidersHorizontal,
+  CalendarDays,
+  CircleDollarSign,
+  BarChart3,
   Clock,
   Calendar,
   CheckCircle,
@@ -14,6 +17,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { EmptyState } from "./designSystem/EmptyState";
+import { AccessibleChart } from "./designSystem/AccessibleChart";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
@@ -156,6 +160,156 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({ payouts }) => {
   );
 };
 
+// ─── Ledger Entries Section (Issue #628) ──────────────────────────────────────
+
+/** A single distribution/disbursement row in the investor ledger. */
+export interface LedgerEntry {
+  id: string;
+  /** The offering the distribution belongs to. */
+  offering: string;
+  /** Gross amount disbursed in USD. */
+  amount: number;
+  status: PayoutStatus;
+  /** ISO date of the expected (or paid) distribution. */
+  date: string;
+}
+
+const LEDGER_OFFERINGS = [
+  'Helios Solar',
+  'Arctic Freight',
+  'Tidewater Bio',
+  'Vertex Robotics',
+  'Brightline Media',
+  'Atlas Mining',
+];
+
+/** Deterministic pseudo-random dollar amount (no Math.random) so the mock
+ *  ledger is stable across renders and tests. */
+function seededAmount(index: number): number {
+  const n = ((index * 9301 + 49297) % 233280) / 233280;
+  return Math.round((250 + n * 4750) * 100) / 100;
+}
+
+/** Build `count` deterministic ledger entries. Exported for tests/demos. */
+export function generateLedgerEntries(count: number): LedgerEntry[] {
+  const statuses: PayoutStatus[] = ['Paid', 'Processing', 'Upcoming'];
+  const entries: LedgerEntry[] = [];
+  for (let i = 0; i < count; i += 1) {
+    entries.push({
+      id: `LED-${String(i + 1).padStart(4, '0')}`,
+      offering: LEDGER_OFFERINGS[i % LEDGER_OFFERINGS.length],
+      amount: seededAmount(i + 1),
+      status: statuses[i % statuses.length],
+      date: new Date(Date.UTC(2026, (i * 7) % 12, (i + 1) % 28 + 1)).toISOString().slice(0, 10),
+    });
+  }
+  return entries;
+}
+
+const LEDGER_COLUMNS: Column<LedgerEntry>[] = [
+  { key: 'entry', label: 'Entry', width: '9rem', render: (r) => r.id },
+  { key: 'offering', label: 'Offering', width: '15rem', render: (r) => r.offering },
+  {
+    key: 'amount',
+    label: 'Amount',
+    width: '10rem',
+    render: (r) => `$${r.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+  },
+  { key: 'status', label: 'Status', width: '8rem', render: (r) => r.status },
+  {
+    key: 'date',
+    label: 'Expected Distribution',
+    width: '12rem',
+    render: (r) => new Date(`${r.date}T00:00:00Z`).toLocaleDateString(),
+  },
+];
+
+const formatEntryAmount = (r: LedgerEntry) =>
+  `$${r.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const renderLedgerDetail = (entry: LedgerEntry) => (
+  <div className="space-y-4" data-testid="ledger-entry-detail">
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Entry ID</p>
+      <p className="font-mono">{entry.id}</p>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Offering</p>
+      <p className="font-medium">{entry.offering}</p>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Amount</p>
+      <p className="text-xl font-bold">{formatEntryAmount(entry)}</p>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Status</p>
+      <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-medium border items-center gap-1.5 ${getStatusColor(entry.status)}`}>
+        {getStatusIcon(entry.status)}
+        {entry.status}
+      </span>
+    </div>
+    <div>
+      <p className="text-xs text-muted uppercase tracking-wide">Expected Distribution</p>
+      <p>{new Date(`${entry.date}T00:00:00Z`).toLocaleDateString()}</p>
+    </div>
+  </div>
+);
+
+export interface LedgerEntriesSectionProps {
+  entries: LedgerEntry[];
+  entriesPerPage?: number;
+}
+
+/**
+ * Virtualized investor ledger with a configurable-column header, density
+ * toggle, and a row-detail side drawer opened via deep-link permalinks.
+ * Issue #628.
+ */
+export const LedgerEntriesSection: React.FC<LedgerEntriesSectionProps> = ({
+  entries,
+  entriesPerPage = 50,
+}) => {
+  if (!entries || entries.length === 0) {
+    return (
+      <div className="glass-card p-8 text-center" role="region" aria-label="Ledger Entries">
+        <h3 className="text-lg font-semibold mb-2">No Ledger Entries Yet</h3>
+        <p className="text-muted text-sm">Distributions on your invested offerings will appear here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <section aria-labelledby="ledger-entries-heading" className="space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2">
+        <div>
+          <h2 id="ledger-entries-heading" className="text-2xl font-bold tracking-tight">Ledger Entries</h2>
+          <p className="text-muted text-sm mt-1">
+            Every distribution on your invested offerings, newest first.
+          </p>
+        </div>
+        <p className="text-xs text-muted" aria-live="polite" data-testid="ledger-entry-count">
+          {entries.length.toLocaleString()} entries
+        </p>
+      </div>
+      <LedgerTable<LedgerEntry>
+        data={entries}
+        columns={LEDGER_COLUMNS}
+        rowKey={(r) => r.id}
+        rowDetail={renderLedgerDetail}
+        detailMode="drawer"
+        drawer={{
+          deepLinkParam: 'entry',
+          title: (r) => `Ledger entry ${r.id}`,
+        }}
+        pageSize={entriesPerPage}
+        ariaLabel="Investor ledger entries"
+      />
+    </section>
+  );
+};
+
+const DEFAULT_LEDGER_ENTRIES = generateLedgerEntries(50);
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Offering {
@@ -174,8 +328,22 @@ type DiscoveryState =
   | { kind: 'truly-empty' }
   | { kind: 'error'; retryCount: number };
 
+export interface DistributionRecord {
+  id: string;
+  date: string;
+  amount: number;
+  currency?: string;
+}
+
+export type DistributionState =
+  | { kind: 'loaded'; distributions: DistributionRecord[] }
+  | { kind: 'empty' }
+  | { kind: 'error' };
+
 interface InvestorDiscoveryProps {
   __simulateState?: DiscoveryState;
+  /** Test-only state injection; production data should use the same record contract. */
+  __simulateDistributionState?: DistributionState;
   __onClearFilters?: () => void;
   __onRetry?: () => void;
 }
@@ -188,8 +356,187 @@ const MOCK_OFFERINGS: Offering[] = [
   { id: 3, name: 'Nexus Pay', category: 'Cross-Border Payments', revenueShare: 18, target: 300000, raised: 186000 },
 ];
 
+const MOCK_DISTRIBUTIONS: DistributionRecord[] = [
+  { id: 'dist-jan', date: '2026-01-31', amount: 1240, currency: 'USDC' },
+  { id: 'dist-feb', date: '2026-02-28', amount: 1380, currency: 'USDC' },
+  { id: 'dist-mar', date: '2026-03-31', amount: 1525, currency: 'USDC' },
+  { id: 'dist-apr', date: '2026-04-30', amount: 1480, currency: 'USDC' },
+  { id: 'dist-may', date: '2026-05-31', amount: 1690, currency: 'USDC' },
+];
+
+const formatDistributionAmount = (amount: number, currency = 'USDC') => {
+  const asset = /^[A-Z0-9]{3,5}$/.test(currency) ? currency : 'USDC';
+  const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(amount);
+  return asset === 'USD' ? `$${formatted}` : `${formatted} ${asset}`;
+};
+
+const formatDistributionDate = (date: string) =>
+  new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(
+    new Date(`${date}T00:00:00`),
+  );
+
+const projectNextPayoutDate = (date: string) => {
+  const [year, month, day] = date.split('-').map(Number);
+  const nextMonthLastDay = new Date(year, month + 1, 0).getDate();
+  return new Date(year, month, Math.min(day, nextMonthLastDay));
+};
+
+/** Drops malformed and duplicate records before they can distort investor-facing totals. */
+export const normaliseDistributionHistory = (records: DistributionRecord[]): DistributionRecord[] => {
+  const seen = new Set<string>();
+
+  return records
+    .filter((record) => {
+      const valid =
+        Boolean(record?.id) &&
+        !seen.has(record.id) &&
+        typeof record.amount === 'number' &&
+        Number.isFinite(record.amount) &&
+        record.amount >= 0 &&
+        !Number.isNaN(Date.parse(record.date));
+
+      if (valid) seen.add(record.id);
+      return valid;
+    })
+    .sort((left, right) => left.date.localeCompare(right.date));
+};
+
+const DistributionDashboard: React.FC<{
+  state: DistributionState;
+  onRetry: () => void;
+}> = ({ state, onRetry }) => {
+  const [showTable, setShowTable] = useState(false);
+  const distributions = useMemo(
+    () => (state.kind === 'loaded' ? normaliseDistributionHistory(state.distributions) : []),
+    [state],
+  );
+
+  const totalDistributed = distributions.reduce((total, record) => total + record.amount, 0);
+  const lastPayout = distributions.at(-1);
+  const projectedNextPayout = lastPayout ? projectNextPayoutDate(lastPayout.date) : null;
+  const maximumAmount = Math.max(...distributions.map((record) => record.amount), 1);
+  const chartDescription = distributions.length
+    ? `Past distributions range from ${formatDistributionDate(distributions[0].date)} to ${formatDistributionDate(distributions.at(-1)!.date)} and total ${formatDistributionAmount(totalDistributed)}.`
+    : 'No past distributions are available.';
+
+  if (state.kind === 'error') {
+    return (
+      <section className="glass-card p-6" aria-labelledby="distribution-dashboard-heading" role="alert">
+        <h2 id="distribution-dashboard-heading" className="text-xl font-semibold">Distribution dashboard</h2>
+        <p className="text-muted text-sm mt-2">Payout history could not be loaded. Your investment records have not changed.</p>
+        <button className="btn-primary mt-4 py-2 px-4 text-sm" onClick={onRetry}>Try again</button>
+      </section>
+    );
+  }
+
+  if (state.kind === 'empty' || distributions.length === 0) {
+    return (
+      <section className="glass-card p-6" aria-labelledby="distribution-dashboard-heading">
+        <h2 id="distribution-dashboard-heading" className="text-xl font-semibold">Distribution dashboard</h2>
+        <p className="text-muted text-sm mt-2">No distributions have been paid yet. When a payout is complete, its history will appear here.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-4" aria-labelledby="distribution-dashboard-heading" data-testid="distribution-dashboard">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">Investor returns</p>
+          <h2 id="distribution-dashboard-heading" className="text-xl font-semibold">Distribution dashboard</h2>
+        </div>
+        <p className="text-sm text-muted">Your confirmed payout history</p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4" role="list" aria-label="Distribution key metrics">
+        <div className="glass-card p-5" role="listitem">
+          <CircleDollarSign size={18} className="text-primary mb-3" aria-hidden="true" />
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Total distributed</p>
+          <p className="text-2xl font-bold mt-1">{formatDistributionAmount(totalDistributed, lastPayout?.currency)}</p>
+        </div>
+        <div className="glass-card p-5" role="listitem">
+          <CalendarDays size={18} className="text-primary mb-3" aria-hidden="true" />
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Last payout</p>
+          <p className="text-lg font-semibold mt-1">{formatDistributionDate(lastPayout!.date)}</p>
+          <p className="text-sm text-muted">{formatDistributionAmount(lastPayout!.amount, lastPayout!.currency)}</p>
+        </div>
+        <div className="glass-card p-5" role="listitem">
+          <BarChart3 size={18} className="text-primary mb-3" aria-hidden="true" />
+          <p className="text-xs font-medium uppercase tracking-wide text-muted">Projected next payout</p>
+          <p className="text-lg font-semibold mt-1">{projectedNextPayout?.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          <p className="text-sm text-muted">Projection based on the latest payout cadence</p>
+        </div>
+      </div>
+
+      <div className="glass-card p-5 sm:p-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="font-semibold">Payout history</h3>
+            <p className="text-sm text-muted">Bars show each confirmed distribution; the line tracks the cumulative amount.</p>
+          </div>
+          <button
+            type="button"
+            className="btn btn--secondary btn--sm self-start"
+            aria-expanded={showTable}
+            aria-controls="distribution-history-table"
+            onClick={() => setShowTable((visible) => !visible)}
+          >
+            {showTable ? 'View chart' : 'View as table'}
+          </button>
+        </div>
+
+        {!showTable && (
+          <>
+            <div className="hidden md:block mt-6" data-testid="distribution-chart">
+              <svg viewBox="0 0 640 250" width="100%" role="img" aria-labelledby="distribution-chart-title distribution-chart-description">
+                <title id="distribution-chart-title">Past distribution amounts and cumulative total</title>
+                <desc id="distribution-chart-description">{chartDescription}</desc>
+                <line x1="48" y1="204" x2="610" y2="204" stroke="currentColor" opacity="0.25" />
+                {distributions.map((record, index) => {
+                  const x = 76 + index * (500 / distributions.length);
+                  const height = Math.max(4, (record.amount / maximumAmount) * 142);
+                  return (
+                    <g key={record.id}>
+                      <rect x={x} y={204 - height} width="34" height={height} rx="3" fill="#22d3ee" />
+                      <text x={x + 17} y="222" textAnchor="middle" fontSize="12" fill="currentColor">{new Date(`${record.date}T00:00:00`).toLocaleDateString('en-US', { month: 'short' })}</text>
+                    </g>
+                  );
+                })}
+                <polyline
+                  fill="none"
+                  stroke="#a3e635"
+                  strokeWidth="3"
+                  points={distributions.map((record, index) => {
+                    const cumulative = distributions.slice(0, index + 1).reduce((total, item) => total + item.amount, 0);
+                    return `${93 + index * (500 / distributions.length)},${204 - (cumulative / totalDistributed) * 142}`;
+                  }).join(' ')}
+                />
+              </svg>
+              <div className="flex gap-4 text-xs text-muted mt-2" aria-hidden="true">
+                <span><span className="inline-block h-2 w-2 mr-1 rounded-sm bg-cyan-400" />Distribution</span>
+                <span><span className="inline-block h-0.5 w-3 mr-1 align-middle bg-lime-400" />Cumulative total</span>
+              </div>
+            </div>
+            <p className="md:hidden text-sm text-muted mt-5">Payout history is shown as a table on small screens.</p>
+          </>
+        )}
+
+        {showTable && (
+          <div id="distribution-history-table" className="overflow-x-auto mt-6" tabIndex={-1}>
+            <table className="w-full text-sm" aria-label="Distribution payout history">
+              <thead><tr className="border-b border-[rgba(148,163,184,0.2)]"><th scope="col" className="text-left py-2 text-muted">Date</th><th scope="col" className="text-right py-2 text-muted">Distribution</th><th scope="col" className="text-right py-2 text-muted">Cumulative total</th></tr></thead>
+              <tbody>{distributions.map((record, index) => <tr key={record.id} className="border-b border-[rgba(148,163,184,0.1)]"><td className="py-3">{formatDistributionDate(record.date)}</td><td className="py-3 text-right">{formatDistributionAmount(record.amount, record.currency)}</td><td className="py-3 text-right">{formatDistributionAmount(distributions.slice(0, index + 1).reduce((total, item) => total + item.amount, 0), record.currency)}</td></tr>)}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+};
+
 export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   __simulateState,
+  __simulateDistributionState,
   __onClearFilters,
   __onRetry,
 }) => {
@@ -199,6 +546,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   const [query, setQuery] = useState("");
   const [filtersActive, setFiltersActive] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [distributionSimDismissed, setDistributionSimDismissed] = useState(false);
 
   /** When true, the externally-supplied __simulateState is ignored */
   const [simDismissed, setSimDismissed] = useState(false);
@@ -239,6 +587,9 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   }, [query, filtersActive, effectiveSimState, seedOfferings]);
 
   const state = resolveState();
+  const distributionState = distributionSimDismissed || !__simulateDistributionState
+    ? { kind: 'loaded', distributions: MOCK_DISTRIBUTIONS } as DistributionState
+    : __simulateDistributionState;
 
   const handleClearFilters = () => {
     setQuery('');
@@ -260,6 +611,10 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
 
   const handleToggleFilters = () => {
     setFiltersActive((f) => !f);
+  };
+
+  const handleDistributionRetry = () => {
+    setDistributionSimDismissed(true);
   };
 
   return (
@@ -344,6 +699,10 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
         </div>
       )}
 
+      {!isLoading && state.kind === 'loaded' && (
+        <DistributionDashboard state={distributionState} onRetry={handleDistributionRetry} />
+      )}
+
       {/* ── Result Area ── */}
       {!isLoading && (
         <section aria-labelledby="offerings-heading" aria-live="polite">
@@ -373,25 +732,17 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
                       <h3 className="font-semibold text-lg">{offering.name}</h3>
                       <p className="text-xs text-muted">{offering.category}</p>
                     </div>
-                    <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
-                      <div className="flex justify-between text-xs mb-1">
-                        <span className="text-muted">Target</span>
-                        <span>{target}</span>
-                      </div>
-                      <div
-                        className="w-full bg-slate-800 rounded-full h-1.5"
-                        role="progressbar"
-                        aria-valuenow={progress}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                        aria-label={`${progress}% funded`}
-                      >
-                        <div
-                          className="bg-primary h-1.5 rounded-full"
-                          style={{ width: `${progress}%` }}
+                      <div className="pt-4 border-t border-[rgba(148,163,184,0.1)]">
+                        <AccessibleChart
+                          title={`${offering.name} Funding Progress`}
+                          data={[
+                            { label: 'Raised', value: offering.raised, patternId: 'pattern-stripe' },
+                            { label: 'Target', value: offering.target, patternId: 'pattern-dots' }
+                          ]}
+                          width={240}
+                          height={120}
                         />
                       </div>
-                    </div>
                     <button className="btn-primary py-2 text-xs">
                       View Prospectus
                     </button>
@@ -481,6 +832,11 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
             </button>
           </div>
         </div>
+      )}
+
+      {/* ── Ledger Entries (virtualized table, Issue #628) ── */}
+      {!isLoading && state.kind === 'loaded' && (
+        <LedgerEntriesSection entries={DEFAULT_LEDGER_ENTRIES} />
       )}
 
       {/* ── Payout Schedule ── */}

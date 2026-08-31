@@ -11,6 +11,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { OfferingSettingsGeneralTab } from "./OfferingSettingsGeneralTab";
+import {
+  LockupStatusCard,
+  type LockupSchedule,
+} from "./LockupStatusCard/LockupStatusCard";
 
 interface OfferingData {
   id: string;
@@ -24,7 +28,14 @@ interface OfferingData {
   highlights: string[];
   riskLevel: "low" | "medium" | "high";
   minInvestment: number;
+  lockup: LockupSchedule;
 }
+
+const addMonths = (months: number): string => {
+  const date = new Date();
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString();
+};
 
 const mockOfferings: Record<string, OfferingData> = {
   "1": {
@@ -45,6 +56,34 @@ const mockOfferings: Record<string, OfferingData> = {
     ],
     riskLevel: "low",
     minInvestment: 1000,
+    lockup: {
+      totalLocked: 150000,
+      unlockedAmount: 0,
+      cliffEndAt: addMonths(12),
+      vestingEndAt: addMonths(36),
+      phases: [
+        {
+          id: "cliff",
+          kind: "cliff",
+          label: "Cliff",
+          description:
+            "Shares are fully locked until the cliff date, then the cliff portion unlocks in a single batch.",
+          startAt: addMonths(-1),
+          endAt: addMonths(12),
+          amount: 60000,
+        },
+        {
+          id: "vesting",
+          kind: "vesting",
+          label: "Linear vesting",
+          description:
+            "After the cliff, the remaining shares unlock linearly every month through the vesting end date.",
+          startAt: addMonths(12),
+          endAt: addMonths(36),
+          amount: 90000,
+        },
+      ],
+    },
   },
 };
 
@@ -163,6 +202,8 @@ export const OfferingDetail: React.FC = () => {
     if (tabId === "distributions") {
       return (
         <div className="space-y-5">
+          <LockupStatusCard schedule={offering.lockup} compact={isMobile} />
+
           <div className="glass-card p-6">
             <div className="flex items-center justify-between gap-4">
               <div>

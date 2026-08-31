@@ -1,0 +1,126 @@
+/* WidgetCard — shared widget shell: header + loading/error/empty/ready states */
+
+.rd-widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  min-width: 0;
+}
+
+.rd-widget__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-sm);
+}
+
+.rd-widget__title {
+  margin: 0;
+  color: var(--text-main);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.rd-widget__status {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: var(--spacing-3xs) var(--spacing-xs);
+  border-radius: var(--radius-full);
+}
+
+.rd-status--loading {
+  color: var(--text-muted);
+  background: var(--glass-bg-accent);
+}
+
+.rd-status--error {
+  color: var(--error);
+  background: var(--glass-bg-accent);
+}
+
+.rd-status--empty {
+  color: var(--text-muted);
+  background: var(--glass-bg-accent);
+}
+
+.rd-widget__body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Loading skeleton */
+.rd-widget__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rd-skel {
+  display: block;
+  border-radius: var(--radius-sm);
+  background: var(--glass-bg-accent);
+  animation: rd-pulse 1.2s ease-in-out infinite;
+}
+
+.rd-skel--lg {
+  height: var(--spacing-2xl);
+  width: 100%;
+}
+
+.rd-skel--md {
+  height: var(--spacing-lg);
+  width: 70%;
+}
+
+@keyframes rd-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rd-skel {
+    animation: none;
+  }
+}
+
+/* Error surface */
+.rd-widget__error {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--error);
+  font-size: var(--font-size-sm);
+}
+
+.rd-widget__error-icon {
+  font-size: var(--font-size-lg);
+}
+
+/* Empty surface */
+.rd-widget__empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xs);
+}
+
+.rd-widget__empty-title {
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.rd-widget__empty-body {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}

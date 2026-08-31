@@ -1,0 +1,143 @@
+/* DashboardWidgetContent — ready-state bodies (metrics / rows / progress) */
+
+.rd-metrics {
+  display: grid;
+  gap: var(--spacing-lg);
+}
+
+.rd-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xs);
+}
+
+.rd-metric__label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.rd-metric__value {
+  color: var(--text-main);
+  font-size: var(--font-size-2xl);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.rd-metric__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rd-sparkline {
+  width: 88px;
+  height: 28px;
+  overflow: visible;
+}
+
+.rd-sparkline__line {
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.rd-tone--positive {
+  color: var(--success);
+}
+
+.rd-tone--negative {
+  color: var(--error);
+}
+
+.rd-tone--neutral {
+  color: var(--text-muted);
+}
+
+.rd-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.rd-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.rd-row__label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.rd-row__meter {
+  height: var(--spacing-xs);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg-accent);
+  overflow: hidden;
+}
+
+.rd-row__fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+}
+
+.rd-row__value {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.rd-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.rd-progress__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--spacing-md);
+}
+
+.rd-progress__label {
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.rd-progress__value {
+  color: var(--text-main);
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.rd-progress__track {
+  height: var(--spacing-md);
+  border-radius: var(--radius-full);
+  background: var(--glass-bg-accent);
+  overflow: hidden;
+}
+
+.rd-progress__fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: linear-gradient(90deg, var(--primary), var(--text-accent));
+}
+
+.rd-progress__note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--font-size-sm);
+}
+
+@media (max-width: 768px) {
+  .rd-metrics {
+    grid-template-columns: 1fr;
+  }
+}

@@ -52,8 +52,13 @@ export default defineConfig({
         // Issue #642 – Canonical status-timeline pattern
         'src/components/StatusTimeline/StatusTimeline.tsx',
         'src/components/StatusTimeline/presets.ts',
-        // Issue #630 – Lockup status display with countdown and unlock timeline
-        'src/components/LockupStatusCard/LockupStatusCard.tsx',
+        // Issue #636 – Role-based dashboard variants
+        'src/components/AppShell/RoleDashboard/RoleDashboard.tsx',
+        'src/components/AppShell/RoleDashboard/WidgetCard.tsx',
+        'src/components/AppShell/RoleDashboard/DashboardWidgetContent.tsx',
+        'src/components/AppShell/RoleDashboard/widgets.ts',
+        'src/components/AppShell/RoleDashboard/onboardingHints.ts',
+        'src/components/AppShell/RoleDashboard/roleDashboard.types.ts',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -169,7 +174,23 @@ export default defineConfig({
         'src/components/StatusTimeline/presets.ts': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
-        'src/components/LockupStatusCard/LockupStatusCard.tsx': {
+        // Issue #636 – Role-based dashboard variants
+        'src/components/AppShell/RoleDashboard/RoleDashboard.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/AppShell/RoleDashboard/WidgetCard.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/AppShell/RoleDashboard/DashboardWidgetContent.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/AppShell/RoleDashboard/widgets.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/AppShell/RoleDashboard/onboardingHints.ts': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/AppShell/RoleDashboard/roleDashboard.types.ts': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

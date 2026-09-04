@@ -1,0 +1,928 @@
+/* GovernanceVoting.css - Issue #629 */
+
+.gv-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  color: var(--text-main, #e5e7eb);
+}
+
+/* ─── Header & Proposal Switcher ─── */
+.gv-top-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.gv-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gv-switcher-label {
+  font-size: var(--font-size-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-muted, #94a3b8);
+  font-weight: 600;
+}
+
+.gv-select {
+  background-color: rgba(15, 23, 42, 0.85);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2));
+  color: var(--text-main, #e5e7eb);
+  padding: 0.45rem 0.85rem;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  max-width: 100%;
+}
+
+.gv-select:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+  border-color: var(--primary, #3b82f6);
+}
+
+/* ─── Proposal Header Card ─── */
+.gv-hero-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-xl, 1rem);
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  box-shadow: var(--shadow-md, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+}
+
+.gv-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.gv-pills {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.gv-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: var(--radius-full, 9999px);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+
+.gv-pill--active {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+  border-color: rgba(59, 130, 246, 0.35);
+}
+
+.gv-pill--pre_voting {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+.gv-pill--passed {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.gv-pill--rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.gv-pill--quorum_failed {
+  background: rgba(217, 119, 6, 0.15);
+  color: #f59e0b;
+  border-color: rgba(217, 119, 6, 0.35);
+}
+
+.gv-pill--category {
+  background: rgba(148, 163, 184, 0.1);
+  color: var(--text-muted, #cbd5e1);
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.gv-timing-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--text-muted, #cbd5e1);
+  font-weight: 500;
+}
+
+.gv-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text-main, #f8fafc);
+  margin: 0 0 0.75rem 0;
+}
+
+.gv-description {
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  color: var(--text-muted, #cbd5e1);
+  margin: 0 0 1.25rem 0;
+}
+
+.gv-proposer-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--glass-border, rgba(148, 163, 184, 0.12));
+  font-size: 0.8125rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.gv-proposer-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gv-proposer-info strong {
+  color: var(--text-main, #f1f5f9);
+  font-family: monospace;
+}
+
+/* ─── Quorum Progress Card ─── */
+.gv-quorum-card {
+  padding: 1.25rem;
+  border-radius: var(--radius-xl, 1rem);
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+}
+
+.gv-quorum-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.gv-quorum-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: var(--font-size-sm, 0.875rem);
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+}
+
+.gv-quorum-values {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-muted, #cbd5e1);
+}
+
+.gv-quorum-current {
+  color: var(--text-main, #f8fafc);
+}
+
+.gv-quorum-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-full, 9999px);
+  background-color: rgba(30, 41, 59, 0.8);
+  overflow: visible;
+  margin-top: 0.5rem;
+}
+
+.gv-quorum-fill {
+  height: 100%;
+  border-radius: var(--radius-full, 9999px);
+  transition: width 0.4s ease;
+  background: linear-gradient(90deg, #3b82f6 0%, #38bdf8 100%);
+}
+
+.gv-quorum-fill--met {
+  background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
+}
+
+.gv-quorum-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.gv-quorum-status-text {
+  font-weight: 600;
+}
+
+.gv-quorum-status-text--met {
+  color: #34d399;
+}
+
+.gv-quorum-status-text--pending {
+  color: #fbbf24;
+}
+
+/* ─── Grid: Tally Visualizer & Voting Power ─── */
+.gv-grid-layout {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 1024px) {
+  .gv-grid-layout {
+    grid-template-columns: 3fr 2fr;
+  }
+}
+
+/* ─── Vote Tally Visualization ─── */
+.gv-tally-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-xl, 1rem);
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.gv-tally-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.gv-tally-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  margin: 0;
+}
+
+.gv-tally-total {
+  font-size: 0.8125rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Color-blind Accessible Segmented Stacked Bar */
+.gv-stacked-bar-container {
+  width: 100%;
+}
+
+.gv-stacked-bar {
+  display: flex;
+  width: 100%;
+  height: 20px;
+  border-radius: var(--radius-md, 0.5rem);
+  overflow: hidden;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.25));
+}
+
+.gv-stacked-segment {
+  height: 100%;
+  transition: width 0.4s ease;
+  position: relative;
+}
+
+/* High contrast + texture patterns for color-blind accessibility */
+.gv-bar--for {
+  background-color: #10b981;
+  background-image: linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(255, 255, 255, 0.2) 100%
+  );
+}
+
+.gv-bar--against {
+  background-color: #ef4444;
+  /* Diagonal stripes texture */
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.2),
+    rgba(0, 0, 0, 0.2) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+.gv-bar--abstain {
+  background-color: #64748b;
+  /* Dotted stipple texture */
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.4) 1.5px,
+    transparent 1.5px
+  );
+  background-size: 6px 6px;
+}
+
+.gv-stacked-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Tally Legend Cards */
+.gv-tally-legend {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.gv-legend-card {
+  display: flex;
+  flex-direction: column;
+  padding: 0.75rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.12));
+}
+
+.gv-legend-top {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.gv-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.gv-swatch--for {
+  background-color: #10b981;
+}
+
+.gv-swatch--against {
+  background-color: #ef4444;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.35),
+    rgba(0, 0, 0, 0.35) 2px,
+    transparent 2px,
+    transparent 4px
+  );
+}
+
+.gv-swatch--abstain {
+  background-color: #64748b;
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.4) 1px,
+    transparent 1px
+  );
+  background-size: 3px 3px;
+}
+
+.gv-legend-pct {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+  margin-top: 0.25rem;
+}
+
+.gv-legend-count {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 0.15rem;
+}
+
+/* ─── Voting Power & Eligibility Card ─── */
+.gv-power-card {
+  padding: 1.5rem;
+  border-radius: var(--radius-xl, 1rem);
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.gv-power-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-main, #f8fafc);
+}
+
+.gv-power-header h3 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.gv-power-metric-box {
+  padding: 1rem;
+  border-radius: var(--radius-lg, 0.75rem);
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+}
+
+.gv-power-label {
+  font-size: var(--font-size-xs, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+}
+
+.gv-power-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+  margin: 0.25rem 0 0 0;
+}
+
+.gv-power-subtext {
+  font-size: 0.8125rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0.25rem 0 0 0;
+}
+
+.gv-eligibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.gv-eligibility--eligible {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.gv-eligibility--voted {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.gv-eligibility--ineligible {
+  background: rgba(239, 68, 68, 0.12);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* ─── Vote Selection Section ─── */
+.gv-selection-section {
+  padding: 1.5rem;
+  border-radius: var(--radius-xl, 1rem);
+  background: var(--glass-bg, rgba(15, 23, 42, 0.85));
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.gv-selection-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  margin: 0;
+}
+
+.gv-selection-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .gv-selection-options {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.gv-choice-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 1rem;
+  border-radius: var(--radius-lg, 0.75rem);
+  background: rgba(15, 23, 42, 0.6);
+  border: 2px solid var(--glass-border, rgba(148, 163, 184, 0.2));
+  color: var(--text-main, #e5e7eb);
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  min-height: 90px;
+}
+
+.gv-choice-card:hover:not(:disabled) {
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(30, 41, 59, 0.6);
+  transform: translateY(-1px);
+}
+
+.gv-choice-card:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.gv-choice-card:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Selected choice styling */
+.gv-choice-card--selected-for {
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.12);
+  box-shadow: 0 0 0 1px #10b981;
+}
+
+.gv-choice-card--selected-against {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+  box-shadow: 0 0 0 1px #ef4444;
+}
+
+.gv-choice-card--selected-abstain {
+  border-color: #94a3b8;
+  background: rgba(148, 163, 184, 0.15);
+  box-shadow: 0 0 0 1px #94a3b8;
+}
+
+.gv-choice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.gv-choice-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.gv-choice-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  margin-top: 0.4rem;
+  line-height: 1.4;
+}
+
+.gv-vote-action-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+
+.gv-btn-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  background: var(--primary, #3b82f6);
+  color: #ffffff;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  min-height: 44px;
+}
+
+.gv-btn-submit:hover:not(:disabled) {
+  background: var(--primary-hover, #2563eb);
+  transform: translateY(-1px);
+}
+
+.gv-btn-submit:focus-visible {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+.gv-btn-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.gv-vote-status-note {
+  font-size: 0.8125rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ─── Confirmation Modal Dialog ─── */
+.gv-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.gv-modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  border-radius: var(--radius-xl, 1rem);
+  background: #0f172a;
+  border: 1px solid var(--glass-border-bright, rgba(148, 163, 184, 0.3));
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: gv-fade-in 0.2s ease-out;
+}
+
+@keyframes gv-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.gv-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+}
+
+.gv-modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+}
+
+.gv-modal-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.gv-modal-close-btn:hover {
+  color: #f8fafc;
+  background-color: rgba(148, 163, 184, 0.1);
+}
+
+.gv-modal-close-btn:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+.gv-modal-body {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.gv-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.gv-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.gv-summary-key {
+  color: var(--text-muted, #94a3b8);
+}
+
+.gv-summary-val {
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  text-align: right;
+}
+
+.gv-confirm-choice-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--radius-full, 9999px);
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+}
+
+.gv-warning-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  color: #fbbf24;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.gv-error-callout {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem;
+  border-radius: var(--radius-md, 0.5rem);
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.8125rem;
+}
+
+.gv-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gv-retry-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.gv-success-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 1.5rem;
+  gap: 0.75rem;
+}
+
+.gv-success-icon {
+  color: #10b981;
+}
+
+.gv-success-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #f8fafc;
+}
+
+.gv-success-desc {
+  font-size: 0.875rem;
+  color: var(--text-muted, #94a3b8);
+  margin: 0;
+}
+
+.gv-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--glass-border, rgba(148, 163, 184, 0.15));
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.gv-btn-secondary {
+  padding: 0.65rem 1.25rem;
+  border-radius: var(--radius-md, 0.5rem);
+  font-size: 0.875rem;
+  font-weight: 600;
+  background: rgba(30, 41, 59, 0.8);
+  color: var(--text-main, #e5e7eb);
+  border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  min-height: 44px;
+}
+
+.gv-btn-secondary:hover {
+  background: rgba(51, 65, 85, 0.8);
+  color: #ffffff;
+}
+
+.gv-btn-secondary:focus-visible {
+  outline: 2px solid var(--primary, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* ─── Screen Reader Only Helper ─── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─── Reduced Motion ─── */
+@media (prefers-reduced-motion: reduce) {
+  .gv-choice-card,
+  .gv-btn-submit,
+  .gv-modal-card,
+  .gv-stacked-segment,
+  .gv-quorum-fill {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* ─── High Contrast Forced Colors ─── */
+@media (forced-colors: active) {
+  .gv-choice-card,
+  .gv-hero-card,
+  .gv-tally-card,
+  .gv-power-card,
+  .gv-selection-section,
+  .gv-modal-card,
+  .gv-stacked-bar {
+    border: 2px solid ButtonText !important;
+  }
+
+  .gv-choice-card--selected-for,
+  .gv-choice-card--selected-against,
+  .gv-choice-card--selected-abstain {
+    outline: 3px solid Highlight !important;
+  }
+}

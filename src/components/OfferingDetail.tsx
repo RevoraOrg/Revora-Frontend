@@ -15,6 +15,13 @@ import {
   LockupStatusCard,
   type LockupSchedule,
 } from "./LockupStatusCard/LockupStatusCard";
+import {
+  GovernanceVoting,
+  type GovernanceProposal,
+  type VoteChoice,
+  type VoteSubmissionResult,
+} from "./GovernanceVoting";
+import { mockGovernanceProposals } from "./GovernanceVoting/mockProposals";
 
 interface OfferingData {
   id: string;
@@ -29,6 +36,7 @@ interface OfferingData {
   riskLevel: "low" | "medium" | "high";
   minInvestment: number;
   lockup: LockupSchedule;
+  governanceProposals?: GovernanceProposal[];
 }
 
 const addMonths = (months: number): string => {
@@ -84,15 +92,17 @@ const mockOfferings: Record<string, OfferingData> = {
         },
       ],
     },
+    governanceProposals: mockGovernanceProposals,
   },
 };
 
-type SettingsTabId = "general" | "distributions" | "compliance" | "documents" | "danger";
+type SettingsTabId = "general" | "distributions" | "compliance" | "governance" | "documents" | "danger";
 
 const SETTINGS_TABS: Array<{ id: SettingsTabId; label: string; description: string }> = [
   { id: "general", label: "General", description: "Basics and profile metadata" },
   { id: "distributions", label: "Distributions", description: "Payout cadence and treasury" },
   { id: "compliance", label: "Compliance", description: "Verification and sanctions" },
+  { id: "governance", label: "Governance", description: "Proposals, vote tally, and voting power" },
   { id: "documents", label: "Documents", description: "Investor materials and files" },
   { id: "danger", label: "Danger zone", description: "Sensitive operational actions" },
 ];
@@ -110,7 +120,19 @@ const getTabFromHash = (): SettingsTabId => {
   return "general";
 };
 
-export const OfferingDetail: React.FC = () => {
+export interface OfferingDetailProps {
+  proposals?: GovernanceProposal[];
+  onVoteSubmit?: (
+    proposalId: string,
+    choice: VoteChoice,
+    votingPower: number
+  ) => Promise<VoteSubmissionResult> | VoteSubmissionResult;
+}
+
+export const OfferingDetail: React.FC<OfferingDetailProps> = ({
+  proposals,
+  onVoteSubmit,
+}) => {
   const navigate = useNavigate();
   const { id = "1" } = useParams<{ id: string }>();
   const offering = mockOfferings[id] || mockOfferings["1"];
@@ -268,6 +290,18 @@ export const OfferingDetail: React.FC = () => {
               Review required before entering restricted geographies.
             </div>
           </div>
+        </div>
+      );
+    }
+
+    if (tabId === "governance") {
+      return (
+        <div className="space-y-5">
+          <GovernanceVoting
+            proposals={proposals || offering.governanceProposals}
+            onVoteSubmit={onVoteSubmit}
+            compact={isMobile}
+          />
         </div>
       );
     }

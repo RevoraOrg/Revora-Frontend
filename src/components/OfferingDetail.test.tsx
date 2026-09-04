@@ -65,4 +65,17 @@ describe('OfferingDetail settings tabs', () => {
     fireEvent.click(deleteButton);
     expect(confirmMock).toHaveBeenCalledTimes(1);
   });
+
+  it('renders the governance voting UI inside the governance tab', () => {
+    renderComponent('#general');
+
+    const governanceTab = screen.getByRole('tab', { name: /governance/i });
+    fireEvent.click(governanceTab);
+
+    expect(governanceTab).toHaveAttribute('aria-selected', 'true');
+    expect(window.location.hash).toBe('#governance');
+    expect(screen.getByTestId('governance-voting')).toBeInTheDocument();
+    expect(screen.getByTestId('vote-tally-bar')).toBeInTheDocument();
+    expect(screen.getByTestId('vote-radiogroup')).toBeInTheDocument();
+  });
 });

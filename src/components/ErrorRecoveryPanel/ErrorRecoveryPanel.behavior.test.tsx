@@ -12,11 +12,8 @@ import { render, screen, fireEvent, act, cleanup } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 import { ErrorRecoveryPanel } from './ErrorRecoveryPanel';
-import {
-  useErrorSnapshots,
-  resetGlobalState,
-  UseErrorSnapshotsResult,
-} from '../../hooks/useErrorSnapshots';
+import { useErrorSnapshots, resetGlobalState } from '../../hooks/useErrorSnapshots';
+import type { UseErrorSnapshotsResult } from '../../hooks/useErrorSnapshots';
 
 let api: UseErrorSnapshotsResult;
 

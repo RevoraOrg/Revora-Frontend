@@ -45,12 +45,15 @@ describe('DistributionDashboard', () => {
     expect(screen.getByRole('button', { name: /for/i })).toBeInTheDocument();
   });
 
-  it('renders recent uploads queue section', () => {
+  it('renders the batch upload queue section', () => {
     renderWithRouter();
 
-    expect(screen.getByText('Recent Uploads Queue')).toBeInTheDocument();
-    expect(screen.getByText('Q3_Revenue_Report.pdf')).toBeInTheDocument();
-    expect(screen.getByText('malicious_payload.exe')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /batch upload queue/i })).toBeInTheDocument();
+    expect(screen.getByTestId('upload-dropzone')).toBeInTheDocument();
+    expect(screen.getByTestId('file-input')).toHaveAttribute(
+      'accept',
+      '.pdf,.doc,.docx,.png,.jpg,.jpeg'
+    );
   });
 
   describe('error rate sparkline tiles', () => {
@@ -90,7 +93,10 @@ describe('DistributionDashboard', () => {
     it('renders By Region heading', () => {
       renderWithRouter();
 
-      expect(screen.getByText('By Region')).toBeInTheDocument();
+      // Scope to the region subgroup: the filter toolbar's segment select
+      // also renders a "By Region" option elsewhere on the page.
+      const regionGroup = screen.getByTestId('error-rate-by-region');
+      expect(within(regionGroup).getByText('By Region')).toBeInTheDocument();
     });
 
     it('renders issuer error rate tiles with correct values', () => {
@@ -170,20 +176,24 @@ describe('DistributionDashboard', () => {
     renderWithRouter();
 
     expect(screen.getByRole('heading', { name: /Results Breakdown/i })).toBeInTheDocument();
-    expect(screen.getByText(/68\.4% turnout/i)).toBeInTheDocument();
+    expect(screen.getByText(/63\.5% turnout/i)).toBeInTheDocument();
   });
 
-  it('renders empty state for distributions', () => {
+  it('renders distribution KPI tiles', () => {
     renderWithRouter();
 
-    expect(screen.getByText('No distributions yet')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-total-distributed')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-active-payouts')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-gas-spent')).toBeInTheDocument();
+    expect(screen.getByTestId('kpi-pending-retries')).toBeInTheDocument();
   });
 
-  it('has working Back to Discovery link', () => {
+  it('links admin hero tiles to their detail pages', () => {
     renderWithRouter();
 
-    const backLink = screen.getByText('Back to Discovery');
-    expect(backLink.closest('a')).toHaveAttribute('href', '/investor/portal');
+    const tile = screen.getByTestId('ah-tile-api-latency');
+    const tileLink = within(tile).getByRole('link');
+    expect(tileLink).toHaveAttribute('href', '/admin/api-latency');
   });
 
   it('passes axe accessibility checks with 0 violations', async () => {

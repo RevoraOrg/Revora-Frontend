@@ -18,9 +18,16 @@ import { BlacklistBulkRemoveConfirm, BlacklistEntry } from '../components/Blackl
 import { GovernanceProposalDetail, type ProposalData } from '../components/designSystem/GovernanceProposalDetail';
 import { UploadQueue } from '../components/UploadQueue/UploadQueue';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { PreOpenBanner } from '../components/PreOpenBanner';
+import { DistributionFilterToolbar } from '../components/DistributionFilterToolbar/DistributionFilterToolbar';
+import { TokenSupplyBlock } from '../components/TokenSupplyBlock/TokenSupplyBlock';
+import { PayoutDrillDownPanel } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel';
+import { FinancialTermsForm } from '../components/FinancialTermsForm/FinancialTermsForm';
+import type { FinancialTermsField } from '../utils/financialTermsValidation';
 
 interface ExtendedPayoutDetail extends PayoutDetail {
   region: string;
+  tier?: string;
 }
 
 const MOCK_RECIPIENTS_BASE: RecipientItem[] = [
@@ -242,7 +249,41 @@ export const DistributionDashboard: React.FC = () => {
     };
   });
 
+  const {
+    queue,
+    addFiles,
+    removeFile,
+    retryFile,
+    uploadFiles,
+    clearComplete,
+    totalCount,
+    successCount,
+    errorCount,
+    uploadingCount,
+    overallProgress,
+  } = useUploadQueue();
 
+  const [payoutsList, setPayoutsList] = useState<ExtendedPayoutDetail[]>(MOCK_PAYOUTS);
+  const [selectedPayoutId, setSelectedPayoutId] = useState<string | null>(
+    () => searchParams.get('payoutId'),
+  );
+
+  /** Applies filters to state and mirrors them into the URL query string. */
+  const updateFiltersAndUrl = useCallback(
+    (next: DistributionFilterState) => {
+      setFilterState(next);
+      const params = new URLSearchParams();
+      if (next.searchQuery) params.set('search', next.searchQuery);
+      if (next.dateRange !== 'all') params.set('date', String(next.dateRange));
+      if (next.issuer !== 'all') params.set('issuer', next.issuer);
+      if (next.region !== 'all') params.set('region', next.region);
+      if (next.status !== 'all') params.set('status', String(next.status));
+      if (next.segmentBy !== 'none') params.set('segment', String(next.segmentBy));
+      if (next.compareMode) params.set('compare', 'true');
+      setSearchParams(params);
+    },
+    [setSearchParams],
+  );
 
   const handleUploadAll = useCallback(() => {
     uploadFiles(mockUploader);
@@ -434,6 +475,7 @@ export const DistributionDashboard: React.FC = () => {
   }, []);
 
   return (
+    <>
     <div className="max-w-6xl mx-auto p-6 space-y-10 animate-fade-in">
       <AdminHero
         tiles={SAMPLE_TILES}
@@ -442,6 +484,7 @@ export const DistributionDashboard: React.FC = () => {
           console.log('Dismissed incident:', id);
         }}
       />
+    </div>
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       {!bannerDismissed && (
         <PreOpenBanner
@@ -711,5 +754,6 @@ export const DistributionDashboard: React.FC = () => {
         }}
       />
     </div>
+    </>
   );
 };

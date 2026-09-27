@@ -409,7 +409,6 @@ export function CommandPalette({
     if (confirmingItemId && query.trim().length >= 2) {
       setConfirmingItemId(null);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
 
   // ------------------------------------------------------------------

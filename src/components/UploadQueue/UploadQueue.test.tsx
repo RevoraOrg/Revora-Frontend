@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { UploadQueue } from './UploadQueue';
-import type { UploadFile } from '../../hooks/useUploadQueue';
+import type { UploadFile, Uploader } from '../../hooks/useUploadQueue';
 
 expect.extend(toHaveNoViolations);
 
@@ -20,13 +20,15 @@ function makeItem(overrides: Partial<UploadFile> = {}): UploadFile {
   };
 }
 
-const defaultProps = {
-  queue: [] as UploadFile[],
-  onAddFiles: vi.fn(),
-  onRemove: vi.fn(),
-  onRetry: vi.fn(),
-  onUploadAll: vi.fn(),
-  onClearComplete: vi.fn(),
+type QueueProps = React.ComponentProps<typeof UploadQueue>;
+
+const defaultProps: QueueProps = {
+  queue: [],
+  onAddFiles: vi.fn<(files: File[]) => void>(),
+  onRemove: vi.fn<(id: string) => void>(),
+  onRetry: vi.fn<(id: string, uploader: Uploader) => void>(),
+  onUploadAll: vi.fn<() => void>(),
+  onClearComplete: vi.fn<() => void>(),
   totalCount: 0,
   successCount: 0,
   errorCount: 0,
@@ -34,7 +36,7 @@ const defaultProps = {
   overallProgress: 0,
 };
 
-function renderQueue(props: Partial<typeof defaultProps> = {}) {
+function renderQueue(props: Partial<QueueProps> = {}) {
   return render(<UploadQueue {...defaultProps} {...props} />);
 }
 
@@ -317,7 +319,9 @@ describe('UploadQueue – summary bar', () => {
       errorCount: 1,
       overallProgress: 50,
     });
-    expect(screen.getByText(/1 failed/i)).toBeInTheDocument();
+    // Scope to the summary label: the "1 failed" copy also appears in the
+    // error stat chip, so an unscoped /1 failed/i match is ambiguous.
+    expect(screen.getByText('1 of 2 uploaded, 1 failed')).toBeInTheDocument();
   });
 
   it('shows uploading copy when uploads are in progress', () => {

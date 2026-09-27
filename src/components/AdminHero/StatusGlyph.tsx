@@ -36,7 +36,7 @@ const STATUS_CONFIG: Record<HealthStatus, {
 };
 
 export const StatusGlyph: React.FC<StatusGlyphProps> = ({ status, className = '' }) => {
-  const config = STATUS_CONFIG[status];
+  const config = STATUS_CONFIG[status] || STATUS_CONFIG.unknown;
   const Icon = config.icon;
 
   return (

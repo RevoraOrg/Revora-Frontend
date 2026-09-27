@@ -7,11 +7,8 @@
  * optionality boundaries of `AuditNoteEditorProps`.
  */
 
-import {
-  DEFAULT_TEMPLATES,
-  NoteTemplate,
-  AuditNoteEditorProps,
-} from './AuditNoteEditor.types';
+import { DEFAULT_TEMPLATES } from './AuditNoteEditor.types';
+import type { NoteTemplate, AuditNoteEditorProps } from './AuditNoteEditor.types';
 
 const TEMPLATE_KEYS = ['id', 'label', 'content'];
 

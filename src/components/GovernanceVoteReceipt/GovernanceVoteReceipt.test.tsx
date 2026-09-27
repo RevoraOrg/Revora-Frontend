@@ -320,7 +320,7 @@ describe('ARIA semantics', () => {
 
   it('receipt details use a <dl> with aria-label', () => {
     renderReceipt();
-    expect(screen.getByRole('definition', { hidden: true }) || document.querySelector('dl[aria-label]')).toBeTruthy();
+    expect(document.querySelector('dl[aria-label="Vote receipt details"]')).toBeTruthy();
   });
 
   it('share toggle has aria-controls pointing to panel', async () => {

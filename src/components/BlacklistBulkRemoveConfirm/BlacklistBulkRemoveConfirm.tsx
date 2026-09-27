@@ -39,6 +39,7 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
   const [initials, setInitials] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [delayActive, setDelayActive] = useState(true);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const { registerUndo } = useUndoBanners();
 
   useEffect(() => {
@@ -48,6 +49,7 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
       setInitials('');
       setIsSubmitting(false);
       setDelayActive(true);
+      setSubmitError(null);
       return;
     }
 
@@ -92,15 +94,17 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
   };
 
   const isReasonValid = selectedPreset !== 'Other' ? reason.length > 0 : reason.trim().length >= 10;
-  const isFormValid = isReasonValid && initials.trim().length >= 2;
+  const hasEntries = entries.length > 0;
+  const isFormValid = hasEntries && isReasonValid && initials.trim().length >= 2;
 
   const handleConfirm = async () => {
     if (!isFormValid || delayActive) return;
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       await onConfirm(reason, initials);
-      
+
       // Wire up undo banner
       registerUndo({
         message: `Removed ${entries.length} entries from blacklist`,
@@ -113,7 +117,9 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
 
       onClose();
     } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to remove entries. Please try again.';
       console.error('Failed to remove entries', error);
+      setSubmitError(message);
       setIsSubmitting(false);
     }
   };
@@ -170,6 +176,10 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
         </div>
 
         <div className="blacklist-bulk-remove-form">
+          {submitError && (
+            <p role="alert" className="blacklist-bulk-remove-error">{submitError}</p>
+          )}
+
           <div>
             <label className="blacklist-bulk-remove-label">Reason for removal</label>
             <div className="blacklist-bulk-remove-presets" role="group" aria-label="Reason presets">
@@ -238,7 +248,7 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
             type="button"
             className="blacklist-bulk-remove-btn-danger"
             onClick={handleConfirm}
-            disabled={!isFormValid || delayActive || isSubmitting}
+            disabled={!isFormValid || delayActive || isSubmitting || !hasEntries}
           >
             {isSubmitting ? 'Removing...' : delayActive ? 'Please wait...' : 'Remove Entries'}
           </button>

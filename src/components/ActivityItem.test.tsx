@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { axe } from 'jest-axe';
-import ActivityItem, { TransactionReceipt, normalizeTxStatus } from './ActivityItem';
+import ActivityItem, { TransactionReceipt, normalizeTxStatus, type TxStatus } from './ActivityItem';
 
 describe('ActivityItem & TransactionReceipt', () => {
   const mockActivity = {
@@ -222,8 +222,10 @@ describe('ActivityItem & TransactionReceipt', () => {
     ['failed', 'failed'],
     ['error', 'failed'],
     ['reorged', 'reorged'],
+    ['reorg', 'reorged'],
     ['REORGED', 'reorged'],
     ['PENDING', 'pending'],
+    ['  PENDING  ', 'pending'],
   ] as const)('maps legacy status %s to badge variant %s', (raw, expected) => {
     expect(normalizeTxStatus(raw)).toBe(expected);
   });
@@ -233,6 +235,15 @@ describe('ActivityItem & TransactionReceipt', () => {
     expect(normalizeTxStatus('')).toBeUndefined();
     expect(normalizeTxStatus('   ')).toBeUndefined();
     expect(normalizeTxStatus('nope')).toBeUndefined();
+  });
+
+  it('renders a neutral placeholder for an unsupported runtime status', () => {
+    render(<TransactionReceipt status={'unknown' as TxStatus} />);
+
+    const status = screen.getByTestId('tx-status');
+    expect(status).toHaveClass('status-unknown');
+    expect(status).toHaveTextContent('—');
+    expect(status.querySelector('.onchain-badge')).not.toBeInTheDocument();
   });
 
   it('renders the on-chain badge for each supported status', () => {

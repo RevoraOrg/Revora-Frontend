@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useId } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useId } from 'react';
 import { UploadCloud, X, RotateCcw, CheckCircle2, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import './UploadQueue.css';
 import type { UploadFile, UploadStatus, Uploader } from '../../hooks/useUploadQueue';
@@ -17,7 +17,12 @@ export interface UploadQueueProps {
   errorCount: number;
   uploadingCount: number;
   overallProgress: number;
-  /** Injected uploader — used for retry. Defaults to a no-op stub. */
+  /**
+   * Injected uploader — used for per-file retry and "Upload all".
+   * When omitted, retry controls render disabled with an explanatory
+   * tooltip and are non-functional; no error is thrown and `onRetry` is
+   * never invoked.
+   */
   uploader?: Uploader;
   /** Accept string forwarded to the hidden file input. */
   accept?: string;
@@ -25,6 +30,40 @@ export interface UploadQueueProps {
 }
 
 /* ─── Helpers ───────────────────────────────────────────────────────────── */
+
+/**
+ * Resolves the effective uploader for this render.
+ *
+ * Success contract: an explicitly injected uploader is used verbatim for
+ * retry (and upload-all) invocations.
+ *
+ * Failure contract: when no uploader is provided, retry is a deterministic
+ * no-op — the component falls back to an internal no-op uploader so a caller
+ * may still complete the public contract without crashing, while rendering
+ * a disabled retry control and emitting a single `console.warn` per mount
+ * cycle so the missing dependency is observable in tests and telemetry.
+ *
+ * Returns whether the uploader was actually injected (drives the disabled
+ * retry state) and the uploader instance to pass to callbacks.
+ */
+function resolveUploader(
+  uploader: Uploader | undefined,
+): { injected: boolean; uploader: Uploader } {
+  return uploader
+    ? { injected: true, uploader }
+    : { injected: false, uploader: createNoopUploader() };
+}
+
+/**
+ * Completed default for the optional `uploader` prop: a no-op uploader that
+ * never invokes its progress callback and never rejects. Callers may pass
+ * this explicitly (e.g. `uploader={createNoopUploader()}`) to satisfy the
+ * contract, keeping retry permanently inert in a type-safe way.
+ */
+export function createNoopUploader(): Uploader {
+  const noop: Uploader = () => Promise.resolve();
+  return noop;
+}
 
 const RING_R = 16;
 const RING_CIRC = 2 * Math.PI * RING_R;
@@ -118,10 +157,18 @@ interface QueueRowProps {
   item: UploadFile;
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
+  /** True when the row is a failed upload and no uploader is injected. */
+  disabled?: boolean;
   labelId: string;
 }
 
-const QueueRow: React.FC<QueueRowProps> = ({ item, onRemove, onRetry, labelId }) => {
+const QueueRow: React.FC<QueueRowProps> = ({
+  item,
+  onRemove,
+  onRetry,
+  disabled = false,
+  labelId,
+}) => {
   const { id, file, status, progress, errorMessage } = item;
   const rowClass = [
     'upload-queue__row',
@@ -160,10 +207,20 @@ const QueueRow: React.FC<QueueRowProps> = ({ item, onRemove, onRetry, labelId })
         {status === 'error' && (
           <button
             type="button"
-            className="upload-queue__btn upload-queue__btn--retry"
+            className={`upload-queue__btn upload-queue__btn--retry${
+              disabled ? ' upload-queue__btn--retry-disabled' : ''
+            }`}
             aria-label={`Retry upload for ${file.name}`}
+            aria-disabled={disabled || undefined}
+            disabled={disabled || undefined}
+            title={
+              disabled
+                ? 'Retry unavailable: no uploader provided'
+                : undefined
+            }
             onClick={() => onRetry(id)}
             data-testid="retry-btn"
+            data-uploader-missing={disabled || undefined}
           >
             <RotateCcw size={14} aria-hidden="true" />
           </button>
@@ -308,6 +365,33 @@ export const UploadQueue: React.FC<UploadQueueProps> = ({
   const liveRegionId = useId();
   const baseRowId = useId();
 
+  const { injected: uploaderInjected, uploader: effectiveUploader } =
+    resolveUploader(uploader);
+
+  /*
+   * Failure-path observability: when failed uploads exist while no uploader
+   * is provided, emit a single deterministic `console.warn` per failure
+   * episode so the misconfiguration is visible in tests and telemetry
+   * without requiring user interaction. The guard resets once the condition
+   * clears (uploader added or no failed rows remain).
+   */
+  const hasFailedRows = errorCount > 0;
+  const warnedNoUploaderRef = useRef(false);
+
+  useEffect(() => {
+    if (!uploaderInjected && hasFailedRows) {
+      if (!warnedNoUploaderRef.current) {
+        warnedNoUploaderRef.current = true;
+        console.warn(
+          '[UploadQueue] Retry unavailable: no `uploader` prop was provided. ' +
+            'Pass an Uploader to enable per-file retry.',
+        );
+      }
+    } else {
+      warnedNoUploaderRef.current = false;
+    }
+  }, [uploaderInjected, hasFailedRows]);
+
   const pendingCount = queue.filter((f) => f.status === 'pending').length;
 
   const handleFiles = useCallback(
@@ -346,9 +430,12 @@ export const UploadQueue: React.FC<UploadQueueProps> = ({
 
   const handleRetry = useCallback(
     (id: string) => {
-      if (uploader) onRetry(id, uploader);
+      // Defensive guard: the retry control renders disabled in this state,
+      // so user-initiated clicks never reach here without an uploader.
+      if (!uploaderInjected) return;
+      onRetry(id, effectiveUploader);
     },
-    [onRetry, uploader],
+    [onRetry, uploaderInjected, effectiveUploader],
   );
 
   /* Live-region announcement text */
@@ -435,6 +522,7 @@ export const UploadQueue: React.FC<UploadQueueProps> = ({
               item={item}
               onRemove={onRemove}
               onRetry={handleRetry}
+              disabled={item.status === 'error' && !uploaderInjected}
               labelId={`${baseRowId}-row-${idx}`}
             />
           ))}

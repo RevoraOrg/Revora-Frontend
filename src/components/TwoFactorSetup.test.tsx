@@ -60,7 +60,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     await navigateToStep4(user);
 
     // Check that placeholder is visible and codes are hidden
-    expect(screen.getByText('••••••')).toBeInTheDocument();
+    expect(screen.getAllByText('••••••').length).toBeGreaterThan(0);
     expect(screen.queryByText(TEST_CODES[0])).not.toBeInTheDocument();
 
     // Verify status shows 0 revealed
@@ -71,7 +71,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     const user = userEvent.setup();
     await navigateToStep4(user);
 
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     const firstCard = codeCards[0];
 
     // Click to reveal
@@ -81,8 +81,8 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     expect(firstCard).toHaveClass('revealed');
     // The code text should be visible
     expect(screen.getByText(TEST_CODES[0])).toBeInTheDocument();
-    // Placeholder should be gone
-    expect(screen.queryByText('••••••')).not.toBeInTheDocument();
+    // Only the revealed card's placeholder is gone (9 remain hidden)
+    expect(screen.getAllByText('••••••')).toHaveLength(9);
 
     // Other cards should still be hidden
     const secondCard = codeCards[1];
@@ -95,14 +95,14 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     await navigateToStep4(user);
 
     // Should show "Revealed: 0/10" initially
-    expect(screen.getByText(/Revealed: 0/10/)).toBeInTheDocument();
+    expect(screen.getByText(/Revealed: 0\/10/)).toBeInTheDocument();
 
     // Reveal first code
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     await user.click(codeCards[0]);
 
     // Should now show "Revealed: 1/10"
-    expect(screen.getByText(/Revealed: 1/10/)).toBeInTheDocument();
+    expect(screen.getByText(/Revealed: 1\/10/)).toBeInTheDocument();
   });
 
   it('shows "Reveal All" and "Hide All" buttons', async () => {
@@ -121,7 +121,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     await navigateToStep4(user);
 
     // Initially all should be hidden
-    expect(screen.getByText('••••••')).toBeInTheDocument();
+    expect(screen.getAllByText('••••••').length).toBeGreaterThan(0);
 
     // Click Reveal All
     const revealAllBtn = screen.getByRole('button', { name: /show all recovery codes/i });
@@ -137,7 +137,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     await user.click(screen.getByRole('button', { name: /hide all recovery codes/i }));
 
     // All codes should be hidden again
-    expect(screen.getByText('••••••')).toBeInTheDocument();
+    expect(screen.getAllByText('••••••').length).toBeGreaterThan(0);
   });
 
   it('copy all codes to clipboard with feedback', async () => {
@@ -145,7 +145,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     await navigateToStep4(user);
 
     // First reveal some codes
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     await user.click(codeCards[0]);
     await user.click(codeCards[1]);
 
@@ -190,7 +190,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     });
 
     // Reveal some codes
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     await user.click(codeCards[0]);
 
     // Click download
@@ -210,14 +210,14 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
 
     // Mock print window
     const printWindow = {
-      document: { write: vi.fn() },
+      document: { write: vi.fn(), close: vi.fn() },
       print: vi.fn(),
       close: vi.fn(),
     };
     window.open = vi.fn().mockReturnValue(printWindow);
 
     // Reveal some codes
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     await user.click(codeCards[0]);
 
     // Click print
@@ -243,8 +243,9 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     expect(screen.getByRole('heading', { name: /Regenerate Recovery Codes/i })).toBeInTheDocument();
     expect(screen.getByText(/⚠️ Warning:/i)).toBeInTheDocument();
 
-    // Cancel button should be present
-    const cancelBtn = screen.getByRole('button', { name: /Cancel/i });
+    // Cancel button should be present (exact name: /Cancel/i would also
+    // match the outer "Cancel setup" control)
+    const cancelBtn = screen.getByRole('button', { name: 'Cancel' });
     expect(cancelBtn).toBeInTheDocument();
 
     // Confirm button should be present
@@ -293,7 +294,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     expect(grid).toBeInTheDocument();
 
     // Each code card should have ARIA pressed state
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     const firstCard = codeCards[0];
     expect(firstCard).toHaveAttribute('aria-pressed', 'false'); // Initially hidden
 
@@ -316,10 +317,10 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
 
     // Check icon should appear after all codes are revealed
     // (This is tested through the status bar)
-    expect(screen.getByText(/All codes visible/)).not.toBeInTheDocument(); // Initially
+    expect(screen.queryByText(/All codes visible/)).not.toBeInTheDocument(); // Initially
 
     // Reveal all codes by clicking them
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     for (const card of codeCards) {
       await user.click(card);
     }
@@ -337,7 +338,7 @@ describe('Step 4 – Enhanced Recovery Codes UX', () => {
     expect(grid).toHaveFocus();
 
     // Click on a code should not remove focus from grid
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     await user.click(codeCards[0]);
 
     expect(grid).toHaveFocus();
@@ -407,7 +408,7 @@ describe('Accessibility', () => {
     expect(grid).toHaveAttribute('aria-label', 'Recovery codes grid');
 
     // All interactive elements should have proper roles
-    const codeCards = screen.getAllByRole('button');
+    const codeCards = within(screen.getByRole('grid', { name: /recovery codes grid/i })).getAllByRole('button');
     expect(codeCards).toHaveLength(10);
 
     // Status indicators should be present
@@ -441,7 +442,7 @@ describe('RTL Support', () => {
     await navigateToStep4(user);
 
     // In RTL mode, card index should appear on right
-    const html = screen.getByText('••••••').closest('html') || document.documentElement;
+    const html = screen.getAllByText('••••••')[0].closest('html') || document.documentElement;
     // This would test the [dir="rtl"] styles
     // For demo, we'll just verify the component renders
     expect(screen.getByRole('grid')).toBeInTheDocument();

@@ -267,6 +267,15 @@
   color: var(--primary);
 }
 
+/* Retry is inert when no uploader was provided (data-uploader-missing) */
+.upload-queue__btn--retry-disabled,
+.upload-queue__btn--retry-disabled:hover {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--text-muted);
+}
+
 .upload-queue__btn--remove:hover {
   background: rgba(239, 68, 68, 0.12);
   color: var(--error);

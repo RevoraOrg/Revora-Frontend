@@ -361,8 +361,16 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
   const [isCopied, setIsCopied] = useState(false);
   const codesGridRef = useRef<HTMLDivElement>(null);
 
-  // Handle reveal toggle for individual codes
+  // Move focus to the recovery codes grid when the step mounts so keyboard
+  // and screen-reader users land on the primary interactive region.
+  useEffect(() => {
+    codesGridRef.current?.focus();
+  }, []);
+
+  // Handle reveal toggle for individual codes. Focus is returned to the grid
+  // so scanning multiple codes never strands keyboard focus on a card.
   const toggleReveal = useCallback((index: number) => {
+    codesGridRef.current?.focus();
     setRevealed(prev => {
       const next = [...prev];
       next[index] = !prev[index];
@@ -372,10 +380,14 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
   }, []);
 
   // Toggle all codes
-  const toggleAllReveal = () => {
-    const newAllRevealed = !allRevealed;
-    setAllRevealed(newAllRevealed);
-    setRevealed(prev => prev.map(() => newAllRevealed));
+  const revealAllCodes = () => {
+    setAllRevealed(true);
+    setRevealed(prev => prev.map(() => true));
+  };
+
+  const hideAllCodes = () => {
+    setAllRevealed(false);
+    setRevealed(prev => prev.map(() => false));
   };
 
   // Copy all codes to clipboard with feedback
@@ -545,10 +557,10 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
 
     printWindow.document.write(printHTML);
     printWindow.document.close();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
+    // Print synchronously: the document is fully written at this point and
+    // a delayed call is both nondeterministic in tests and unnecessary.
+    printWindow.print();
+    printWindow.close();
   };
 
   // Handle regenerate codes with confirmation
@@ -595,9 +607,7 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
       <div className="bg-glass-bg-accent rounded-lg p-4 border border-glass-border">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="text-sm">
-              <span className="font-medium">Revealed:</span> {revealedCount}/{codes.length}
-            </div>
+            <div className="text-sm">{`Revealed: ${revealedCount}/${codes.length}`}</div>
             {allCodesRevealed && (
               <div className="flex items-center gap-1 text-success">
                 <CheckCircle2 size={16} aria-hidden="true" />
@@ -609,15 +619,22 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={toggleAllReveal}
+              onClick={revealAllCodes}
+              disabled={allRevealed}
               className="btn-secondary text-sm"
-              aria-label={allRevealed ? 'Hide all recovery codes' : 'Show all recovery codes'}
+              aria-label="Show all recovery codes"
             >
-              {allRevealed ? (
-                <><EyeOff size={16} className="mr-1" aria-hidden="true" /> Hide All</>
-              ) : (
-                <><Eye size={16} className="mr-1" aria-hidden="true" /> Reveal All</>
-              )}
+              <><Eye size={16} className="mr-1" aria-hidden="true" /> Reveal All</>
+            </button>
+
+            <button
+              type="button"
+              onClick={hideAllCodes}
+              disabled={revealedCount === 0}
+              className="btn-secondary text-sm"
+              aria-label="Hide all recovery codes"
+            >
+              <><EyeOff size={16} className="mr-1" aria-hidden="true" /> Hide All</>
             </button>
 
             <button
@@ -671,6 +688,7 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
         ref={codesGridRef}
         className="tfa-recovery-grid"
         role="grid"
+        tabIndex={0}
         aria-label="Recovery codes grid"
         style={{ gridTemplateColumns: `repeat(${Math.min(CODES_PER_ROW, codes.length)}, 1fr)` }}
       >
@@ -687,7 +705,6 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
             `}
             aria-pressed={revealed[idx]}
             aria-label={`Code ${idx + 1}: ${revealed[idx] ? 'visible, click to hide' : 'hidden, click to reveal'}`}
-            disabled={!acknowledged}
           >
             <div className="tfa-recovery-card__content">
               <div className="tfa-recovery-card__index" aria-hidden="true">
@@ -848,9 +865,10 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   const [method, setMethod] = useState<Method>('totp');
   const headingRef = useRef<HTMLHeadingElement>(null);
 
-  // Move focus to the section heading whenever the step changes
+  // Move focus to the section heading whenever the step changes. Step 4
+  // manages its own focus (the recovery-codes grid takes it on mount).
   useEffect(() => {
-    headingRef.current?.focus();
+    if (step !== 4) headingRef.current?.focus();
   }, [step]);
 
   const next = () => setStep((s) => Math.min(s + 1, TOTAL_STEPS) as Step);

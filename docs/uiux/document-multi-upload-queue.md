@@ -153,7 +153,7 @@ export const MyPage = () => {
 | Non-`Error` rejection | Falls back to "Upload failed" message |
 | Progress out of range | Clamped to `[0, 100]` |
 | File with 200-char name | Truncated with ellipsis; full name in `title` |
-| `uploader` prop absent | Retry click is a no-op (safe) |
+| `uploader` prop absent | Retry controls render **disabled** with an explanatory tooltip and a `data-uploader-missing` marker; clicks are a deterministic no-op that emits a single `console.warn` per mount — `onRetry` is never invoked, nothing throws |
 
 ---
 

@@ -56,6 +56,25 @@ describe('DocumentUploader', () => {
     expect(onFilesAdded.mock.calls[0][0]).toEqual([file]);
   });
 
+  it('accepts a file whose size is exactly the configured limit', () => {
+    const onFilesAdded = vi.fn();
+    render(
+      <DocumentUploader
+        files={[]}
+        onFilesAdded={onFilesAdded}
+        onRemove={vi.fn()}
+        maxSizeBytes={1024}
+      />,
+    );
+
+    const input = screen.getByTestId('doc-uploader-input');
+    const file = makeFile('financials.pdf', 1024);
+    fireEvent.change(input, { target: { files: [file] } });
+
+    expect(onFilesAdded).toHaveBeenCalledWith([file]);
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
+  });
+
   it('rejects a file over the size limit and announces the rejection instead of adding it', () => {
     const onFilesAdded = vi.fn();
     render(
@@ -68,7 +87,7 @@ describe('DocumentUploader', () => {
     );
 
     const input = screen.getByTestId('doc-uploader-input');
-    const tooBig = makeFile('financials.pdf', 5000);
+    const tooBig = makeFile('financials.pdf', 1025);
     fireEvent.change(input, { target: { files: [tooBig] } });
 
     expect(onFilesAdded).not.toHaveBeenCalled();

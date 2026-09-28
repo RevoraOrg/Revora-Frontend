@@ -348,6 +348,19 @@ describe('DocumentUploader', () => {
     expect(screen.getByRole('status')).toHaveTextContent(/failed to upload\./i);
   });
 
+  it('falls back to a generic message when an error file has an empty errorMessage', () => {
+    render(
+      <DocumentUploader
+        files={[makeUploadable({ status: 'error', progress: undefined, errorMessage: '' })]}
+        onFilesAdded={vi.fn()}
+        onRemove={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/upload failed\. please try again\./i);
+    expect(screen.getByRole('status')).toHaveTextContent(/failed to upload\./i);
+  });
+
   it('has no axe-detectable accessibility violations in an empty and populated state', async () => {
     const { container, rerender } = render(
       <DocumentUploader files={[]} onFilesAdded={vi.fn()} onRemove={vi.fn()} />,

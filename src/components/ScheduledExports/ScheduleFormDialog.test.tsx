@@ -134,4 +134,59 @@ describe('ScheduleFormDialog', () => {
     const { container } = renderDialog();
     expect(await axe(container)).toHaveNoViolations();
   });
+
+    // ---- Closed-state regression coverage (`if (!open) return null`) ----
+
+  it('renders no DOM at all when closed', () => {
+    const { container } = renderDialog({ open: false });
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('schedule-form-backdrop')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
+  });
+
+  it('does not call onSave or onClose on mount when closed', () => {
+    const { onSave, onClose } = renderDialog({ open: false });
+    expect(onSave).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('renders nothing when closed even if initial data is provided', () => {
+    renderDialog({ open: false, initial: { name: 'Edit Me' } });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /edit schedule/i })).not.toBeInTheDocument();
+  });
+
+  it('does not call onClose on Escape when closed', async () => {
+    const user = userEvent.setup();
+    const { onClose } = renderDialog({ open: false });
+    await user.keyboard('{Escape}');
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it('removes the dialog when open changes from true to false', () => {
+    const onSave = vi.fn();
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <ScheduleFormDialog open={true} onSave={onSave} onClose={onClose} />
+    );
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    rerender(<ScheduleFormDialog open={false} onSave={onSave} onClose={onClose} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('shows the dialog when open changes from false to true', () => {
+    const onSave = vi.fn();
+    const onClose = vi.fn();
+    const { rerender } = render(
+      <ScheduleFormDialog open={false} onSave={onSave} onClose={onClose} />
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    rerender(<ScheduleFormDialog open={true} onSave={onSave} onClose={onClose} />);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /new schedule/i })).toBeInTheDocument();
+  });
+  
 });

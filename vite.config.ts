@@ -62,6 +62,8 @@ export default defineConfig({
         'src/components/AppShell/RoleDashboard/widgets.ts',
         'src/components/AppShell/RoleDashboard/onboardingHints.ts',
         'src/components/AppShell/RoleDashboard/roleDashboard.types.ts',
+        // DelegateProfileCard behavior coverage
+        'src/components/GovernanceDelegation/DelegateProfileCard.tsx',
         // Issue #674 – Admin alerts inbox AlertRow
         'src/components/AdminAlertsInbox/AlertRow.tsx',
       ],
@@ -201,8 +203,19 @@ export default defineConfig({
         'src/components/AppShell/RoleDashboard/roleDashboard.types.ts': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
+        // DelegateProfileCard behavior coverage
+        'src/components/GovernanceDelegation/DelegateProfileCard.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
+        // Issue #674 – Admin alerts inbox AlertRow
         'src/components/AdminAlertsInbox/AlertRow.tsx': {
-          branches: 95, functions: 95, lines: 95, statements: 95,
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
         },
       }
     }

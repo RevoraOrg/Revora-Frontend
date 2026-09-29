@@ -3,12 +3,40 @@ import { render, screen, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { axe } from 'jest-axe';
 import { vi } from 'vitest';
-import { RoleDashboard } from './RoleDashboard';
+import { RoleDashboard, resolveActiveRole } from './RoleDashboard';
 import type { DashboardHintStorage } from './onboardingHints';
 
 const INVESTOR_METRIC = 'Portfolio value';
 const ISSUER_METRIC = 'Fundraising progress';
 const ADMIN_METRIC = 'Oversight incidents';
+
+describe('resolveActiveRole', () => {
+	test('returns null when available roles are empty', () => {
+		// No requested role, no whitelist
+		expect(resolveActiveRole(undefined, undefined)).toBeNull();
+		// Invalid requested role, no whitelist
+		expect(resolveActiveRole('invalid' as never, undefined)).toBeNull();
+		// Invalid requested role, empty whitelist
+		expect(resolveActiveRole('invalid' as never, [])).toBeNull();
+		// Invalid requested role, invalid whitelist
+		expect(resolveActiveRole('invalid' as never, ['invalid' as never])).toBeNull();
+	});
+
+	test('returns requested role when valid and no whitelist is provided', () => {
+		expect(resolveActiveRole('investor', undefined)).toBe('investor');
+		expect(resolveActiveRole('issuer', undefined)).toBe('issuer');
+		expect(resolveActiveRole('admin', undefined)).toBe('admin');
+	});
+
+	test('returns requested role when it exists in the whitelist', () => {
+		expect(resolveActiveRole('issuer', ['investor', 'issuer'])).toBe('issuer');
+	});
+
+	test('downgrades to first whitelisted role when requested role is invalid or not in whitelist', () => {
+		expect(resolveActiveRole('admin', ['investor', 'issuer'])).toBe('investor');
+		expect(resolveActiveRole('invalid' as never, ['issuer', 'admin'])).toBe('issuer');
+	});
+});
 
 describe('RoleDashboard', () => {
 	test('renders investor dashboard by default', () => {

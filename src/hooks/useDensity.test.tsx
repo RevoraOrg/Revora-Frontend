@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { DensityProvider } from '../components/DensityProvider/DensityProvider';
 import { useDensity } from './useDensity';
 
@@ -43,6 +43,26 @@ describe('useDensity', () => {
     expect(screen.getByTestId('mode').textContent).toBe('comfortable');
   });
 
+  it('restores a valid stored density', () => {
+    localStorageMock.setItem('revora-density', 'compact');
+    render(
+      <DensityProvider>
+        <HookConsumer />
+      </DensityProvider>,
+    );
+    expect(screen.getByTestId('mode').textContent).toBe('compact');
+  });
+
+  it('falls back to comfortable for an invalid stored density', () => {
+    localStorageMock.setItem('revora-density', 'spacious');
+    render(
+      <DensityProvider>
+        <HookConsumer />
+      </DensityProvider>,
+    );
+    expect(screen.getByTestId('mode').textContent).toBe('comfortable');
+  });
+
   it('setDensity updates the value', () => {
     render(
       <DensityProvider>
@@ -63,12 +83,25 @@ describe('useDensity', () => {
     expect(screen.getByTestId('mode').textContent).toBe('cozy');
   });
 
-  it('throws when used outside DensityProvider', () => {
-    const originalError = console.error;
-    console.error = () => {};
-    expect(() => render(<HookConsumer />)).toThrow(
-      'useDensity must be used inside <DensityProvider>',
+  it('cycle wraps from compact to comfortable', () => {
+    localStorageMock.setItem('revora-density', 'compact');
+    render(
+      <DensityProvider>
+        <HookConsumer />
+      </DensityProvider>,
     );
-    console.error = originalError;
+    fireEvent.click(screen.getByText('cycle'));
+    expect(screen.getByTestId('mode').textContent).toBe('comfortable');
+  });
+
+  it('throws when used outside DensityProvider', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      expect(() => render(<HookConsumer />)).toThrow(
+        'useDensity must be used inside <DensityProvider>',
+      );
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 });

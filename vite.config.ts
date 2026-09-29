@@ -64,6 +64,8 @@ export default defineConfig({
         'src/components/AppShell/RoleDashboard/roleDashboard.types.ts',
         // Issue #674 – Admin alerts inbox AlertRow
         'src/components/AdminAlertsInbox/AlertRow.tsx',
+        // Issue – PreOpenBanner failure-handling regression
+        'src/components/PreOpenBanner.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -202,6 +204,9 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/AdminAlertsInbox/AlertRow.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/PreOpenBanner.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
       }

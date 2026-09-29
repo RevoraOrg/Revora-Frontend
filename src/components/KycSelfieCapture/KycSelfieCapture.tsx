@@ -82,7 +82,12 @@ export default function KycSelfieCapture({
 
   const startCamera = useCallback(async () => {
     setCameraState('requesting');
+    await Promise.resolve();
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setCameraState('unavailable');
+        return;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'user',
@@ -97,7 +102,7 @@ export default function KycSelfieCapture({
       }
       setCameraState('active');
     } catch (err: unknown) {
-      if (err instanceof DOMException) {
+      if (err instanceof DOMException || err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           setCameraState('denied');
         } else if (err.name === 'NotFoundError') {
@@ -234,4 +239,182 @@ export default function KycSelfieCapture({
       <div className={`ksc-container${className ? ` ${className}` : ''}`}>
         <div className="ksc-header">
           <h2 id={titleId} className="ksc-title">Starting camera…</h2>
-          <p className="ksc-subtitle">Please allow camera access when prompted<
+          <p className="ksc-subtitle">Please allow camera access when prompted</p>
+          {onClose && (
+            <button
+              type="button"
+              className="ksc-close-btn"
+              onClick={onClose}
+              aria-label="Close selfie capture"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+        <div className="ksc-fallback">
+          <RefreshCw className="ksc-fallback__icon" aria-hidden="true" />
+          <h3 className="ksc-fallback__heading">Waiting for camera permission…</h3>
+          <p className="ksc-fallback__text">
+            Check your browser prompt and grant permission to use the camera.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render: Camera Denied / Unavailable / Error ──────────────────────
+
+  if (cameraState === 'denied' || cameraState === 'unavailable' || cameraState === 'error') {
+    const heading =
+      cameraState === 'denied'
+        ? 'Camera access denied'
+        : cameraState === 'unavailable'
+        ? 'No camera found'
+        : 'Camera error';
+
+    const message =
+      cameraState === 'denied'
+        ? 'Camera permission was denied. Please allow camera access in your browser settings, or upload a photo instead.'
+        : cameraState === 'unavailable'
+        ? 'No compatible camera device was detected. Please connect a camera or upload a photo.'
+        : 'An error occurred while attempting to access your camera. Please try again or upload a photo.';
+
+    return (
+      <div className={`ksc-container${className ? ` ${className}` : ''}`}>
+        <div className="ksc-header">
+          <h2 id={titleId} className="ksc-title">Verify Your Identity</h2>
+          <p className="ksc-subtitle">Take a selfie to complete verification</p>
+          {onClose && (
+            <button
+              type="button"
+              className="ksc-close-btn"
+              onClick={onClose}
+              aria-label="Close selfie capture"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+
+        <div className="ksc-denied" role="alert">
+          <AlertTriangle className="ksc-denied__icon" aria-hidden="true" />
+          <h3 className="ksc-denied__heading">{heading}</h3>
+          <p className="ksc-denied__text">{message}</p>
+          <div className="ksc-permission-primer__actions">
+            <button
+              type="button"
+              className="ksc-btn ksc-btn--primary"
+              onClick={startCamera}
+              aria-label="Try again"
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Try again
+            </button>
+            <button
+              type="button"
+              className="ksc-btn ksc-btn--secondary"
+              onClick={handleFallbackUpload}
+              aria-label="Upload a photo"
+            >
+              <Upload size={16} aria-hidden="true" />
+              Upload a photo
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render: Preview & Retake ──────────────────────────────────────────
+
+  if (capturedImage) {
+    return (
+      <div className={`ksc-container${className ? ` ${className}` : ''}`}>
+        <div className="ksc-header">
+          <h2 id={titleId} className="ksc-title">Review Your Selfie</h2>
+          <p className="ksc-subtitle">Make sure your face is clearly visible and well-lit</p>
+          {onClose && (
+            <button
+              type="button"
+              className="ksc-close-btn"
+              onClick={onClose}
+              aria-label="Close selfie capture"
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+          )}
+        </div>
+
+        <div className="ksc-preview">
+          <img
+            src={capturedImage}
+            alt="Captured selfie"
+            className="ksc-preview__image"
+          />
+          <div className="ksc-preview__actions">
+            <button
+              type="button"
+              className="ksc-btn ksc-btn--secondary"
+              onClick={handleRetake}
+              aria-label="Retake photo"
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+              Retake photo
+            </button>
+            <button
+              type="button"
+              className="ksc-btn ksc-btn--primary"
+              onClick={handleConfirm}
+              aria-label="Use this photo"
+            >
+              <CheckCircle2 size={16} aria-hidden="true" />
+              Use this photo
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Render: Active Camera Viewport ────────────────────────────────────
+
+  return (
+    <div className={`ksc-container${className ? ` ${className}` : ''}`}>
+      <div className="ksc-header">
+        <h2 id={titleId} className="ksc-title">Take a Selfie</h2>
+        <p className="ksc-subtitle">Align your face inside the oval frame</p>
+        {onClose && (
+          <button
+            type="button"
+            className="ksc-close-btn"
+            onClick={onClose}
+            aria-label="Close selfie capture"
+          >
+            <X size={20} aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      <div className="ksc-camera-viewport">
+        <video ref={videoRef} autoPlay playsInline muted aria-label="Camera feed" />
+        <div className="ksc-face-oval" aria-hidden="true">
+          <span className="ksc-face-oval__label">Align your face within the frame</span>
+        </div>
+      </div>
+
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      <div className="ksc-camera-toolbar">
+        <button
+          type="button"
+          className="ksc-capture-btn"
+          onClick={capturePhoto}
+          aria-label="Capture photo"
+          aria-busy={isCapturing}
+        >
+          <span className="ksc-capture-btn__inner" />
+        </button>
+      </div>
+    </div>
+  );
+}

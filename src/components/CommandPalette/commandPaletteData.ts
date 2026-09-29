@@ -248,23 +248,32 @@ export const COMMAND_BY_ID: Map<string, CommandItem> = new Map(
 
 /** Filter and score items against a lowercase query string. */
 export function searchCommands(query: string): CommandItem[] {
+  if (typeof query !== 'string') return [];
+
   const q = query.toLowerCase().trim();
   if (!q) return [];
-  return ALL_COMMANDS.filter(
-    (item) =>
+
+  return ALL_COMMANDS.filter((item) => {
+    if (!item || typeof item.label !== 'string') return false;
+
+    const itemDescription = typeof item.description === 'string' ? item.description : '';
+    return (
       item.label.toLowerCase().includes(q) ||
-      item.description?.toLowerCase().includes(q),
-  );
+      itemDescription.toLowerCase().includes(q)
+    );
+  });
 }
 
 /** Apply per-group result limits and return groups that have results. */
 export function groupSearchResults(
   items: CommandItem[],
 ): { group: CommandGroup; items: CommandItem[] }[] {
+  if (!Array.isArray(items)) return [];
+
   return COMMAND_GROUPS.reduce<{ group: CommandGroup; items: CommandItem[] }[]>(
     (acc, group) => {
       const matching = items
-        .filter((i) => i.group === group.key)
+        .filter((i) => i && i.group === group.key)
         .slice(0, group.resultLimit);
       if (matching.length > 0) {
         acc.push({ group, items: matching });

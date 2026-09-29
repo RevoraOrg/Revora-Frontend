@@ -36,6 +36,11 @@ describe('BlacklistBulkRemoveConfirm', () => {
     jest.useRealTimers();
   });
 
+  it('renders nothing when closed', () => {
+    const { container } = render(<BlacklistBulkRemoveConfirm {...defaultProps} isOpen={false} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+
   it('should not have basic accessibility violations', async () => {
     const { container } = render(<BlacklistBulkRemoveConfirm {...defaultProps} />);
     const results = await axe(container);
@@ -105,6 +110,17 @@ describe('BlacklistBulkRemoveConfirm', () => {
     expect(screen.queryByText(/Reason must be at least 10 characters./i)).not.toBeInTheDocument();
   });
 
+  it('disables removing when the selection is empty', () => {
+    render(<BlacklistBulkRemoveConfirm {...defaultProps} entries={[]} />);
+
+    act(() => {
+      jest.advanceTimersByTime(750);
+    });
+
+    const submitButton = screen.getByRole('button', { name: /Remove Entries/i });
+    expect(submitButton).toBeDisabled();
+  });
+
   it('handles network failure mid-remove', async () => {
     const onConfirmError = jest.fn().mockRejectedValue(new Error('Network error'));
     render(<BlacklistBulkRemoveConfirm {...defaultProps} onConfirm={onConfirmError} />);
@@ -114,28 +130,22 @@ describe('BlacklistBulkRemoveConfirm', () => {
     });
 
     const user = userEvent.setup({ delay: null });
-    
-    // Select a valid preset
+
     await user.click(screen.getByRole('button', { name: 'Added by mistake' }));
-    
-    // Type valid initials
     await user.type(screen.getByRole('textbox', { name: /Actor Initials/i }), 'AB');
 
     const submitButton = screen.getByRole('button', { name: /Remove Entries/i });
     expect(submitButton).not.toBeDisabled();
 
-    // Click confirm
     await user.click(submitButton);
 
-    // Should show loading state
     expect(screen.getByRole('button', { name: /Removing\.\.\./i })).toBeDisabled();
 
-    // Wait for the promise to reject
     await waitFor(() => {
       expect(onConfirmError).toHaveBeenCalledTimes(1);
     });
 
-    // Should return to normal state on error
+    expect(await screen.findByRole('alert')).toHaveTextContent('Network error');
     expect(screen.getByRole('button', { name: /Remove Entries/i })).not.toBeDisabled();
     expect(defaultProps.onClose).not.toHaveBeenCalled();
   });

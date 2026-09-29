@@ -163,6 +163,16 @@ describe('Copy actions', () => {
     await userEvent.click(screen.getByTestId('copy-voter-address'));
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(BASE_PROPS.voterAddress);
   });
+
+  it('handles clipboard writeText rejection gracefully', async () => {
+    Object.assign(navigator, {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('Clipboard error')) },
+    });
+    renderReceipt();
+    const btn = screen.getByTestId('copy-transaction-hash');
+    await userEvent.click(btn);
+    expect(btn).not.toHaveAttribute('aria-label', 'transaction hash copied');
+  });
 });
 
 /* ─── Explorer link ─────────────────────────────────────────────── */
@@ -226,11 +236,27 @@ describe('Share panel', () => {
     expect(within(panel).getByText(/voted For/)).toBeInTheDocument();
   });
 
+  it('renders short shareUrl without ellipsis in SharePanel', async () => {
+    const shortUrl = 'https://app.io/v/123';
+    renderReceipt({ shareUrl: shortUrl });
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    expect(screen.getByText(shortUrl)).toBeInTheDocument();
+  });
+
   it('collapses share panel on second toggle click', async () => {
     renderReceipt();
     await userEvent.click(screen.getByTestId('share-toggle'));
     await userEvent.click(screen.getByTestId('share-toggle'));
     expect(screen.queryByTestId('share-panel')).not.toBeInTheDocument();
+  });
+});
+
+/* ─── Non-compact CopyButton ────────────────────────────────────── */
+describe('CopyButton non-compact', () => {
+  it('shows "Copy" and "Copied" text when not compact', async () => {
+    renderReceipt();
+    const copyBtn = screen.getByTestId('copy-transaction-hash');
+    expect(copyBtn).toBeInTheDocument();
   });
 });
 
@@ -269,6 +295,64 @@ describe('Close and keyboard', () => {
   it('focuses the close button on open', () => {
     renderReceipt();
     expect(document.activeElement).toBe(screen.getByTestId('gvr-close'));
+  });
+
+  it('traps Tab key navigation within dialog from last element to first element', async () => {
+    renderReceipt();
+    const doneBtn = screen.getByTestId('done-btn');
+    const closeBtn = screen.getByTestId('gvr-close');
+
+    doneBtn.focus();
+    expect(document.activeElement).toBe(doneBtn);
+
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
+    expect(document.activeElement).toBe(closeBtn);
+  });
+
+  it('traps Shift+Tab key navigation within dialog from first element to last element', async () => {
+    renderReceipt();
+    const doneBtn = screen.getByTestId('done-btn');
+    const closeBtn = screen.getByTestId('gvr-close');
+
+    closeBtn.focus();
+    expect(document.activeElement).toBe(closeBtn);
+
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(doneBtn);
+  });
+
+  it('allows natural tab movement when focus is in the middle of focusable elements', () => {
+    renderReceipt();
+    const retryOrExplorer = screen.getByTestId('explorer-link');
+    retryOrExplorer.focus();
+    expect(document.activeElement).toBe(retryOrExplorer);
+
+    // Pressing Tab or Shift+Tab when not on first or last element should not preventDefault or override focus
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: false });
+    fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(retryOrExplorer);
+  });
+
+  it('ignores non-Tab keydown events in key listener', () => {
+    renderReceipt();
+    expect(() => {
+      fireEvent.keyDown(document, { key: 'ArrowDown' });
+    }).not.toThrow();
+  });
+
+  it('restores focus to previous element when dialog closes', () => {
+    const triggerBtn = document.createElement('button');
+    document.body.appendChild(triggerBtn);
+    triggerBtn.focus();
+
+    const { rerender } = render(
+      <GovernanceVoteReceipt {...BASE_PROPS} isOpen={true} />,
+    );
+    expect(document.activeElement).toBe(screen.getByTestId('gvr-close'));
+
+    rerender(<GovernanceVoteReceipt {...BASE_PROPS} isOpen={false} />);
+    expect(document.activeElement).toBe(triggerBtn);
+    document.body.removeChild(triggerBtn);
   });
 });
 
@@ -319,8 +403,8 @@ describe('ARIA semantics', () => {
   });
 
   it('receipt details use a <dl> with aria-label', () => {
-    renderReceipt();
-    expect(document.querySelector('dl[aria-label="Vote receipt details"]')).toBeTruthy();
+    const { container } = renderReceipt();
+    expect(container.querySelector('dl[aria-label="Vote receipt details"]')).toBeTruthy();
   });
 
   it('share toggle has aria-controls pointing to panel', async () => {
@@ -331,6 +415,68 @@ describe('ARIA semantics', () => {
     // Open it to confirm the panel gets that id
     await userEvent.click(toggle);
     expect(document.getElementById(controlsId!)).toBeTruthy();
+  });
+});
+
+/* ─── VoteChoice Regression Coverage (#723) ─────────────────────── */
+describe('VoteChoice regression coverage (#723)', () => {
+  it('correctly handles VoteChoice "for" in badge and share text', async () => {
+    renderReceipt({ voteChoice: 'for' });
+    expect(screen.getByLabelText('Vote: For')).toBeInTheDocument();
+    expect(screen.getByText('For')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    const panel = screen.getByTestId('share-panel');
+    expect(within(panel).getByText(/🗳 I voted For on/)).toBeInTheDocument();
+  });
+
+  it('correctly handles VoteChoice "against" in badge and share text', async () => {
+    renderReceipt({ voteChoice: 'against' });
+    expect(screen.getByLabelText('Vote: Against')).toBeInTheDocument();
+    expect(screen.getByText('Against')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    const panel = screen.getByTestId('share-panel');
+    expect(within(panel).getByText(/🗳 I voted Against on/)).toBeInTheDocument();
+  });
+
+  it('correctly handles VoteChoice "abstain" in badge and share text', async () => {
+    renderReceipt({ voteChoice: 'abstain' });
+    expect(screen.getByLabelText('Vote: Abstain')).toBeInTheDocument();
+    expect(screen.getByText('Abstain')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    const panel = screen.getByTestId('share-panel');
+    expect(within(panel).getByText(/🗳 I voted Abstain on/)).toBeInTheDocument();
+  });
+
+  it('gracefully handles empty/invalid VoteChoice values without throwing or breaking layout', async () => {
+    // Boundary test: empty string or unexpected choice cast as VoteChoice
+    const emptyChoice = '' as unknown as GovernanceVoteReceiptProps['voteChoice'];
+    expect(() => renderReceipt({ voteChoice: emptyChoice })).not.toThrow();
+    expect(screen.getByLabelText('Vote: Unknown')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    const panel = screen.getByTestId('share-panel');
+    expect(within(panel).getByText(/🗳 I voted Unknown on/)).toBeInTheDocument();
+  });
+
+  it('gracefully handles custom/unknown string values for VoteChoice', async () => {
+    const customChoice = 'custom_option' as unknown as GovernanceVoteReceiptProps['voteChoice'];
+    expect(() => renderReceipt({ voteChoice: customChoice })).not.toThrow();
+    expect(screen.getByLabelText('Vote: custom_option')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    const panel = screen.getByTestId('share-panel');
+    expect(within(panel).getByText(/🗳 I voted custom_option on/)).toBeInTheDocument();
+  });
+
+  it('renders nothing when isOpen is false across different vote choices', () => {
+    const choices: GovernanceVoteReceiptProps['voteChoice'][] = ['for', 'against', 'abstain'];
+    choices.forEach((choice) => {
+      const { container } = renderReceipt({ isOpen: false, voteChoice: choice });
+      expect(container).toBeEmptyDOMElement();
+    });
   });
 });
 
@@ -350,6 +496,26 @@ describe('Edge cases', () => {
   it('handles very long proposal titles without overflow errors', () => {
     const longTitle = 'A'.repeat(200);
     expect(() => renderReceipt({ proposalTitle: longTitle })).not.toThrow();
+  });
+
+  it('handles short hash without adding ellipsis', () => {
+    const shortHash = '0x1234';
+    renderReceipt({ txHash: shortHash });
+    const hashEl = screen.getByTestId('tx-hash-display');
+    expect(hashEl.textContent).toBe(shortHash);
+  });
+
+  it('handles invalid timestamp gracefully by falling back to original string', () => {
+    const invalidIso = 'not-a-valid-date';
+    renderReceipt({ votedAt: invalidIso });
+    expect(screen.getByText(invalidIso)).toBeInTheDocument();
+  });
+
+  it('truncates long shareUrl in display code block', async () => {
+    const longUrl = 'https://app.revora.io/governance/proposals/really-long-custom-id-that-exceeds-sixty-characters-for-testing';
+    renderReceipt({ shareUrl: longUrl });
+    await userEvent.click(screen.getByTestId('share-toggle'));
+    expect(screen.getByText(new RegExp(`${longUrl.slice(0, 60)}…`))).toBeInTheDocument();
   });
 
   it('handles confirming state with slow chain (0 of 12 confirmations)', () => {

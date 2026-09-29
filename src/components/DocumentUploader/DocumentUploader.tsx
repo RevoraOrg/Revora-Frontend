@@ -162,7 +162,7 @@ const FileTile: React.FC<FileTileProps> = ({ file, onRemove, onRetry }) => {
 
         {file.status === 'error' && (
           <p id={errorId} role="alert" className="doc-uploader-tile-error">
-            {file.errorMessage ?? 'Upload failed. Please try again.'}
+            {file.errorMessage?.trim() || 'Upload failed. Please try again.'}
           </p>
         )}
       </div>

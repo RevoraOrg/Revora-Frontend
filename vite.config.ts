@@ -17,6 +17,7 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: [
         'src/hooks/useUploadQueue.ts',
+        'src/components/UploadQueue/index.ts',
         'src/components/UploadQueue/UploadQueue.tsx',
         'src/pages/DistributionDashboard.tsx',
         'src/utils/financialTermsValidation.ts',
@@ -41,6 +42,8 @@ export default defineConfig({
         'src/hooks/useDensity.ts',
         // Issue #199 – Inline document uploader
         'src/components/DocumentUploader/DocumentUploader.tsx',
+        // Issue #725 – Help drawer
+        'src/components/HelpDrawer/HelpDrawer.tsx',
         // Issue #472 – Governance vote receipt
         'src/components/GovernanceVoteReceipt/GovernanceVoteReceipt.tsx',
         // Command Palette
@@ -61,6 +64,8 @@ export default defineConfig({
         'src/components/AppShell/RoleDashboard/roleDashboard.types.ts',
         // DelegateProfileCard behavior coverage
         'src/components/GovernanceDelegation/DelegateProfileCard.tsx',
+        // Issue #674 – Admin alerts inbox AlertRow
+        'src/components/AdminAlertsInbox/AlertRow.tsx',
       ],
       thresholds: {
         'src/utils/financialTermsValidation.ts': {
@@ -79,6 +84,9 @@ export default defineConfig({
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/DocumentUploader/DocumentUploader.tsx': {
+          branches: 95, functions: 95, lines: 95, statements: 95,
+        },
+        'src/components/HelpDrawer/HelpDrawer.tsx': {
           branches: 95, functions: 95, lines: 95, statements: 95,
         },
         'src/components/GovernanceVoteReceipt/GovernanceVoteReceipt.tsx': {
@@ -201,7 +209,14 @@ export default defineConfig({
           functions: 95,
           lines: 95,
           statements: 95,
-         },
+        },
+        // Issue #674 – Admin alerts inbox AlertRow
+        'src/components/AdminAlertsInbox/AlertRow.tsx': {
+          branches: 95,
+          functions: 95,
+          lines: 95,
+          statements: 95,
+        },
       }
     }
   }

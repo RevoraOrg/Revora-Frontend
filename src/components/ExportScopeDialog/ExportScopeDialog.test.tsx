@@ -56,9 +56,16 @@ describe('ExportScopeDialog rendering', () => {
     expect(screen.getByRole('dialog', { name: /export audit trail/i })).toBeInTheDocument();
   });
 
-  it('does not render when closed', () => {
-    renderDialog({ open: false });
+  it('returns null when closed and leaves the container empty', () => {
+    const { container } = renderDialog({ open: false });
+    expect(container.firstChild).toBeNull();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('renders a zero-row boundary state without warnings', () => {
+    renderDialog({ totalEntries: 0, filteredEntries: 0 });
+    expect(screen.getByTestId('export-estimate')).toHaveTextContent(/0/);
+    expect(screen.queryByTestId('export-large-warning')).not.toBeInTheDocument();
   });
 
   it('renders all scope options', () => {

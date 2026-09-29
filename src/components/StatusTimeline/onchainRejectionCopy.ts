@@ -90,7 +90,7 @@ export const ONCHAIN_REJECTION_COPY: Record<OnchainRejectionReason, RejectionCop
  * Returns copy template for a given rejection reason, falling back to 'unknown' for unrecognized reasons.
  */
 export function getOnchainRejectionCopy(reason?: string): RejectionCopyTemplate {
-  if (reason && reason in ONCHAIN_REJECTION_COPY) {
+  if (reason && Object.prototype.hasOwnProperty.call(ONCHAIN_REJECTION_COPY, reason)) {
     return ONCHAIN_REJECTION_COPY[reason as OnchainRejectionReason];
   }
   return ONCHAIN_REJECTION_COPY.unknown;

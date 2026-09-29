@@ -17,6 +17,7 @@ export default defineConfig({
       reporter: ['text', 'html'],
       include: [
         'src/hooks/useUploadQueue.ts',
+        'src/components/UploadQueue/index.ts',
         'src/components/UploadQueue/UploadQueue.tsx',
         'src/pages/DistributionDashboard.tsx',
         'src/utils/financialTermsValidation.ts',

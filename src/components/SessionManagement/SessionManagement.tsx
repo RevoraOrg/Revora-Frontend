@@ -754,29 +754,17 @@ export function SessionManagement({
       )}
 
       {/* ── Confirm Dialog ── */}
-      {dialogState?.type === "single" && (
-        <ConfirmDialog
-          isOpen
-          title="Revoke session?"
-          message={`This will sign out "${dialogState.deviceName}" immediately. You may need to sign in again on that device.`}
-          confirmLabel="Revoke"
-          onConfirm={handleRevokeSingle}
-          onCancel={() => setDialogState(null)}
-          isLoading={revokingId !== null}
-        />
-      )}
-
-      {dialogState?.type === "all" && (
-        <ConfirmDialog
-          isOpen
-          title="Sign out everywhere?"
-          message="This will sign out all other active sessions. Your current session will remain active."
-          confirmLabel="Sign out everywhere"
-          onConfirm={handleRevokeAll}
-          onCancel={() => setDialogState(null)}
-          isLoading={revokingAll}
-        />
-      )}
+      <ConfirmDialog
+        isOpen={dialogState !== null}
+        title={dialogState?.type === "all" ? "Sign out everywhere?" : "Revoke session?"}
+        message={dialogState?.type === "all"
+          ? "This will sign out all other active sessions. Your current session will remain active."
+          : `This will sign out "${dialogState?.deviceName ?? "device"}" immediately. You may need to sign in again on that device.`}
+        confirmLabel={dialogState?.type === "all" ? "Sign out everywhere" : "Revoke"}
+        onConfirm={dialogState?.type === "all" ? handleRevokeAll : handleRevokeSingle}
+        onCancel={() => setDialogState(null)}
+        isLoading={revokingAll || revokingId !== null}
+      />
     </div>
   );
 }

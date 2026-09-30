@@ -76,6 +76,13 @@ describe('describeSchedule', () => {
     const rule: RecurrenceRule = { frequency: 'monthly', time: '10:00', timezone: 'UTC' };
     expect(describeSchedule(rule)).toContain('1st');
   });
+
+  it('throws for an unsupported recurrence frequency', () => {
+    const rule = { frequency: 'yearly', time: '10:00', timezone: 'UTC' } as unknown as RecurrenceRule;
+    expect(() => describeSchedule(rule)).toThrowError(
+      new RangeError('Unsupported recurrence frequency: yearly'),
+    );
+  });
 });
 
 describe('computeNextRun', () => {

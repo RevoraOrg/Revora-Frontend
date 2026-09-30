@@ -16,6 +16,8 @@ export function describeSchedule(rule: RecurrenceRule): string {
       const suffix = ordinalSuffix(day);
       return `Monthly on the ${day}${suffix} at ${time} (${tz})`;
     }
+    default:
+      throw new RangeError(`Unsupported recurrence frequency: ${rule.frequency}`);
   }
 }
 

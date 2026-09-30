@@ -1,7 +1,7 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { axe, toHaveNoViolations } from "jest-axe";
-import { ErrorRateSparklineTile, ErrorRateDataPoint } from "./ErrorRateSparklineTile";
+import { ErrorRateSparklineTile, ErrorRateDataPoint, MiniSparkline, sparklinePath } from "./ErrorRateSparklineTile";
 
 expect.extend(toHaveNoViolations);
 
@@ -247,5 +247,31 @@ describe("ErrorRateSparklineTile", () => {
   it("is tabIndex 0 when onClick provided", () => {
     render(<ErrorRateSparklineTile {...defaultProps} onClick={vi.fn()} />);
     expect(screen.getByRole("button")).toHaveAttribute("tabindex", "0");
+  });
+});
+
+describe("MiniSparkline explicit failure handling", () => {
+  it("returns null when data is empty", () => {
+    const { container } = render(<MiniSparkline data={[]} rate={1} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("renders correctly with normal data boundary", () => {
+    const { container } = render(<MiniSparkline data={[{ label: "W1", value: 1.5 }]} rate={1.5} />);
+    expect(container.querySelector("svg")).toBeInTheDocument();
+  });
+});
+
+describe("sparklinePath", () => {
+  it("returns empty string when points are empty", () => {
+    expect(sparklinePath([])).toBe("");
+  });
+
+  it("returns correct SVG path for neighboring normal path inputs", () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 10, y: 10 },
+    ];
+    expect(sparklinePath(points)).toBe("M 0,0 L 10,10");
   });
 });

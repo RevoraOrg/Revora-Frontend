@@ -21,7 +21,7 @@ export interface ErrorRateSparklineTileProps {
   onClick?: () => void;
 }
 
-function sparklinePath(points: { x: number; y: number }[]): string {
+export function sparklinePath(points: { x: number; y: number }[]): string {
   if (points.length === 0) return "";
   return points.reduce(
     (d, p, i) => d + (i === 0 ? `M ${p.x},${p.y}` : ` L ${p.x},${p.y}`),
@@ -29,7 +29,7 @@ function sparklinePath(points: { x: number; y: number }[]): string {
   );
 }
 
-function MiniSparkline({ data, rate }: { data: ErrorRateDataPoint[]; rate: number }) {
+export function MiniSparkline({ data, rate }: { data: ErrorRateDataPoint[]; rate: number }) {
   if (data.length === 0) return null;
 
   const W = 64;

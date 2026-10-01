@@ -14,6 +14,7 @@ const TEST_SECRET = 'JBSWY3DPEHPK3PXP';
 
 const onComplete = vi.fn();
 const onCancel = vi.fn();
+const verifyCode = vi.fn(async ({ code }: { code: string }) => code === '123456');
 
 const renderSetup = () => {
   return render(
@@ -22,6 +23,7 @@ const renderSetup = () => {
       onCancel={onCancel}
       totpSecret={TEST_SECRET}
       recoveryCodes={TEST_CODES}
+      verifyCode={verifyCode}
     />
   );
 };

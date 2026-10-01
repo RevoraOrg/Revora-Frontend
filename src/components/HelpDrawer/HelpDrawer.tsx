@@ -213,17 +213,17 @@ export const HelpDrawer: React.FC<HelpDrawerProps> = ({
           </section>
 
           {/* Definitions */}
-          {definitions && definitions.length > 0 && (
+          {Array.isArray(definitions) && definitions.length > 0 && (
             <section className="hd-section" aria-labelledby="hd-defs-heading">
               <h3 id="hd-defs-heading" className="hd-section-title">
                 <HelpCircle size={14} className="hd-section-title-icon" aria-hidden="true" />
                 Key terms
               </h3>
               <dl className="hd-defs">
-                {definitions.map((def) => (
-                  <div key={def.term} className="hd-def">
-                    <dt className="hd-def-term">{def.term}</dt>
-                    <dd className="hd-def-desc">{def.description}</dd>
+                {definitions.map((def, index) => (
+                  <div key={def?.term || `def-${index}`} className="hd-def">
+                    <dt className="hd-def-term">{def?.term || 'Term'}</dt>
+                    <dd className="hd-def-desc">{def?.description || ''}</dd>
                   </div>
                 ))}
               </dl>

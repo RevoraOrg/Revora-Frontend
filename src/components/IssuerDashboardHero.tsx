@@ -89,11 +89,16 @@ const formatCurrency = (cents: number, currency = 'USD') =>
   }).format(cents);
 
 function daysUntil(isoDate: string): number {
-  const due = new Date(isoDate);
+  const match = isoDate.match(/^(\d{4})-(\d{2})-(\d{2})/);
   const now = new Date();
-  // Compare calendar days only (drop time component)
-  const dueDay = Date.UTC(due.getFullYear(), due.getMonth(), due.getDate());
   const nowDay = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  if (match) {
+    const [, y, m, d] = match;
+    const dueDay = Date.UTC(Number(y), Number(m) - 1, Number(d));
+    return Math.round((dueDay - nowDay) / (1000 * 60 * 60 * 24));
+  }
+  const due = new Date(isoDate);
+  const dueDay = Date.UTC(due.getFullYear(), due.getMonth(), due.getDate());
   return Math.round((dueDay - nowDay) / (1000 * 60 * 60 * 24));
 }
 

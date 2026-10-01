@@ -23,7 +23,10 @@ expect.extend(toHaveNoViolations);
 function isoRelative(offsetDays: number): string {
   const d = new Date();
   d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().split('T')[0];
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 const successKpi: IssuerKpiData = { value: '$42,000', status: 'success', change: 5.2, changeLabel: 'vs last month' };
@@ -376,3 +379,126 @@ describe('IssuerDashboardHero – edge cases', () => {
     expect(screen.queryByTestId('reminder-banner')).not.toBeInTheDocument();
   });
 });
+
+/* ─── Regression Suite: Branch Evidence (Lines 122, 127, 129) & KpiStatus ── */
+
+describe('IssuerDashboardHero – branch regression suite', () => {
+  describe('evidence line 122: return null on submitted, accepted, or none', () => {
+    it.each(['submitted', 'accepted', 'none'] as const)(
+      'returns null for status "%s" regardless of due date',
+      (status) => {
+        renderHero({ reportStatus: status, reportDueDate: isoRelative(2) });
+        expect(screen.queryByTestId('reminder-banner')).toBeNull();
+      }
+    );
+
+    it('returns null when reportStatus is omitted / defaults to none', () => {
+      renderHero({ reportStatus: undefined, reportDueDate: isoRelative(1) });
+      expect(screen.queryByTestId('reminder-banner')).toBeNull();
+    });
+
+    it('renders banner on neighboring normal path when status is overdue', () => {
+      renderHero({ reportStatus: 'overdue', reportDueDate: isoRelative(-1) });
+      expect(screen.getByTestId('reminder-banner')).toBeInTheDocument();
+    });
+
+    it('renders banner on neighboring normal path when status is due within 7 days', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: isoRelative(1) });
+      expect(screen.getByTestId('reminder-banner')).toBeInTheDocument();
+    });
+  });
+
+  describe('evidence line 127: return null if (!reportDueDate)', () => {
+    it('returns null when reportDueDate is undefined', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: undefined });
+      expect(screen.queryByTestId('reminder-banner')).toBeNull();
+    });
+
+    it('returns null when reportDueDate is empty string', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: '' });
+      expect(screen.queryByTestId('reminder-banner')).toBeNull();
+    });
+
+    it('renders banner on neighboring normal path with valid reportDueDate', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: isoRelative(5) });
+      expect(screen.getByTestId('reminder-banner')).toBeInTheDocument();
+    });
+  });
+
+  describe('evidence line 129: return null if (days > 7)', () => {
+    it('returns null at upper boundary days = 8 (> 7)', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: isoRelative(8) });
+      expect(screen.queryByTestId('reminder-banner')).toBeNull();
+    });
+
+    it('renders banner at boundary days = 7 (<= 7)', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: isoRelative(7) });
+      const banner = screen.getByTestId('reminder-banner');
+      expect(banner).toBeInTheDocument();
+      expect(banner).toHaveTextContent('due in 7 days');
+    });
+
+    it('renders banner at neighboring normal path days = 6', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: isoRelative(6) });
+      const banner = screen.getByTestId('reminder-banner');
+      expect(banner).toBeInTheDocument();
+      expect(banner).toHaveTextContent('due in 6 days');
+    });
+
+    it('renders banner at lower boundary days = 0 (due today)', () => {
+      renderHero({ reportStatus: 'due', reportDueDate: isoRelative(0) });
+      const banner = screen.getByTestId('reminder-banner');
+      expect(banner).toBeInTheDocument();
+      expect(banner).toHaveTextContent(/due today/i);
+    });
+  });
+
+  describe('KpiStatus explicit failure and empty-result contracts', () => {
+    it('falls back to empty state when status is success but value is null', () => {
+      renderHero({ arr: { status: 'success', value: null } });
+      const tile = screen.getByTestId('kpi-tile-arr');
+      expect(tile).toHaveAttribute('role', 'status');
+      expect(tile).toHaveAttribute('aria-label', 'ARR: no data yet');
+      expect(tile).toHaveTextContent('No data yet');
+    });
+
+    it('falls back to empty state when status is success but value is undefined', () => {
+      renderHero({ arr: { status: 'success', value: undefined } });
+      const tile = screen.getByTestId('kpi-tile-arr');
+      expect(tile).toHaveAttribute('role', 'status');
+      expect(tile).toHaveTextContent('No data yet');
+    });
+
+    it('renders empty contract when status is empty even if value is non-null', () => {
+      renderHero({ arr: { status: 'empty', value: '$100,000' } });
+      const tile = screen.getByTestId('kpi-tile-arr');
+      expect(tile).toHaveTextContent('No data yet');
+      expect(screen.queryByText('$100,000')).not.toBeInTheDocument();
+    });
+
+    it('renders error contract when status is error even if value is non-null', () => {
+      renderHero({ arr: { status: 'error', value: '$100,000' } });
+      const tile = screen.getByTestId('kpi-tile-arr');
+      expect(tile).toHaveTextContent('Failed to load');
+      expect(screen.queryByText('$100,000')).not.toBeInTheDocument();
+    });
+
+    it('renders loading contract when status is loading even if value is non-null', () => {
+      renderHero({ arr: { status: 'loading', value: '$100,000' } });
+      const tile = screen.getByTestId('kpi-tile-arr');
+      expect(tile).toHaveAttribute('aria-busy', 'true');
+      expect(screen.queryByText('$100,000')).not.toBeInTheDocument();
+    });
+
+    it('renders zero change with positive indicator when change is 0', () => {
+      renderHero({ mrr: { status: 'success', value: '$50,000', change: 0 } });
+      expect(screen.getByText('+0.0%')).toBeInTheDocument();
+    });
+
+    it('does not render trend indicator when change is undefined', () => {
+      renderHero({ mrr: { status: 'success', value: '$50,000', change: undefined } });
+      expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    });
+  });
+});
+

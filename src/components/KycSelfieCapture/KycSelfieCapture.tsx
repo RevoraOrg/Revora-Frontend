@@ -63,25 +63,65 @@ export default function KycSelfieCapture({
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
 
   // Cleanup stream on unmount
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
+      if (streamRef.current && typeof streamRef.current.getTracks === 'function') {
         streamRef.current.getTracks().forEach((t) => t.stop());
       }
     };
   }, []);
 
   const stopStream = useCallback(() => {
-    if (streamRef.current) {
+    if (streamRef.current && typeof streamRef.current.getTracks === 'function') {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    setIsVideoReady(false);
   }, []);
+
+  useEffect(() => {
+    if (cameraState === 'active' && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      try {
+        const playPromise = video.play?.();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      } catch {
+        // Ignore play interruption or unsupported environments
+      }
+
+      const onLoadedMetadata = () => {
+        if (video.videoWidth > 0) {
+          setIsVideoReady(true);
+        }
+      };
+
+      if (video.videoWidth > 0) {
+        setIsVideoReady(true);
+      }
+
+      video.addEventListener('loadedmetadata', onLoadedMetadata);
+      return () => {
+        video.removeEventListener('loadedmetadata', onLoadedMetadata);
+      };
+    } else {
+      setIsVideoReady(false);
+    }
+  }, [cameraState]);
 
   const startCamera = useCallback(async () => {
     setCameraState('requesting');
+    setIsVideoReady(false);
+    setCaptureError(null);
     await Promise.resolve();
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -97,9 +137,6 @@ export default function KycSelfieCapture({
         audio: false,
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-      }
       setCameraState('active');
     } catch (err: unknown) {
       if (err instanceof DOMException || err instanceof Error) {
@@ -116,17 +153,25 @@ export default function KycSelfieCapture({
     }
   }, []);
 
+  const handleLoadedMetadata = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (e.currentTarget.videoWidth > 0) {
+      setIsVideoReady(true);
+    }
+  }, []);
+
   const capturePhoto = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas || !isVideoReady || isCapturing) return;
 
     setIsCapturing(true);
+    setCaptureError(null);
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       setIsCapturing(false);
+      setCaptureError('Failed to capture photo. Please try again.');
       return;
     }
 
@@ -137,14 +182,18 @@ export default function KycSelfieCapture({
 
     canvas.toBlob((blob) => {
       if (blob) {
+        setCaptureError(null);
         const file = new File([blob], 'selfie.png', { type: 'image/png' });
         setCapturedFile(file);
         setCapturedImage(URL.createObjectURL(blob));
+        setIsCapturing(false);
+        stopStream();
+      } else {
+        setCaptureError('Failed to capture photo. Please try again.');
+        setIsCapturing(false);
       }
-      setIsCapturing(false);
-      stopStream();
     }, 'image/png');
-  }, [stopStream]);
+  }, [isVideoReady, isCapturing, stopStream]);
 
   const handleRetake = useCallback(() => {
     if (capturedImage) {
@@ -152,6 +201,7 @@ export default function KycSelfieCapture({
     }
     setCapturedImage(null);
     setCapturedFile(null);
+    setCaptureError(null);
     startCamera();
   }, [capturedImage, startCamera]);
 
@@ -396,13 +446,26 @@ export default function KycSelfieCapture({
       </div>
 
       <div className="ksc-camera-viewport">
-        <video ref={videoRef} autoPlay playsInline muted aria-label="Camera feed" />
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          aria-label="Camera feed"
+          onLoadedMetadata={handleLoadedMetadata}
+        />
         <div className="ksc-face-oval" aria-hidden="true">
           <span className="ksc-face-oval__label">Align your face within the frame</span>
         </div>
       </div>
 
       <canvas ref={canvasRef} style={{ display: 'none' }} />
+
+      {captureError && (
+        <div className="ksc-capture-error" role="alert">
+          {captureError}
+        </div>
+      )}
 
       <div className="ksc-camera-toolbar">
         <button
@@ -411,6 +474,7 @@ export default function KycSelfieCapture({
           onClick={capturePhoto}
           aria-label="Capture photo"
           aria-busy={isCapturing}
+          disabled={!isVideoReady || isCapturing}
         >
           <span className="ksc-capture-btn__inner" />
         </button>

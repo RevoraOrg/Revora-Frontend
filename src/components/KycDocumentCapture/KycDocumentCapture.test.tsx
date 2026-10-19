@@ -140,9 +140,7 @@ describe('KycDocumentCapture', () => {
 
     it('shows denied state when camera permission is denied', async () => {
       mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+        new DOMException('Permission denied', 'NotAllowedError'),
       );
 
       render(<KycDocumentCapture />);
@@ -178,9 +176,7 @@ describe('KycDocumentCapture', () => {
 
     it('shows file upload option in denied state', async () => {
       mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+        new DOMException('Permission denied', 'NotAllowedError'),
       );
 
       render(<KycDocumentCapture />);
@@ -191,16 +187,7 @@ describe('KycDocumentCapture', () => {
 
     it('shows retry camera button in denied state', async () => {
       mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
-      );
-
-      // Make the retry succeed
-      mockGetUserMedia.mockResolvedValueOnce(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+        new DOMException('Permission denied', 'NotAllowedError'),
       );
 
       render(<KycDocumentCapture />);
@@ -219,9 +206,7 @@ describe('KycDocumentCapture', () => {
 
     it('has no axe violations on denied fallback', async () => {
       mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+        new DOMException('Permission denied', 'NotAllowedError'),
       );
 
       const { container } = render(<KycDocumentCapture />);
@@ -229,6 +214,114 @@ describe('KycDocumentCapture', () => {
 
       await screen.findByTestId('camera-denied');
       expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
+  describe('Camera stream attachment and capture flow', () => {
+    it('attaches stream to video.srcObject and calls play() after camera activation', async () => {
+      const mockTrack = { stop: vi.fn(), kind: 'video' };
+      const fakeStream = {
+        getTracks: vi.fn().mockReturnValue([mockTrack]),
+        getVideoTracks: vi.fn().mockReturnValue([mockTrack]),
+      } as unknown as MediaStream;
+
+      const playSpy = vi.fn().mockResolvedValue(undefined);
+      window.HTMLMediaElement.prototype.play = playSpy;
+
+      mockGetUserMedia.mockResolvedValue(fakeStream);
+
+      render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      const video = (await screen.findByTestId('camera-video')) as HTMLVideoElement;
+      expect(video).toBeTruthy();
+      expect(video.srcObject).toBe(fakeStream);
+      expect(playSpy).toHaveBeenCalled();
+    });
+
+    it('keeps capture button disabled until loadedmetadata fires with non-zero videoWidth', async () => {
+      const mockTrack = { stop: vi.fn(), kind: 'video' };
+      const fakeStream = {
+        getTracks: vi.fn().mockReturnValue([mockTrack]),
+        getVideoTracks: vi.fn().mockReturnValue([mockTrack]),
+      } as unknown as MediaStream;
+      window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+
+      mockGetUserMedia.mockResolvedValue(fakeStream);
+
+      render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      const captureBtn = await screen.findByRole('button', { name: /take photo/i });
+      const video = screen.getByTestId('camera-video') as HTMLVideoElement;
+
+      // Initially disabled before metadata
+      expect(captureBtn).toBeDisabled();
+
+      // If loadedmetadata fires with videoWidth === 0, stays disabled
+      Object.defineProperty(video, 'videoWidth', { value: 0, configurable: true });
+      fireEvent(video, new Event('loadedmetadata'));
+      expect(captureBtn).toBeDisabled();
+
+      // Once loadedmetadata fires with non-zero videoWidth, becomes enabled
+      Object.defineProperty(video, 'videoWidth', { value: 1280, configurable: true });
+      Object.defineProperty(video, 'videoHeight', { value: 720, configurable: true });
+      fireEvent(video, new Event('loadedmetadata'));
+
+      expect(captureBtn).toBeEnabled();
+    });
+
+    it('handles null blob from toBlob with a visible error and keeps stream running for retry', async () => {
+      const mockTrack = { stop: vi.fn(), kind: 'video' };
+      const fakeStream = {
+        getTracks: vi.fn().mockReturnValue([mockTrack]),
+        getVideoTracks: vi.fn().mockReturnValue([mockTrack]),
+      } as unknown as MediaStream;
+      window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+
+      mockGetUserMedia.mockResolvedValue(fakeStream);
+
+      HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue({
+        drawImage: vi.fn(),
+      }) as unknown as typeof HTMLCanvasElement.prototype.getContext;
+
+      // First produce null blob
+      HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+        callback(null);
+      });
+
+      render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      const captureBtn = await screen.findByRole('button', { name: /take photo/i });
+      const video = screen.getByTestId('camera-video') as HTMLVideoElement;
+
+      Object.defineProperty(video, 'videoWidth', { value: 1280, configurable: true });
+      Object.defineProperty(video, 'videoHeight', { value: 720, configurable: true });
+      fireEvent(video, new Event('loadedmetadata'));
+      expect(captureBtn).toBeEnabled();
+
+      // Click capture with null blob
+      fireEvent.click(captureBtn);
+
+      // Visible error shown
+      const errorMsg = await screen.findByRole('alert');
+      expect(errorMsg).toHaveTextContent(/failed to capture document/i);
+
+      // Stream is not stopped (kept running for retry)
+      expect(mockTrack.stop).not.toHaveBeenCalled();
+
+      // Now retry when toBlob produces a valid blob
+      global.URL.createObjectURL = vi.fn().mockReturnValue('blob:http://localhost/doc-ok');
+      (HTMLCanvasElement.prototype.toBlob as ReturnType<typeof vi.fn>).mockImplementation((callback) => {
+        callback(new Blob(['document-data'], { type: 'image/jpeg' }));
+      });
+
+      fireEvent.click(captureBtn);
+
+      // Transitions to preview and stops stream on success
+      await screen.findByText(/Use this photo/i);
+      expect(mockTrack.stop).toHaveBeenCalled();
     });
   });
 });

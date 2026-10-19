@@ -40,7 +40,9 @@ describe("i18n utility functions", () => {
     expect(usdInGerman).toContain("$");
     expect(usdInGerman).not.toContain("€");
     expect(formatCurrency(100, "EUR", "en-US")).toContain("€");
-    expect(formatCurrency(100, "GBP", "ja-JP")).toContain("£");
+    expect(formatCurrency(100, "GBP", "ja-JP")).toBe(
+      new Intl.NumberFormat("ja-JP", { style: "currency", currency: "GBP" }).format(100),
+    );
   });
 
   it("falls back to the locale default currency when none is requested", () => {

@@ -1,15 +1,17 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { BlacklistBulkRemoveConfirm } from './BlacklistBulkRemoveConfirm';
 
 expect.extend(toHaveNoViolations);
 
 // Mock the useUndoBanners hook
-jest.mock('../../hooks/useUndoBanners', () => ({
+const mockRegisterUndo = vi.fn();
+vi.mock('../../hooks/useUndoBanners', () => ({
   useUndoBanners: () => ({
-    registerUndo: jest.fn(),
+    registerUndo: mockRegisterUndo,
   }),
 }));
 
@@ -21,19 +23,19 @@ describe('BlacklistBulkRemoveConfirm', () => {
 
   const defaultProps = {
     isOpen: true,
-    onClose: jest.fn(),
-    onConfirm: jest.fn().mockResolvedValue(undefined),
+    onClose: vi.fn(),
+    onConfirm: vi.fn().mockResolvedValue(undefined),
     entries: mockEntries,
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    jest.useFakeTimers();
+    vi.clearAllMocks();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
-    jest.useRealTimers();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
   });
 
   it('renders nothing when closed', () => {
@@ -72,7 +74,7 @@ describe('BlacklistBulkRemoveConfirm', () => {
 
     // Fast-forward 750ms
     act(() => {
-      jest.advanceTimersByTime(750);
+      vi.advanceTimersByTime(750);
     });
 
     // It should still be disabled because the form is invalid (no reason/initials)
@@ -83,7 +85,7 @@ describe('BlacklistBulkRemoveConfirm', () => {
     render(<BlacklistBulkRemoveConfirm {...defaultProps} />);
     
     act(() => {
-      jest.advanceTimersByTime(750);
+      vi.advanceTimersByTime(750);
     });
 
     const user = userEvent.setup({ delay: null });
@@ -114,7 +116,7 @@ describe('BlacklistBulkRemoveConfirm', () => {
     render(<BlacklistBulkRemoveConfirm {...defaultProps} entries={[]} />);
 
     act(() => {
-      jest.advanceTimersByTime(750);
+      vi.advanceTimersByTime(750);
     });
 
     const submitButton = screen.getByRole('button', { name: /Remove Entries/i });
@@ -122,11 +124,15 @@ describe('BlacklistBulkRemoveConfirm', () => {
   });
 
   it('handles network failure mid-remove', async () => {
-    const onConfirmError = jest.fn().mockRejectedValue(new Error('Network error'));
+    let rejectPromise!: (reason?: any) => void;
+    const pendingPromise = new Promise<void>((_, reject) => {
+      rejectPromise = reject;
+    });
+    const onConfirmError = vi.fn().mockReturnValue(pendingPromise);
     render(<BlacklistBulkRemoveConfirm {...defaultProps} onConfirm={onConfirmError} />);
 
     act(() => {
-      jest.advanceTimersByTime(750);
+      vi.advanceTimersByTime(750);
     });
 
     const user = userEvent.setup({ delay: null });
@@ -141,6 +147,10 @@ describe('BlacklistBulkRemoveConfirm', () => {
 
     expect(screen.getByRole('button', { name: /Removing\.\.\./i })).toBeDisabled();
 
+    act(() => {
+      rejectPromise(new Error('Network error'));
+    });
+
     await waitFor(() => {
       expect(onConfirmError).toHaveBeenCalledTimes(1);
     });
@@ -151,11 +161,11 @@ describe('BlacklistBulkRemoveConfirm', () => {
   });
 
   it('successfully removes entries and registers undo banner', async () => {
-    const onConfirmSuccess = jest.fn().mockResolvedValue(undefined);
+    const onConfirmSuccess = vi.fn().mockResolvedValue(undefined);
     render(<BlacklistBulkRemoveConfirm {...defaultProps} onConfirm={onConfirmSuccess} />);
 
     act(() => {
-      jest.advanceTimersByTime(750);
+      vi.advanceTimersByTime(750);
     });
 
     const user = userEvent.setup({ delay: null });
@@ -174,5 +184,188 @@ describe('BlacklistBulkRemoveConfirm', () => {
     });
 
     expect(defaultProps.onClose).toHaveBeenCalled();
+  });
+
+  it('does not close via Escape or backdrop click while confirm is submitting', async () => {
+    let resolvePromise!: () => void;
+    const pendingPromise = new Promise<void>((resolve) => {
+      resolvePromise = resolve;
+    });
+    const onConfirmPending = vi.fn().mockReturnValue(pendingPromise);
+    const onClose = vi.fn();
+
+    render(
+      <BlacklistBulkRemoveConfirm
+        {...defaultProps}
+        onClose={onClose}
+        onConfirm={onConfirmPending}
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(750);
+    });
+
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole('button', { name: 'Added by mistake' }));
+    await user.type(screen.getByRole('textbox', { name: /Actor Initials/i }), 'JD');
+
+    await user.click(screen.getByRole('button', { name: /Remove Entries/i }));
+    expect(screen.getByRole('button', { name: /Removing\.\.\./i })).toBeInTheDocument();
+
+    // Try pressing Escape while submitting
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).not.toHaveBeenCalled();
+
+    // Try clicking backdrop while submitting
+    const modalBackdrop = screen.getByRole('presentation');
+    fireEvent.click(modalBackdrop);
+    expect(onClose).not.toHaveBeenCalled();
+
+    // Finish submission
+    act(() => {
+      resolvePromise();
+    });
+
+    await waitFor(() => {
+      expect(onClose).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  it('traps focus inside the dialog with Tab and Shift+Tab', () => {
+    render(<BlacklistBulkRemoveConfirm {...defaultProps} />);
+
+    const dialog = screen.getByRole('dialog');
+    const focusables = Array.from(
+      dialog.querySelectorAll<HTMLElement>(
+        'button:not([disabled]):not([aria-hidden="true"]), input:not([disabled]):not([aria-hidden="true"]), textarea:not([disabled]):not([aria-hidden="true"]), [tabindex]:not([tabindex="-1"]):not([aria-hidden="true"])'
+      )
+    );
+
+    expect(focusables.length).toBeGreaterThan(1);
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+
+    // Tab from last wraps to first
+    last.focus();
+    expect(document.activeElement).toBe(last);
+    fireEvent.keyDown(dialog, { key: 'Tab' });
+    expect(document.activeElement).toBe(first);
+
+    // Shift+Tab from first wraps to last
+    first.focus();
+    fireEvent.keyDown(dialog, { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(last);
+  });
+
+  it('restores focus to trigger element on close', () => {
+    const trigger = document.createElement('button');
+    trigger.setAttribute('data-testid', 'trigger-btn');
+    document.body.appendChild(trigger);
+    trigger.focus();
+    expect(document.activeElement).toBe(trigger);
+
+    const { rerender } = render(<BlacklistBulkRemoveConfirm {...defaultProps} isOpen={true} />);
+    expect(document.activeElement).not.toBe(trigger);
+
+    rerender(<BlacklistBulkRemoveConfirm {...defaultProps} isOpen={false} />);
+    expect(document.activeElement).toBe(trigger);
+
+    document.body.removeChild(trigger);
+  });
+
+  it('registers undo banner only when onUndo is provided, and passes removed entries', async () => {
+    const onUndo = vi.fn().mockResolvedValue(undefined);
+    const onConfirmSuccess = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <BlacklistBulkRemoveConfirm
+        {...defaultProps}
+        onConfirm={onConfirmSuccess}
+        onUndo={onUndo}
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(750);
+    });
+
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole('button', { name: 'Added by mistake' }));
+    await user.type(screen.getByRole('textbox', { name: /Actor Initials/i }), 'JD');
+
+    await user.click(screen.getByRole('button', { name: /Remove Entries/i }));
+
+    await waitFor(() => {
+      expect(onConfirmSuccess).toHaveBeenCalledTimes(1);
+      expect(mockRegisterUndo).toHaveBeenCalledTimes(1);
+    });
+
+    const undoConfig = mockRegisterUndo.mock.calls[0][0];
+    expect(undoConfig.message).toBe('Removed 2 entries from blacklist');
+
+    // Trigger onUndo callback
+    await undoConfig.onUndo();
+    expect(onUndo).toHaveBeenCalledTimes(1);
+    expect(onUndo).toHaveBeenCalledWith(mockEntries);
+  });
+
+  it('does not register undo banner when onUndo prop is not provided', async () => {
+    const onConfirmSuccess = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <BlacklistBulkRemoveConfirm
+        {...defaultProps}
+        onConfirm={onConfirmSuccess}
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(750);
+    });
+
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole('button', { name: 'Added by mistake' }));
+    await user.type(screen.getByRole('textbox', { name: /Actor Initials/i }), 'JD');
+
+    await user.click(screen.getByRole('button', { name: /Remove Entries/i }));
+
+    await waitFor(() => {
+      expect(onConfirmSuccess).toHaveBeenCalledTimes(1);
+    });
+
+    expect(mockRegisterUndo).not.toHaveBeenCalled();
+  });
+
+  it('displays an error if onUndo fails', async () => {
+    const onUndoError = vi.fn().mockRejectedValue(new Error('Failed to restore entries'));
+    const onConfirmSuccess = vi.fn().mockResolvedValue(undefined);
+
+    render(
+      <BlacklistBulkRemoveConfirm
+        {...defaultProps}
+        onConfirm={onConfirmSuccess}
+        onUndo={onUndoError}
+      />
+    );
+
+    act(() => {
+      vi.advanceTimersByTime(750);
+    });
+
+    const user = userEvent.setup({ delay: null });
+    await user.click(screen.getByRole('button', { name: 'Added by mistake' }));
+    await user.type(screen.getByRole('textbox', { name: /Actor Initials/i }), 'JD');
+
+    await user.click(screen.getByRole('button', { name: /Remove Entries/i }));
+
+    await waitFor(() => {
+      expect(mockRegisterUndo).toHaveBeenCalledTimes(1);
+    });
+
+    const undoConfig = mockRegisterUndo.mock.calls[0][0];
+    await undoConfig.onUndo();
+
+    expect(onUndoError).toHaveBeenCalledTimes(1);
   });
 });

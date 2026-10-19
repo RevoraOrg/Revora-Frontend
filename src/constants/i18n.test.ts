@@ -35,6 +35,26 @@ describe("i18n utility functions", () => {
     expect(formatCurrency(1200, "USD", "en-US")).toContain("$");
   });
 
+  it("uses the requested currency even when the locale has a different default", () => {
+    const usdInGerman = formatCurrency(100, "USD", "de-DE");
+    expect(usdInGerman).toContain("$");
+    expect(usdInGerman).not.toContain("€");
+    expect(formatCurrency(100, "EUR", "en-US")).toContain("€");
+    expect(formatCurrency(100, "GBP", "ja-JP")).toContain("£");
+  });
+
+  it("falls back to the locale default currency when none is requested", () => {
+    expect(formatCurrency(100, undefined, "de-DE")).toContain("€");
+    expect(formatCurrency(100, undefined, "ja-JP")).toBe(
+      new Intl.NumberFormat("ja-JP", { style: "currency", currency: "JPY" }).format(100),
+    );
+  });
+
+  it("only drops decimals when the requested currency is JPY", () => {
+    expect(formatCurrency(1234.5, "JPY", "en-US")).not.toMatch(/\.\d/);
+    expect(formatCurrency(1234.5, "USD", "ja-JP")).toContain(".50");
+  });
+
   it("formats dates using locale settings", () => {
     expect(formatDate("2026-05-10", "en-US")).toContain("2026");
     expect(formatDate("2026-05-10", "de-DE")).toContain("2026");

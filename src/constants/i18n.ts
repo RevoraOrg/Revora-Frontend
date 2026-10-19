@@ -62,7 +62,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "USD",
     date: { year: "numeric", month: "short", day: "numeric" },
     number: { maximumFractionDigits: 2 },
-    currency: { style: "currency", currency: "USD", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "de-DE": {
     code: "de-DE",
@@ -71,7 +71,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "EUR",
     date: { year: "numeric", month: "numeric", day: "numeric" },
     number: { maximumFractionDigits: 2 },
-    currency: { style: "currency", currency: "EUR", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "ja-JP": {
     code: "ja-JP",
@@ -80,7 +80,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "JPY",
     date: { year: "numeric", month: "numeric", day: "numeric" },
     number: { maximumFractionDigits: 0, useGrouping: true },
-    currency: { style: "currency", currency: "JPY", currencyDisplay: "symbol", maximumFractionDigits: 0 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "ar-SA": {
     code: "ar-SA",
@@ -89,7 +89,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "SAR",
     date: { year: "numeric", month: "numeric", day: "numeric" },
     number: { maximumFractionDigits: 2, useGrouping: true },
-    currency: { style: "currency", currency: "SAR", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "fr-FR": {
     code: "fr-FR",
@@ -98,7 +98,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "EUR",
     date: { year: "numeric", month: "numeric", day: "numeric" },
     number: { maximumFractionDigits: 2 },
-    currency: { style: "currency", currency: "EUR", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "es-ES": {
     code: "es-ES",
@@ -107,7 +107,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "EUR",
     date: { year: "numeric", month: "numeric", day: "numeric" },
     number: { maximumFractionDigits: 2 },
-    currency: { style: "currency", currency: "EUR", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "zh-CN": {
     code: "zh-CN",
@@ -116,7 +116,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "CNY",
     date: { year: "numeric", month: "numeric", day: "numeric" },
     number: { maximumFractionDigits: 2, useGrouping: true },
-    currency: { style: "currency", currency: "CNY", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
   "en-GB": {
     code: "en-GB",
@@ -125,7 +125,7 @@ export const LOCALE_FORMAT_SETTINGS: Record<string, LocaleMeta> = {
     defaultCurrency: "GBP",
     date: { year: "numeric", month: "short", day: "numeric" },
     number: { maximumFractionDigits: 2 },
-    currency: { style: "currency", currency: "GBP", currencyDisplay: "symbol", maximumFractionDigits: 2 },
+    currency: { style: "currency", currencyDisplay: "symbol" },
   },
 };
 
@@ -165,13 +165,13 @@ export function formatCurrency(
   locale: string = "en-US",
   options: Intl.NumberFormatOptions = {},
 ): string {
-  const defaultCurr = currency ?? LOCALE_FORMAT_SETTINGS[locale]?.defaultCurrency ?? "USD";
+  const resolvedCurrency = currency ?? LOCALE_FORMAT_SETTINGS[locale]?.defaultCurrency ?? "USD";
   const setting = LOCALE_FORMAT_SETTINGS[locale]?.currency ?? {};
   return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: defaultCurr,
     currencyDisplay: "symbol",
     ...setting,
+    currency: resolvedCurrency,
     ...options,
   }).format(value);
 }

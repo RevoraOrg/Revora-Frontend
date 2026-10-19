@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
+import { StrictMode } from "react";
 import { useUndoBanners, DEFAULT_UNDO_DURATION_MS } from "./useUndoBanners";
 
 beforeEach(() => {
@@ -11,6 +12,94 @@ afterEach(() => {
 });
 
 describe("useUndoBanners", () => {
+  it("flushes every pending action once in StrictMode and skips already committed actions", () => {
+    const pending = vi.fn();
+    const dismissed = vi.fn();
+    const expired = vi.fn();
+    const { result, unmount } = renderHook(() => useUndoBanners(), { wrapper: StrictMode });
+    act(() => {
+      result.current.registerUndo({ message: "Expires", onUndo: vi.fn(), onCommit: expired, durationMs: 100 });
+      const id = result.current.registerUndo({ message: "Dismissed", onUndo: vi.fn(), onCommit: dismissed });
+      result.current.dismiss(id);
+      result.current.registerUndo({ message: "Pending A", onUndo: vi.fn(), onCommit: pending });
+      result.current.registerUndo({ message: "Pending B", onUndo: vi.fn(), onCommit: pending });
+      result.current.registerUndo({ message: "Already persisted", onUndo: vi.fn() });
+      vi.advanceTimersByTime(100);
+    });
+    expect(pending).not.toHaveBeenCalled();
+    unmount();
+    expect(pending).toHaveBeenCalledTimes(2);
+    expect(dismissed).toHaveBeenCalledTimes(1);
+    expect(expired).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not schedule timers or render while empty, including empty bulk actions", () => {
+    const render = vi.fn();
+    const { result } = renderHook(() => {
+      render();
+      return useUndoBanners();
+    });
+    const initial = result.current.banners;
+    const renders = render.mock.calls.length;
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => {
+      vi.advanceTimersByTime(1000);
+      result.current.undoAll();
+      result.current.dismissAll();
+    });
+    expect(render).toHaveBeenCalledTimes(renders);
+    expect(result.current.banners).toBe(initial);
+  });
+
+  it("runs one ticker while pending and stops it after expiry", () => {
+    const { result } = renderHook(() => useUndoBanners());
+    act(() => {
+      result.current.registerUndo({ message: "A", onUndo: vi.fn(), durationMs: 1000 });
+      result.current.registerUndo({ message: "B", onUndo: vi.fn(), durationMs: 1000 });
+    });
+    expect(vi.getTimerCount()).toBe(1);
+    act(() => vi.advanceTimersByTime(300));
+    expect(result.current.banners.map(banner => banner.remainingMs)).toEqual([700, 700]);
+    act(() => vi.advanceTimersByTime(700));
+    expect(result.current.banners).toEqual([]);
+    expect(vi.getTimerCount()).toBe(0);
+    const empty = result.current.banners;
+    act(() => vi.advanceTimersByTime(1000));
+    expect(result.current.banners).toBe(empty);
+  });
+
+  it("flushes pending commits once on unmount without committing undone actions", () => {
+    const onCommit = vi.fn();
+    const undoneCommit = vi.fn();
+    const onUndo = vi.fn();
+    const { result, unmount } = renderHook(() => useUndoBanners());
+    act(() => {
+      result.current.registerUndo({ message: "Pending", onUndo: vi.fn(), onCommit });
+      const id = result.current.registerUndo({ message: "Undone", onUndo, onCommit: undoneCommit });
+      result.current.undo(id);
+    });
+    unmount();
+    expect(onCommit).toHaveBeenCalledTimes(1);
+    expect(onUndo).toHaveBeenCalledTimes(1);
+    expect(undoneCommit).not.toHaveBeenCalled();
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => vi.advanceTimersByTime(10000));
+    expect(onCommit).toHaveBeenCalledTimes(1);
+  });
+
+  it.each(["undo", "dismiss", "undoAll", "dismissAll"] as const)("stops and restarts the ticker after %s", (method) => {
+    const { result } = renderHook(() => useUndoBanners());
+    let id = "";
+    act(() => { id = result.current.registerUndo({ message: "A", onUndo: vi.fn() }); });
+    act(() => result.current[method](id));
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => { result.current.registerUndo({ message: "B", onUndo: vi.fn() }); });
+    expect(vi.getTimerCount()).toBe(1);
+    act(() => vi.advanceTimersByTime(100));
+    expect(result.current.banners[0].remainingMs).toBe(4900);
+  });
+
   it("registers a banner with the default duration", () => {
     const { result } = renderHook(() => useUndoBanners());
 

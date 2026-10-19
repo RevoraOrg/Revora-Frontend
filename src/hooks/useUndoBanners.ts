@@ -4,7 +4,8 @@
  * State manager for the Undo banner pattern (Issue #162). It owns a stack of
  * pending reversible actions, each with a countdown to permanence. When a
  * countdown elapses (or the user dismisses the banner) the action is committed;
- * if the user presses "Undo" the action is reversed instead.
+ * if the user presses "Undo" the action is reversed instead. Unmounting commits
+ * all still-pending actions because their undo controls are no longer available.
  *
  * The hook is the single source of truth for timing so the presentational
  * `<UndoBanner />` stays a pure render of the current stack.
@@ -37,8 +38,8 @@ export interface RegisterUndoOptions {
   onUndo: () => void;
   /**
    * Make the action permanent. Called when the countdown elapses or the user
-   * dismisses the banner. Optional — omit when the action is already persisted
-   * and Undo is the only thing that changes state.
+   * dismisses the banner, or the hook unmounts. Optional — omit when the action
+   * is already persisted and Undo is the only thing that changes state.
    */
   onCommit?: () => void;
   /** Label for the Undo button. Defaults to "Undo". */
@@ -85,6 +86,15 @@ export interface UseUndoBannersResult {
 export function useUndoBanners(): UseUndoBannersResult {
   const [banners, setBanners] = useState<UndoBannerItem[]>([]);
   const entriesRef = useRef<Map<string, InternalEntry>>(new Map());
+  const visibleRef = useRef<UndoBannerItem[]>(banners);
+  const intervalRef = useRef<number | null>(null);
+
+  const stopTicker = useCallback(() => {
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
 
   const sync = useCallback(() => {
     const now = performance.now();
@@ -112,14 +122,35 @@ export function useUndoBanners(): UseUndoBannersResult {
       entry.onCommit?.();
     }
 
-    setBanners(visible);
-  }, []);
+    // Avoid even scheduling a state update for an unchanged snapshot.
+    const previous = visibleRef.current;
+    if (previous.length !== visible.length || visible.some((entry, index) =>
+      entry.id !== previous[index].id || entry.remainingMs !== previous[index].remainingMs
+    )) {
+      visibleRef.current = visible;
+      setBanners(visible);
+    }
 
-  // A single shared ticker keeps every countdown in step.
+    if (entriesRef.current.size === 0) {
+      stopTicker();
+    } else if (intervalRef.current === null) {
+      intervalRef.current = window.setInterval(sync, TICK_MS);
+    }
+  }, [stopTicker]);
+
+  // No timer is needed until an action is registered. Detach pending entries
+  // before invoking callbacks so cleanup cannot commit an action twice.
   useEffect(() => {
-    const interval = window.setInterval(sync, TICK_MS);
-    return () => window.clearInterval(interval);
-  }, [sync]);
+    const entries = entriesRef.current;
+    return () => {
+      stopTicker();
+      const pending = Array.from(entries.values()).reverse();
+      entries.clear();
+      for (const entry of pending) {
+        entry.onCommit?.();
+      }
+    };
+  }, [stopTicker]);
 
   const registerUndo = useCallback(
     (options: RegisterUndoOptions): string => {

@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { KycDocumentCapture, DocumentType } from './KycDocumentCapture';
 
@@ -17,9 +17,38 @@ Object.defineProperty(navigator, 'mediaDevices', {
   configurable: true,
 });
 
+const createMockStream = (trackStopSpy: ReturnType<typeof vi.fn>) => ({
+  getTracks: () => [{ stop: trackStopSpy }],
+});
+
+const setupCanvasMock = () => {
+  const mockContext = {
+    drawImage: vi.fn(),
+  };
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockContext);
+  HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+    callback(new Blob(['mock'], { type: 'image/jpeg' }));
+  });
+};
+
 describe('KycDocumentCapture', () => {
+  let trackStopSpy: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     mockGetUserMedia.mockReset();
+    trackStopSpy = vi.fn();
+    Object.defineProperty(global, 'URL', {
+      value: {
+        createObjectURL: vi.fn(() => 'blob:mock-url'),
+        revokeObjectURL: vi.fn(),
+      },
+      configurable: true,
+    });
+    setupCanvasMock();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('Initial State', () => {
@@ -139,10 +168,8 @@ describe('KycDocumentCapture', () => {
     });
 
     it('shows denied state when camera permission is denied', async () => {
-      mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+      mockGetUserMedia.mockRejectedValueOnce(
+        new DOMException('Permission denied', 'NotAllowedError')
       );
 
       render(<KycDocumentCapture />);
@@ -154,10 +181,8 @@ describe('KycDocumentCapture', () => {
     });
 
     it('shows denied state for unavailable cameras', async () => {
-      mockGetUserMedia.mockRejectedValue(
-        Object.assign(new Error('No camera found'), {
-          name: 'NotFoundError',
-        }),
+      mockGetUserMedia.mockRejectedValueOnce(
+        new DOMException('No camera found', 'NotFoundError')
       );
 
       render(<KycDocumentCapture />);
@@ -177,10 +202,8 @@ describe('KycDocumentCapture', () => {
     });
 
     it('shows file upload option in denied state', async () => {
-      mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+      mockGetUserMedia.mockRejectedValueOnce(
+        new DOMException('Permission denied', 'NotAllowedError')
       );
 
       render(<KycDocumentCapture />);
@@ -190,18 +213,10 @@ describe('KycDocumentCapture', () => {
     });
 
     it('shows retry camera button in denied state', async () => {
-      mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+      mockGetUserMedia.mockRejectedValueOnce(
+        new DOMException('Permission denied', 'NotAllowedError')
       );
-
-      // Make the retry succeed
-      mockGetUserMedia.mockResolvedValueOnce(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
-      );
+      mockGetUserMedia.mockResolvedValueOnce(createMockStream(trackStopSpy));
 
       render(<KycDocumentCapture />);
       fireEvent.click(screen.getByText('Enable Camera'));
@@ -218,10 +233,8 @@ describe('KycDocumentCapture', () => {
     });
 
     it('has no axe violations on denied fallback', async () => {
-      mockGetUserMedia.mockRejectedValue(
-        Object.assign(new DOMException('Permission denied'), {
-          name: 'NotAllowedError',
-        }),
+      mockGetUserMedia.mockRejectedValueOnce(
+        new DOMException('Permission denied', 'NotAllowedError')
       );
 
       const { container } = render(<KycDocumentCapture />);
@@ -229,6 +242,131 @@ describe('KycDocumentCapture', () => {
 
       await screen.findByTestId('camera-denied');
       expect(await axe(container)).toHaveNoViolations();
+    });
+  });
+
+  describe('Camera lifecycle and cleanup (regression tests for #934)', () => {
+    it('stops camera tracks when component unmounts while getUserMedia is pending', async () => {
+      let resolveGetUserMedia: (stream: MediaStream) => void;
+      const pendingPromise = new Promise<MediaStream>((resolve) => {
+        resolveGetUserMedia = resolve;
+      });
+      mockGetUserMedia.mockReturnValueOnce(pendingPromise);
+
+      const { unmount } = render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      // Unmount before getUserMedia resolves
+      unmount();
+
+      // Now resolve the promise (simulating getUserMedia resolving after unmount)
+      // Use the same trackStopSpy from beforeEach
+      const stream = createMockStream(trackStopSpy);
+      resolveGetUserMedia!(stream);
+      await pendingPromise;
+
+      // Track stop should have been called because component was unmounted
+      expect(trackStopSpy).toHaveBeenCalled();
+    });
+
+    it('stops camera when switching to file upload', async () => {
+      mockGetUserMedia.mockResolvedValue(createMockStream(trackStopSpy));
+
+      render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      await waitFor(() => {
+        expect(screen.findByTestId('camera-active'));
+      });
+
+      expect(await screen.findByTestId('camera-active')).toBeInTheDocument();
+
+      // Click "Upload file instead"
+      fireEvent.click(screen.getByText('Upload file instead'));
+
+      // Track stop should have been called
+      expect(trackStopSpy).toHaveBeenCalled();
+    });
+
+    it('revokes object URL on unmount when document is captured', async () => {
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL');
+      mockGetUserMedia.mockResolvedValue(createMockStream(trackStopSpy));
+
+      const { unmount } = render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      await waitFor(() => {
+        expect(screen.findByTestId('camera-active'));
+      });
+
+      expect(await screen.findByTestId('camera-active')).toBeInTheDocument();
+
+      // Capture document by clicking the "Take photo" button
+      fireEvent.click(screen.getByRole('button', { name: /take photo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('captured-preview')).toBeInTheDocument();
+      });
+
+      // Unmount while preview is shown
+      unmount();
+
+      // URL.revokeObjectURL should have been called for the captured image
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url');
+    });
+
+    it('revokes object URL on retake', async () => {
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL');
+      mockGetUserMedia.mockResolvedValue(createMockStream(trackStopSpy));
+
+      render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      await waitFor(() => {
+        expect(screen.findByTestId('camera-active'));
+      });
+
+      expect(await screen.findByTestId('camera-active')).toBeInTheDocument();
+
+      // Capture document by clicking the "Take photo" button
+      fireEvent.click(screen.getByRole('button', { name: /take photo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('captured-preview')).toBeInTheDocument();
+      });
+
+      // Click retake
+      fireEvent.click(screen.getByText('Retake'));
+
+      // URL.revokeObjectURL should have been called for the captured image
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url');
+    });
+
+    it('revokes object URL on confirm', async () => {
+      const revokeObjectURLSpy = vi.spyOn(URL, 'revokeObjectURL');
+      mockGetUserMedia.mockResolvedValue(createMockStream(trackStopSpy));
+
+      render(<KycDocumentCapture />);
+      fireEvent.click(screen.getByText('Enable Camera'));
+
+      await waitFor(() => {
+        expect(screen.findByTestId('camera-active'));
+      });
+
+      expect(await screen.findByTestId('camera-active')).toBeInTheDocument();
+
+      // Capture document by clicking the "Take photo" button
+      fireEvent.click(screen.getByRole('button', { name: /take photo/i }));
+
+      await waitFor(() => {
+        expect(screen.getByTestId('captured-preview')).toBeInTheDocument();
+      });
+
+      // Click confirm
+      fireEvent.click(screen.getByText('Use this photo'));
+
+      // URL.revokeObjectURL should have been called for the captured image
+      expect(revokeObjectURLSpy).toHaveBeenCalledWith('blob:mock-url');
     });
   });
 });

@@ -129,6 +129,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   isLoading?: boolean;
+  error?: string | null;
 }
 
 function ConfirmDialog({
@@ -139,6 +140,7 @@ function ConfirmDialog({
   onConfirm,
   onCancel,
   isLoading,
+  error,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const descriptionId = useId();
@@ -222,6 +224,11 @@ function ConfirmDialog({
         </div>
         <h2 id={titleId} className="sm-dialog-title">{title}</h2>
         <p id={descriptionId} className="sm-dialog-message">{message}</p>
+        {error && (
+          <p className="sm-dialog-error" role="alert">
+            {error}
+          </p>
+        )}
         <div className="sm-dialog-actions">
           <button
             className="sm-btn sm-btn--secondary"
@@ -236,7 +243,7 @@ function ConfirmDialog({
             disabled={isLoading}
             aria-busy={isLoading}
           >
-            {isLoading ? "Revoking..." : confirmLabel}
+            {isLoading ? "Revoking..." : error ? "Retry" : confirmLabel}
           </button>
         </div>
       </div>
@@ -535,6 +542,8 @@ export function SessionManagement({
   } | null>(null);
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [revokingAll, setRevokingAll] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const revokeInFlightRef = useRef(false);
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -550,38 +559,67 @@ export function SessionManagement({
     };
   }, []);
 
+  const closeDialog = useCallback(() => {
+    setDialogState(null);
+    setRevokeError(null);
+  }, []);
+
   const handleRevokeSingle = useCallback(async () => {
     if (!dialogState || dialogState.type !== "single" || !dialogState.sessionId) return;
+    if (revokeInFlightRef.current) return;
+    revokeInFlightRef.current = true;
 
     const sessionId = dialogState.sessionId;
+    const deviceName = dialogState.deviceName || "device";
+    setRevokeError(null);
     setRevokingId(sessionId);
 
-    if (__onRevokeSingle) {
-      await __onRevokeSingle(sessionId);
-    } else {
-      await new Promise((r) => setTimeout(r, 800));
-    }
+    try {
+      if (__onRevokeSingle) {
+        await __onRevokeSingle(sessionId);
+      } else {
+        await new Promise((r) => setTimeout(r, 800));
+      }
 
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-    setRevokingId(null);
-    setDialogState(null);
-    setDrawerSession(null);
-    announce(`Session for ${dialogState.deviceName || "device"} revoked`);
+      // Fail closed: only remove the session once the revoke is confirmed.
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      setDialogState(null);
+      setDrawerSession(null);
+      announce(`Session for ${deviceName} revoked`);
+    } catch {
+      setRevokeError("We couldn't revoke this session. It is still active. Please try again.");
+      announce(`Failed to revoke the session for ${deviceName}. It is still active.`);
+    } finally {
+      revokeInFlightRef.current = false;
+      setRevokingId(null);
+    }
   }, [dialogState, __onRevokeSingle, announce]);
 
   const handleRevokeAll = useCallback(async () => {
+    if (revokeInFlightRef.current) return;
+    revokeInFlightRef.current = true;
+
+    setRevokeError(null);
     setRevokingAll(true);
 
-    if (__onRevokeAll) {
-      await __onRevokeAll();
-    } else {
-      await new Promise((r) => setTimeout(r, 1200));
-    }
+    try {
+      if (__onRevokeAll) {
+        await __onRevokeAll();
+      } else {
+        await new Promise((r) => setTimeout(r, 1200));
+      }
 
-    setSessions((prev) => prev.filter((s) => !s.isCurrent));
-    setRevokingAll(false);
-    setDialogState(null);
-    announce("Signed out of all other devices");
+      // Fail closed: only update the list once the revoke is confirmed.
+      setSessions((prev) => prev.filter((s) => !s.isCurrent));
+      setDialogState(null);
+      announce("Signed out of all other devices");
+    } catch {
+      setRevokeError("We couldn't sign out your other devices. They are still active. Please try again.");
+      announce("Failed to sign out of all other devices. They are still active.");
+    } finally {
+      revokeInFlightRef.current = false;
+      setRevokingAll(false);
+    }
   }, [__onRevokeAll, announce]);
 
   const hasOtherSessions = sessions.some((s) => !s.isCurrent);
@@ -761,8 +799,9 @@ export function SessionManagement({
           message={`This will sign out "${dialogState.deviceName}" immediately. You may need to sign in again on that device.`}
           confirmLabel="Revoke"
           onConfirm={handleRevokeSingle}
-          onCancel={() => setDialogState(null)}
+          onCancel={closeDialog}
           isLoading={revokingId !== null}
+          error={revokeError}
         />
       )}
 
@@ -773,8 +812,9 @@ export function SessionManagement({
           message="This will sign out all other active sessions. Your current session will remain active."
           confirmLabel="Sign out everywhere"
           onConfirm={handleRevokeAll}
-          onCancel={() => setDialogState(null)}
+          onCancel={closeDialog}
           isLoading={revokingAll}
+          error={revokeError}
         />
       )}
     </div>

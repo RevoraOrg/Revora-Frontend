@@ -560,6 +560,9 @@ export function SessionManagement({
   }, []);
 
   const closeDialog = useCallback(() => {
+    // Don't let Escape or an overlay click dismiss the dialog mid-request,
+    // otherwise a later failure would have nowhere to show its error.
+    if (revokeInFlightRef.current) return;
     setDialogState(null);
     setRevokeError(null);
   }, []);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, within, act } from '@testing-library/react';
+import { render, screen, within, act, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
@@ -128,6 +128,26 @@ describe('SessionManagement revoke failures', () => {
 
     expect(onRevokeSingle).toHaveBeenCalledTimes(1);
     await act(async () => { resolveRevoke(); });
+  });
+
+  it('ignores Escape and overlay clicks while a revoke is pending, then still shows the error', async () => {
+    let rejectRevoke!: (reason: Error) => void;
+    const onRevokeSingle = vi.fn(
+      () => new Promise<void>((_, reject) => { rejectRevoke = reject; }),
+    );
+    const { user } = setup({ __onRevokeSingle: onRevokeSingle });
+
+    const dialog = await openSingleDialog(user);
+    await user.click(within(dialog).getByRole('button', { name: 'Revoke' }));
+
+    fireEvent.keyDown(within(dialog).getByRole('button', { name: 'Revoking...' }), { key: 'Escape' });
+    await user.click(dialog);
+    expect(screen.getByRole('dialog', { name: 'Revoke session?' })).toBeInTheDocument();
+
+    await act(async () => { rejectRevoke(new Error('network down')); });
+
+    expect(await within(dialog).findByRole('alert')).toHaveTextContent(/try again/i);
+    expect(screen.getByTestId('session-phone')).toBeInTheDocument();
   });
 });
 

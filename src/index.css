@@ -1277,3 +1277,18 @@ html, body { overflow-x: clip; }
 }
 .site-footer__row { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; justify-content: center; }
 .site-footer__contract { max-width: 100%; overflow-wrap: anywhere; font-size: 0.75rem; color: var(--text-main); }
+.site-footer__status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  min-height: 1.25rem;
+}
+.site-footer__status-loading,
+.site-footer__status-error,
+.site-footer__status-success {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}

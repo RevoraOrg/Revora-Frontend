@@ -20,14 +20,25 @@ import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePa
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 import { PayoutSchedule } from "./pages/PayoutSchedule";
 import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
+import { useContractRead } from "./hooks/useContractRead";
+import { getContractSummary } from "./lib/soroban/revoraContract";
+import {
+  CONTRACT_ID,
+  buildContractExplorerUrl,
+  buildStellarLabUrl,
+} from "./constants/stellar";
 
 const LIVE_URL = "https://revora-frontend-omega.vercel.app";
 const REPO_URL = "https://github.com/RevoraOrg/Revora-Frontend";
-const CONTRACT_ID = "CABIJLQV4TKBHMETNIISV4OT76EDR5WXCZVJJLXHA6AEIII2JVYAHP2I";
-const STELLAR_LAB_URL = `https://lab.stellar.org/r/testnet/contract/${CONTRACT_ID}`;
-const STELLAR_EXPERT_URL = `https://stellar.expert/explorer/testnet/contract/${CONTRACT_ID}`;
+const STELLAR_LAB_URL = buildStellarLabUrl();
+const STELLAR_EXPERT_URL = buildContractExplorerUrl();
 
 function SiteFooter() {
+  const { data: contractSummary, isLoading, isError, error, retry } = useContractRead(
+    getContractSummary,
+    { retryCount: 2, retryDelay: 1000 },
+  );
+
   return (
     <footer className="site-footer">
       <div className="site-footer__row">
@@ -37,6 +48,39 @@ function SiteFooter() {
         </span>
       </div>
       <code className="site-footer__contract">{CONTRACT_ID}</code>
+      
+      {/* On-chain status panel */}
+      <div className="site-footer__status">
+        {isLoading && (
+          <div className="site-footer__status-loading">
+            <span className="text-muted">Loading contract data...</span>
+          </div>
+        )}
+        {isError && (
+          <div className="site-footer__status-error">
+            <span className="text-muted" style={{ color: '#ef4444' }}>
+              Failed to load contract data: {error}
+            </span>
+            <button
+              type="button"
+              onClick={retry}
+              className="link-styled"
+              style={{ background: 'none', border: 'none', padding: 0, marginLeft: '0.5rem', cursor: 'pointer' }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+        {contractSummary && !isLoading && (
+          <div className="site-footer__status-success">
+            <span className="text-muted">
+              {contractSummary.periodCount} period{contractSummary.periodCount !== 1 ? 's' : ''} registered, 
+              {contractSummary.authorizedOfferingsCount} authorized offering{contractSummary.authorizedOfferingsCount !== 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+      </div>
+      
       <div className="site-footer__row">
         <a href={STELLAR_EXPERT_URL} className="link-styled" target="_blank" rel="noopener noreferrer">Stellar Expert</a>
         <a href={STELLAR_LAB_URL} className="link-styled" target="_blank" rel="noopener noreferrer">Stellar Lab</a>

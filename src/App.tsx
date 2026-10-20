@@ -1,27 +1,30 @@
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import {
+  createBrowserRouter,
+  Link,
+  type RouteObject,
+  RouterProvider,
+} from "react-router-dom";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
-import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
+import { InvestorDiscovery } from "./components/InvestorDiscovery";
+
+export const routes: RouteObject[] = [
+  { path: "/", element: <Home /> },
+  { path: "/login", element: <Login /> },
+  { path: "/signup", element: <Signup /> },
+  { path: "/forgot-password", element: <ForgotPassword /> },
+  {
+    path: "/startup/dashboard",
+    element: <Placeholder title="Startup Dashboard" />,
+  },
+  { path: "/investor/portal", element: <InvestorDiscovery /> },
+];
+
+const router = createBrowserRouter(routes);
 
 export function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route
-          path="/startup/dashboard"
-          element={<Placeholder title="Startup Dashboard" />}
-        />
-
-        {/* Updated Route - Issue #63 */}
-        <Route path="/investor/portal" element={<InvestorDiscovery />} />
-      </Routes>
-    </Router>
-  );
+  return <RouterProvider router={router} />;
 }
 
 function Home() {

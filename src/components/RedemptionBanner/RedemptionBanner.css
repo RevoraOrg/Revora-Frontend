@@ -1,0 +1,113 @@
+.redemption-banner {
+  padding: 12px 16px;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.redemption-banner--upcoming {
+  background-color: #3b82f6; /* Blue */
+}
+
+.redemption-banner--active {
+  background-color: #10b981; /* Green */
+}
+
+.redemption-banner--closing-soon {
+  background-color: #f59e0b; /* Amber */
+}
+
+.redemption-banner__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 1200px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.redemption-banner__info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.redemption-banner__status {
+  font-weight: 600;
+}
+
+.redemption-banner__countdown {
+  font-variant-numeric: tabular-nums;
+}
+
+.redemption-banner__eligibility {
+  font-size: 0.9em;
+  opacity: 0.9;
+}
+
+.redemption-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.redemption-banner__cta {
+  background-color: white;
+  color: #111827;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.redemption-banner__cta:hover {
+  opacity: 0.9;
+}
+
+.redemption-banner__close {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  font-size: 1.2rem;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.redemption-banner__close:hover {
+  opacity: 1;
+}
+
+@media (max-width: 600px) {
+  .redemption-banner__content {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .redemption-banner__info {
+    justify-content: center;
+  }
+  
+  .redemption-banner__actions {
+    justify-content: center;
+  }
+  
+  .redemption-banner__close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+}

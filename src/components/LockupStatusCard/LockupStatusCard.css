@@ -1,0 +1,247 @@
+.lockup-card--compact {
+  padding: 1rem;
+}
+
+.lockup-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.lockup-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.lockup-card-icon {
+  color: var(--primary);
+}
+
+.lockup-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--text-muted);
+}
+
+.lockup-card-title {
+  margin-top: 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.lockup-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  border: 1px solid var(--glass-border-bright);
+  background: var(--glass-bg-accent);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.lockup-pill--cliff,
+.lockup-pill--vesting {
+  color: var(--text-accent);
+  border-color: rgba(56, 189, 248, 0.3);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.lockup-pill--unlocked {
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.lockup-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.lockup-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.lockup-card--compact .lockup-metrics {
+  gap: 0.75rem;
+}
+
+.lockup-metric {
+  border-radius: 0.75rem;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-accent);
+  padding: 0.75rem 1rem;
+}
+
+.lockup-metric-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+.lockup-metric-value {
+  margin-top: 0.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.lockup-countdown {
+  margin-top: 1.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--glass-border);
+  background: rgba(59, 130, 246, 0.08);
+  padding: 0.875rem 1rem;
+}
+
+.lockup-countdown-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--text-muted);
+}
+
+.lockup-countdown-value {
+  margin-top: 0.5rem;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-accent);
+}
+
+.lockup-countdown-milestone {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
+.lockup-timeline {
+  margin-top: 1.25rem;
+}
+
+.lockup-timeline-track {
+  position: relative;
+  display: flex;
+  height: 0.75rem;
+  overflow: hidden;
+  border-radius: 9999px;
+  border: 1px solid var(--glass-border);
+  background: var(--glass-bg-accent);
+  margin-top: 0.5rem;
+}
+
+.lockup-phase {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.lockup-phase--completed {
+  background: var(--success);
+}
+
+.lockup-phase--active {
+  background: linear-gradient(90deg, var(--primary), var(--text-accent));
+  animation: lockup-pulse 2s ease-in-out infinite;
+}
+
+.lockup-phase--pending {
+  background: rgba(148, 163, 184, 0.35);
+}
+
+.lockup-phase-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-top: 0.75rem;
+  padding: 0;
+  list-style: none;
+}
+
+.lockup-phase-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.lockup-phase-trigger:hover,
+.lockup-phase-trigger:focus-visible {
+  color: var(--text-main);
+}
+
+.lockup-phase-tooltip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 0.375rem);
+  z-index: 10;
+  width: max-content;
+  max-width: 16rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--glass-border-bright);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-lg);
+  padding: 0.5rem 0.625rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-main);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.125rem);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.lockup-phase-trigger:hover .lockup-phase-tooltip,
+.lockup-phase-trigger:focus-visible .lockup-phase-tooltip {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@keyframes lockup-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lockup-phase--active {
+    animation: none;
+  }
+
+  .lockup-phase {
+    transition: none;
+  }
+
+  .lockup-phase-tooltip {
+    transition: none;
+  }
+}

@@ -19,7 +19,6 @@ export default defineConfig({
         'src/hooks/useUploadQueue.ts',
         'src/components/UploadQueue/index.ts',
         'src/components/UploadQueue/UploadQueue.tsx',
-        'src/pages/DistributionDashboard.tsx',
         'src/utils/financialTermsValidation.ts',
         'src/hooks/useFinancialTermsForm.ts',
         'src/components/FinancialTermsForm/FinancialTermsForm.tsx',

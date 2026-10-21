@@ -4,6 +4,8 @@ import userEvent from '@testing-library/user-event';
 import React from 'react';
 import { ChainMismatchModal } from './ChainMismatchModal';
 import { NetworkSwitcherProvider } from './NetworkSwitcherContext';
+import { useNetworkSwitcher } from '../../hooks/useNetworkSwitcher';
+import { NetworkSwitcherBadge } from './NetworkSwitcherBadge';
 import { axe } from 'jest-axe';
 
 const renderModalInProvider = (
@@ -218,5 +220,145 @@ describe('ChainMismatchModal', () => {
     const { container } = renderModalInProvider(<ChainMismatchModal isOpen />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
+  });
+});
+
+
+describe('ChainMismatchModal dismissal and derived open state (Issue fix)', () => {
+  it('opens modal on mismatch without isOpen prop, and Dismiss closes it and keeps it closed', async () => {
+    const user = userEvent.setup();
+    render(
+      <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>
+        <ChainMismatchModal />
+      </NetworkSwitcherProvider>,
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Network Mismatch Detected')).toBeInTheDocument();
+
+    const dismissBtn = screen.getByRole('button', { name: /Dismiss dialog/i });
+    await user.click(dismissBtn);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes modal on Escape key without isOpen prop and keeps it closed', async () => {
+    const user = userEvent.setup();
+    render(
+      <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>
+        <ChainMismatchModal />
+      </NetworkSwitcherProvider>,
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('closes modal on Close "X" button click without isOpen prop', async () => {
+    const user = userEvent.setup();
+    render(
+      <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>
+        <ChainMismatchModal />
+      </NetworkSwitcherProvider>,
+    );
+
+    const closeBtn = screen.getByRole('button', { name: /Close network mismatch dialog/i });
+    await user.click(closeBtn);
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('re-opens modal when connected chain changes to another mismatched chain after dismissal', async () => {
+    const user = userEvent.setup();
+
+    const Harness: React.FC = () => {
+      const { setConnectedChainId } = useNetworkSwitcher();
+      return (
+        <div>
+          <button onClick={() => setConnectedChainId(42161)}>Switch to Arbitrum</button>
+          <button onClick={() => setConnectedChainId(137)}>Switch to Polygon</button>
+          <ChainMismatchModal />
+        </div>
+      );
+    };
+
+    render(
+      <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>
+        <Harness />
+      </NetworkSwitcherProvider>,
+    );
+
+    // Initial mismatch on Ethereum (1 !== 137) opens modal
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    // Dismiss closes it
+    const dismissBtn = screen.getByRole('button', { name: /Dismiss dialog/i });
+    await user.click(dismissBtn);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Changing connected chain to another mismatched chain (Arbitrum 42161 !== 137) re-opens it
+    const arbitrumBtn = screen.getByRole('button', { name: /Switch to Arbitrum/i });
+    await user.click(arbitrumBtn);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Chain ID: 42161')).toBeInTheDocument();
+
+    // Dismissing again on Arbitrum closes it
+    await user.click(screen.getByRole('button', { name: /Dismiss dialog/i }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Changing to matching chain (Polygon 137) keeps it closed
+    const polygonBtn = screen.getByRole('button', { name: /Switch to Polygon/i });
+    await user.click(polygonBtn);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('defaults provider to disconnected wallet so no mismatch exists until a wallet reports a chain', () => {
+    render(
+      <NetworkSwitcherProvider>
+        <ChainMismatchModal />
+      </NetworkSwitcherProvider>,
+    );
+
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('preserves persistent non-modal NetworkSwitcherBadge mismatch indicator after dismissal and allows re-opening', async () => {
+    const user = userEvent.setup();
+
+    const Harness: React.FC = () => {
+      return (
+        <div>
+          <NetworkSwitcherBadge />
+          <ChainMismatchModal />
+        </div>
+      );
+    };
+
+    render(
+      <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>
+        <Harness />
+      </NetworkSwitcherProvider>,
+    );
+
+    // Initial state: modal open, badge shows wrong network
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText('Wrong Network')).toBeInTheDocument();
+
+    // Dismiss modal
+    const dismissBtn = screen.getByRole('button', { name: /Dismiss dialog/i });
+    await user.click(dismissBtn);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    // Non-modal indicator remains active
+    const badge = screen.getByTestId('network-switcher-badge');
+    expect(badge).toHaveClass('ns-badge--mismatch');
+    expect(screen.getByText('Wrong Network')).toBeInTheDocument();
+
+    // Clicking badge re-opens the modal
+    await user.click(badge);
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });

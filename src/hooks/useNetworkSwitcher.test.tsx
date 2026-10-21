@@ -110,6 +110,33 @@ describe('useNetworkSwitcher', () => {
     expect(result.current.isModalOpen).toBe(false);
   });
 
+  it('records dismissed chain ID on closeModal / dismissModal and resets on chain change', () => {
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>
+        {children}
+      </NetworkSwitcherProvider>
+    );
+
+    const { result } = renderHook(() => useNetworkSwitcher(), { wrapper });
+
+    expect(result.current.dismissedForChainId).toBeNull();
+
+    act(() => {
+      result.current.dismissModal();
+    });
+
+    expect(result.current.dismissedForChainId).toBe(1);
+    expect(result.current.isModalOpen).toBe(false);
+
+    // Changing connected chain resets dismissal
+    act(() => {
+      result.current.setConnectedChainId(42161);
+    });
+
+    expect(result.current.dismissedForChainId).toBeNull();
+    expect(result.current.connectedChainId).toBe(42161);
+  });
+
   it('updates walletName and isWalletConnected state', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <NetworkSwitcherProvider initialConnectedChainId={1} initialAppChainId={137}>

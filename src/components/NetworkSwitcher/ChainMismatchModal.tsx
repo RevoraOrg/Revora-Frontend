@@ -1,4 +1,4 @@
-import React, { useId, useRef, useEffect, useState } from 'react';
+import React, { useId, useRef, useEffect, useState, useCallback } from 'react';
 import {
   X,
   AlertTriangle,
@@ -38,6 +38,7 @@ export const ChainMismatchModal: React.FC<ChainMismatchModalProps> = ({
     isWalletConnected,
     isMismatch,
     isModalOpen: contextIsOpen,
+    dismissedForChainId,
     isSwitching,
     walletCapability,
     switchWalletChain,
@@ -45,8 +46,15 @@ export const ChainMismatchModal: React.FC<ChainMismatchModalProps> = ({
     closeModal,
   } = useNetworkSwitcher();
 
-  const isOpen = externalIsOpen ?? (contextIsOpen || isMismatch);
-  const handleClose = externalOnClose ?? closeModal;
+  const isDismissed = isMismatch && dismissedForChainId === connectedChain.id;
+  const shouldOpenForMismatch = isMismatch && !isDismissed;
+  const isOpen = externalIsOpen ?? (contextIsOpen || shouldOpenForMismatch);
+  const handleClose = useCallback(() => {
+    closeModal();
+    if (externalOnClose) {
+      externalOnClose();
+    }
+  }, [closeModal, externalOnClose]);
 
   const titleId = useId();
   const descriptionId = useId();

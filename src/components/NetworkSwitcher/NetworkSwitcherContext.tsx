@@ -59,31 +59,43 @@ export interface NetworkSwitcherProviderProps {
   initialWalletName?: string;
   initialIsWalletConnected?: boolean;
   initialIsModalOpen?: boolean;
+  initialDismissedForChainId?: number | null;
   onWalletSwitchRequested?: (targetChainId: number) => Promise<void>;
   onAppChainChanged?: (newChainId: number) => void;
 }
 
 export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = ({
   children,
-  initialConnectedChainId = 1, // Ethereum Mainnet (mismatched with Polygon by default)
+  initialConnectedChainId,
   initialAppChainId = DEFAULT_APP_CHAIN_ID, // Polygon PoS (137)
   initialWalletName = 'MetaMask',
-  initialIsWalletConnected = true,
+  initialIsWalletConnected,
   initialIsModalOpen = false,
+  initialDismissedForChainId = null,
   onWalletSwitchRequested,
   onAppChainChanged,
 }) => {
-  const [connectedChainId, setConnectedChainIdState] = useState<number>(() =>
-    parseChainId(initialConnectedChainId),
+  const hasExplicitConnectedChain = initialConnectedChainId !== undefined;
+  const defaultConnectedChainId = hasExplicitConnectedChain
+    ? parseChainId(initialConnectedChainId)
+    : 1;
+
+  const [connectedChainId, setConnectedChainIdState] = useState<number>(
+    defaultConnectedChainId,
   );
   const [appChainId, setAppChainIdState] = useState<number>(() =>
     parseChainId(initialAppChainId),
   );
   const [walletName, setWalletNameState] = useState<string>(initialWalletName);
   const [isWalletConnected, setIsWalletConnectedState] = useState<boolean>(
-    initialIsWalletConnected,
+    initialIsWalletConnected !== undefined
+      ? initialIsWalletConnected
+      : hasExplicitConnectedChain,
   );
   const [isModalOpen, setIsModalOpen] = useState<boolean>(initialIsModalOpen);
+  const [dismissedForChainId, setDismissedForChainId] = useState<number | null>(
+    initialDismissedForChainId,
+  );
   const [isSwitching, setIsSwitching] = useState<boolean>(false);
 
   const isMismatch = useMemo(() => {
@@ -104,7 +116,10 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
   );
 
   const setConnectedChainId = useCallback((id: number | string) => {
-    setConnectedChainIdState(parseChainId(id));
+    const parsed = parseChainId(id);
+    setConnectedChainIdState(parsed);
+    setDismissedForChainId(null);
+    setIsWalletConnectedState(true);
   }, []);
 
   const setAppChainId = useCallback(
@@ -124,8 +139,20 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
     setIsWalletConnectedState(connected);
   }, []);
 
-  const openModal = useCallback(() => setIsModalOpen(true), []);
-  const closeModal = useCallback(() => setIsModalOpen(false), []);
+  const openModal = useCallback(() => {
+    setIsModalOpen(true);
+    setDismissedForChainId(null);
+  }, []);
+
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
+    setDismissedForChainId(connectedChainId);
+  }, [connectedChainId]);
+
+  const dismissModal = useCallback(() => {
+    setIsModalOpen(false);
+    setDismissedForChainId(connectedChainId);
+  }, [connectedChainId]);
 
   const switchWalletChain = useCallback(async () => {
     if (isSwitching) return;
@@ -140,6 +167,7 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
       // Update connected chain to match app target
       setConnectedChainIdState(appChainId);
       setIsModalOpen(false);
+      setDismissedForChainId(null);
     } catch {
       // Rejection or failure — retain modal state
     } finally {
@@ -153,6 +181,7 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
       setAppChainIdState(newChain);
       if (onAppChainChanged) onAppChainChanged(newChain);
       setIsModalOpen(false);
+      setDismissedForChainId(null);
     },
     [connectedChainId, onAppChainChanged],
   );
@@ -165,6 +194,7 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
       isWalletConnected,
       isMismatch,
       isModalOpen,
+      dismissedForChainId,
       isSwitching,
       connectedChain,
       appChain,
@@ -175,8 +205,10 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
       setAppChainId,
       setWalletName,
       setIsWalletConnected,
+      setDismissedForChainId,
       openModal,
       closeModal,
+      dismissModal,
     }),
     [
       connectedChainId,
@@ -185,6 +217,7 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
       isWalletConnected,
       isMismatch,
       isModalOpen,
+      dismissedForChainId,
       isSwitching,
       connectedChain,
       appChain,
@@ -195,8 +228,10 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
       setAppChainId,
       setWalletName,
       setIsWalletConnected,
+      setDismissedForChainId,
       openModal,
       closeModal,
+      dismissModal,
     ],
   );
 

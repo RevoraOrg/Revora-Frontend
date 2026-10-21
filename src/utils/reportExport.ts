@@ -74,17 +74,104 @@ export function reportExportFileName(
 
 /* ── CSV ─────────────────────────────────────────────────────────── */
 
-function escapeCsvCell(value: string): string {
-  if (/[",\r\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
+export interface EscapeCsvCellOptions {
+  isNumeric?: boolean;
 }
 
-export function toCsv(rows: string[][]): string {
+export interface ToCsvOptions {
+  numericColumns?: Array<number | string>;
+}
+
+const DEFAULT_NUMERIC_COLUMNS: readonly string[] = [
+  "gross revenue",
+  "estimated payout",
+];
+
+/**
+ * Neutralise dangerous leading characters in CSV cells to mitigate formula injection (CWE-1236).
+ * Prepends a single quote (') if the cell begins with '=', '+', '-', '@', TAB, or CR,
+ * unless the cell is marked or detected as numeric.
+ */
+export function sanitizeCsvCell(
+  value: string | number,
+  optionsOrIsNumeric?: boolean | EscapeCsvCellOptions
+): string {
+  const isNumeric =
+    typeof optionsOrIsNumeric === "boolean"
+      ? optionsOrIsNumeric
+      : Boolean(optionsOrIsNumeric?.isNumeric);
+
+  if (typeof value === "number" || isNumeric) {
+    return String(value ?? "");
+  }
+
+  const str = String(value ?? "");
+  if (/^[=+\-@\t\r]/.test(str)) {
+    return `'${str}`;
+  }
+  return str;
+}
+
+/**
+ * Neutralise formula injection prefixes and apply CSV RFC-4180 quoting rules.
+ */
+export function escapeCsvCell(
+  value: string | number,
+  optionsOrIsNumeric?: boolean | EscapeCsvCellOptions
+): string {
+  const sanitized = sanitizeCsvCell(value, optionsOrIsNumeric);
+  if (/[",\r\n]/.test(sanitized)) {
+    return `"${sanitized.replace(/"/g, '""')}"`;
+  }
+  return sanitized;
+}
+
+export function toCsv(
+  rows: (string | number)[][],
+  options?: ToCsvOptions
+): string {
+  if (rows.length === 0) {
+    return "";
+  }
+
+  const headerRow = rows[0] ?? [];
+  const numericIndices = new Set<number>();
+
+  const configuredNumeric = options?.numericColumns ?? DEFAULT_NUMERIC_COLUMNS;
+
+  headerRow.forEach((header, index) => {
+    const headerStr = String(header ?? "").trim().toLowerCase();
+    for (const item of configuredNumeric) {
+      if (typeof item === "number" && item === index) {
+        numericIndices.add(index);
+      } else if (
+        typeof item === "string" &&
+        item.trim().toLowerCase() === headerStr
+      ) {
+        numericIndices.add(index);
+      }
+    }
+  });
+
+  if (options?.numericColumns) {
+    for (const item of options.numericColumns) {
+      if (typeof item === "number") {
+        numericIndices.add(item);
+      }
+    }
+  }
+
   return (
     rows
-      .map((row) => row.map((cell) => escapeCsvCell(cell)).join(","))
+      .map((row, rowIndex) => {
+        return row
+          .map((cell, colIndex) => {
+            const isNumericCol =
+              rowIndex > 0 && numericIndices.has(colIndex);
+            return escapeCsvCell(cell, isNumericCol);
+          })
+          .join(",");
+      })
       .join("\r\n") + "\r\n"
   );
 }

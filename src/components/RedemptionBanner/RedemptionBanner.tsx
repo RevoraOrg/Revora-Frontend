@@ -36,8 +36,11 @@ export const RedemptionBanner: React.FC<RedemptionBannerProps> = ({
 
     const calculateTimeLeft = () => {
       const difference = endDate.getTime() - new Date().getTime();
-      
-      if (difference <= 0) {
+
+      // `NaN` (unparseable/invalid end date) and elapsed windows both resolve to
+      // the same deterministic, user-visible terminal state instead of leaking
+      // a `NaNh NaNm` countdown.
+      if (!Number.isFinite(difference) || difference <= 0) {
         return 'Ended';
       }
 

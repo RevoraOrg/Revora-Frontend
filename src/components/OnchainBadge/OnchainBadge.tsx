@@ -178,6 +178,11 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
+  const wrapperRef = useRef<HTMLSpanElement>(null);
+  const badgeRef = useRef<HTMLButtonElement>(null);
+  const prevLabelRef = useRef(label);
+  const [statusAnnouncement, setStatusAnnouncement] = useState('');
+
   const hasMeta = showTooltip && hasTooltipableMetadata(metadata, transactionHash, explorerUrl);
 
   const tooltipVisible = hasMeta && open && !dismissed;
@@ -188,6 +193,13 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
         network: metadata?.network,
       })
     : undefined;
+
+  useEffect(() => {
+    if (prevLabelRef.current !== label) {
+      prevLabelRef.current = label;
+      setStatusAnnouncement(label);
+    }
+  }, [label]);
 
   const openTip = useCallback(() => {
     if (!dismissed) setOpen(true);
@@ -209,6 +221,7 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
         event.stopPropagation();
         setDismissed(true);
         setOpen(false);
+        badgeRef.current?.focus();
       }
     };
 
@@ -221,33 +234,28 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
     metadata?.blockNumber !== null &&
     String(metadata.blockNumber).trim() !== '';
 
-  return (
-    <span
-      className={`onchain-badge onchain-badge--${variant} onchain-badge--${size}${className ? ` ${className}` : ''}`}
-      role="status"
-      aria-label={label}
-      aria-describedby={hasMeta ? tooltipId : undefined}
-      tabIndex={hasMeta ? 0 : undefined}
-      onMouseEnter={hasMeta ? openTip : undefined}
-      onMouseLeave={
-        hasMeta
-          ? () => {
-              closeTip();
-              clearDismissed();
-            }
-          : undefined
-      }
-      onFocus={hasMeta ? openTip : undefined}
-      onBlur={
-        hasMeta
-          ? () => {
-              closeTip();
-              clearDismissed();
-            }
-          : undefined
-      }
-      data-testid={`onchain-badge-${variant}`}
-    >
+  const handleBlur = (event: React.FocusEvent<HTMLElement>) => {
+    const related = event.relatedTarget;
+    if (related instanceof Node && wrapperRef.current?.contains(related)) {
+      return;
+    }
+    closeTip();
+    clearDismissed();
+  };
+
+  const handleMouseLeave = (event: React.MouseEvent<HTMLElement>) => {
+    const related = event.relatedTarget;
+    if (related instanceof Node && wrapperRef.current?.contains(related)) {
+      return;
+    }
+    closeTip();
+    clearDismissed();
+  };
+
+  const badgeClassName = `onchain-badge onchain-badge--${variant} onchain-badge--${size}${className ? ` ${className}` : ''}`;
+
+  const badgeContent = (
+    <>
       <span className="ob-icon">{getIcon(variant, iconSize)}</span>
       <span className="ob-label">
         {variant === 'pending' && 'Pending'}
@@ -266,67 +274,112 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
           </span>
         </>
       )}
+    </>
+  );
 
-      {hasMeta && (
-        <div
-          id={tooltipId}
-          role="tooltip"
-          className={`ob-tooltip${tooltipVisible ? ' ob-tooltip--open' : ''}`}
-          data-testid="onchain-badge-tooltip"
-        >
-          <div className="ob-tooltip-grid">
-            {hasBlock && (
-              <>
-                <span className="ob-tooltip-label">Block</span>
-                <span
-                  className="ob-tooltip-value"
-                  data-testid="ob-tooltip-block"
-                >
-                  {formatBlockNumber(metadata?.blockNumber)}
-                </span>
-              </>
-            )}
-            <span className="ob-tooltip-label">Confirmations</span>
-            <span
-              className="ob-tooltip-value"
-              data-testid="ob-tooltip-confirmations"
-            >
-              {formatConfirmations(currentConfirmations)} / {formatConfirmations(targetConfirmations)}
-            </span>
-            {metadata?.confirmedAt && (
-              <>
-                <span className="ob-tooltip-label">Time since</span>
-                <span
-                  className="ob-tooltip-value"
-                  data-testid="ob-tooltip-time"
-                >
-                  {formatTimeSince(metadata.confirmedAt)}
-                </span>
-              </>
-            )}
-          </div>
-          {tooltipVisible && explorerLink && (
-            <a
-              className="ob-tooltip-link"
-              href={explorerLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              data-testid="ob-tooltip-explorer"
-            >
-              Open in explorer
-              <ExternalLink size={12} aria-hidden="true" />
-            </a>
+  const liveRegion = statusAnnouncement ? (
+    <span role="status" aria-live="polite" className="ob-sr-only">
+      {statusAnnouncement}
+    </span>
+  ) : null;
+
+  if (!hasMeta) {
+    return (
+      <span
+        className={badgeClassName}
+        aria-label={label}
+        data-testid={`onchain-badge-${variant}`}
+      >
+        {liveRegion}
+        {badgeContent}
+      </span>
+    );
+  }
+
+  return (
+    <span
+      ref={wrapperRef}
+      className="ob-disclosure"
+      onMouseEnter={openTip}
+      onMouseLeave={handleMouseLeave}
+      onFocus={openTip}
+      onBlur={handleBlur}
+    >
+      {liveRegion}
+      <button
+        ref={badgeRef}
+        type="button"
+        className={badgeClassName}
+        aria-label={label}
+        aria-describedby={tooltipId}
+        aria-expanded={tooltipVisible}
+        aria-controls={tooltipId}
+        tabIndex={0}
+        onMouseEnter={openTip}
+        onMouseLeave={handleMouseLeave}
+        data-testid={`onchain-badge-${variant}`}
+      >
+        {badgeContent}
+      </button>
+
+      <div
+        id={tooltipId}
+        role="tooltip"
+        className={`ob-tooltip${tooltipVisible ? ' ob-tooltip--open' : ''}`}
+        data-testid="onchain-badge-tooltip"
+      >
+        <div className="ob-tooltip-grid">
+          {hasBlock && (
+            <>
+              <span className="ob-tooltip-label">Block</span>
+              <span
+                className="ob-tooltip-value"
+                data-testid="ob-tooltip-block"
+              >
+                {formatBlockNumber(metadata?.blockNumber)}
+              </span>
+            </>
           )}
-          {tooltipVisible && !explorerLink && (
-            <span
-              className="ob-tooltip-link ob-tooltip-link--disabled"
-              aria-disabled="true"
-            >
-              Explorer link unavailable
-            </span>
+          <span className="ob-tooltip-label">Confirmations</span>
+          <span
+            className="ob-tooltip-value"
+            data-testid="ob-tooltip-confirmations"
+          >
+            {formatConfirmations(currentConfirmations)} / {formatConfirmations(targetConfirmations)}
+          </span>
+          {metadata?.confirmedAt && (
+            <>
+              <span className="ob-tooltip-label">Time since</span>
+              <span
+                className="ob-tooltip-value"
+                data-testid="ob-tooltip-time"
+              >
+                {formatTimeSince(metadata.confirmedAt)}
+              </span>
+            </>
           )}
         </div>
-      )}
+        {tooltipVisible && explorerLink && (
+          <a
+            className="ob-tooltip-link"
+            href={explorerLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-testid="ob-tooltip-explorer"
+          >
+            Open in explorer
+            <ExternalLink size={12} aria-hidden="true" />
+          </a>
+        )}
+        {tooltipVisible && !explorerLink && (
+          <span
+            className="ob-tooltip-link ob-tooltip-link--disabled"
+            aria-disabled="true"
+          >
+            Explorer link unavailable
+          </span>
+        )}
+      </div>
     </span>
   );
 };

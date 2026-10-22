@@ -1,3 +1,4 @@
+import './TwoFactorSetup.css';
 import React, { useState, useRef, useEffect, useId } from 'react';
 import {
   Mail,
@@ -14,16 +15,28 @@ import { FormError } from './FormError';
 
 type Step = 1 | 2 | 3;
 
-interface TwoFactorRecoveryFlowProps {
+export interface TwoFactorRecoveryFlowProps {
   /** Called when recovery is successful */
   onComplete: () => void;
   /** Called when the user cancels / goes back */
   onCancel: () => void;
-  /** Pre-filled email if known from context */
+  /** Pre-filled email if konown from context */
   defaultEmail?: string;
+  /** Request a recovery code be sent to the given email */
+  onRequestCode: (email: string) => Promise<void>;
+  /** Verify a recovery code. Resolves true only on success. */
+  onVerify: (code: string) => Promise<boolean>;
+  /** Resend a recovery code to the given email */
+  onResend: (email: string) => Promise<void>;
+  /** Maximum verify attempts before lockout. Defaults to 5. */
+  maxAttempts?: number;
+  /** Lockout cooldown in seconds after max attempts. Defaults to 30. */
+  lockoutSeconds?: number;
 }
 
-const COOLDOWN_SECONDS = 30;
+const COOLOWN_SECONDS = 30;
+const DEFAULT_MAX_ATTEMPTS = 5;
+const DEFAULT_LOCKOUT_SECONDS = 30;
 
 const StepIndicator: React.FC<{ current: Step }> = ({ current }) => {
   const steps = [
@@ -74,7 +87,8 @@ interface RequestEmailStepProps {
   onSupport: () => void;
 }
 
-const RequestEmailStep: React.FC<RequestEmailStepProps> = ({ onSend, defaultEmail = '', onSupport }) => {
+const RequestEmailStep: React.FC<RequestEmailStepProps> = (stepProps) => {
+  const { onSend, defaultEmail = '', onSupport } = stepProps;
   const [email, setEmail] = useState(defaultEmail);
   const [error, setError] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -101,6 +115,8 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = ({ onSend, defaultEmai
     setIsSending(true);
     try {
       await onSend(trimmed);
+    } catch {
+      setError('Unable to send the recovery code. Please try again.');
     } finally {
       setIsSending(false);
     }
@@ -112,7 +128,7 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = ({ onSend, defaultEmai
   return (
     <form onSubmit={handleSubmit} className={`space-y-4 animate-fade-in ${error ? 'animate-shake' : ''}`} noValidate>
       <p className="text-muted text-sm">
-        If you&apos;ve lost access to your authenticator device, we can send a recovery code to
+        If you&#x27rve lost access to your authenticator device, we can send a recovery code to
         your registered recovery email.
       </p>
 
@@ -162,7 +178,7 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = ({ onSend, defaultEmai
         aria-label="Still can't access your account? Contact support"
       >
         <ExternalLink size={14} aria-hidden="true" />
-        Still can&apos;t access your account?
+        Still can&#x27;t access your account?
       </button>
     </form>
   );
@@ -174,14 +190,20 @@ interface VerifyCodeStepProps {
   onBack: () => void;
   onSupport: () => void;
   email: string;
+  maxAttempts: number;
+  lockoutSeconds: number;
 }
 
-const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onBack, onSupport, email }) => {
+const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
+  const { onVerify, onResend, onBack, onSupport, email, maxAttempts, lockoutSeconds } = stepProps;
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const [cooldown, setCooldown] = useState(COOLDOWN_SECONDS);
+  const [cooldown, setCooldown] = useState(COOLOWN_SECONDS);
+  const [attempts, setAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number>(0);
+  const [lockountRemaining, setLockoutRemaining] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const mountedRef = useRef(true);
 
@@ -201,14 +223,52 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onB
     return () => clearInterval(t);
   }, [cooldown]);
 
+  useEffect(() => {
+    if (lockedUntil <= 0) {
+      setLockoutRemaining(0);
+      return;
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.ceil((lockedUntil - Date.now()) / 1000));
+      setLockoutRemaining(remaining);
+      if (remaining <= 0) {
+        setLockedUntil(0);
+        setAttempts(0);
+        setError(null);
+      }
+    };
+    tick();
+    const t = setInterval(tick, 1000);
+    return () => clearInterval(t);
+  }, [lockedUntil]);
+
+  const isLocked = lockedUntil > 0 && lockoutRemaining > 0;
+
   const handleCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
     setCode(val);
     if (error) setError(null);
   };
 
+  const registerFailure = () => {
+    setAttempts((prev) => {
+      const next = prev + 1;
+      if (next >= maxAttempts) {
+        setLockedUntil(Date.now() + lockoutSeconds * 1000);
+        setLockoutRemaining(lockoutSeconds);
+        setError(
+          `Too many incorrect attempts. Please wait ${lockoutSeconds} seconds before trying again.`
+        );
+      } else {
+        setError('The code you entered is invalid or has expired. Please try again.');
+      }
+      return next;
+    });
+  };
+
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLocked) return;
     if (code.length < 6) {
       setError('Please enter the full 6-digit recovery code.');
       return;
@@ -216,11 +276,15 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onB
     setIsVerifying(true);
     try {
       const valid = await onVerify(code);
+      if (!mountedRef.current) return;
       if (!valid) {
-        setError('The code you entered is invalid or has expired. Please try again.');
+        registerFailure();
       }
+    } catch {
+      if (!mountedRef.current) return;
+      setError('Unable to verify the code right now. Please try again.');
     } finally {
-      setIsVerifying(false);
+      if (mountedRef.current) setIsVerifying(false);
     }
   };
 
@@ -229,8 +293,10 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onB
     setIsResending(true);
     try {
       await onResend();
-      setCooldown(COOLDOWN_SECONDS);
+      setCooldown(COOLOWN_SECONDS);
       setError(null);
+    } catch {
+      setError('Unable to resend the recovery code. Please try again.');
     } finally {
       setIsResending(false);
     }
@@ -248,7 +314,7 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onB
   return (
     <form onSubmit={handleVerify} className={`space-y-4 animate-fade-in ${error ? 'animate-shake' : ''}`} noValidate>
       <p className="text-muted text-sm">
-        We&apos;ve sent a 6-digit recovery code to{' '}
+        We&#x27ve sent a 6-digit recovery code to{' '}
         <span className="text-main font-medium">{email}</span>.
         The code expires in 15 minutes.
       </p>
@@ -275,16 +341,20 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onB
             autoComplete="one-time-code"
             aria-required="true"
             aria-describedby={error ? errorId : undefined}
-            disabled={isVerifying}
+            disabled={isVerifying || isLocked}
           />
         </div>
         <p className="text-muted text-xs mt-1">
-          Check your spam folder if you don&apos;t see the email.
+          Check your spam folder if you don&#x27t see the email.
         </p>
       </div>
 
-      <Button type="submit" loading={isVerifying}>
-        {isVerifying ? 'Verifying…' : 'Verify code'}
+      <Button type="submit" loading={isVerifying} disabled={isLocked}>
+        {isLocked
+          ? `Try again in ${formatCooldown(lockoutRemaining)}`
+          : isVerifying
+            ? 'Verifying…'
+            : 'Verify code'}
       </Button>
 
       <div className="tfar-resend-area">
@@ -329,7 +399,7 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = ({ onVerify, onResend, onB
         aria-label="Still can't access your account? Contact support"
       >
         <ExternalLink size={14} aria-hidden="true" />
-        Still can&apos;t access your account?
+        Still can&#x27;t access your account?
       </button>
 
       <div role="status" aria-live="polite" className="sr-only">
@@ -373,57 +443,65 @@ const RecoverySuccessStep: React.FC<RecoverySuccessStepProps> = ({ onComplete })
   );
 };
 
-export const TwoFactorRecoveryFlow: React.FC<TwoFactorRecoveryFlowProps> = ({
-  onComplete,
-  onCancel,
-  defaultEmail = '',
-}) => {
+export const TwoFactorRecoveryFlow: React.FC<TwoFactorRecoveryFlowProps> = (props) => {
+  const {
+    onComplete,
+    onCancel,
+    defaultEmail = '',
+    onRequestCode,
+    onVerify,
+    onResend,
+    maxAttempts = DEFAULT_MAX_ATTEMPTS,
+    lockoutSeconds = DEFAULT_LOCKOUT_SECONDS,
+  } = props;
   const [step, setStep] = useState<Step>(1);
   const [email, setEmail] = useState(defaultEmail);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  const headingId = useId();
 
   useEffect(() => {
     headingRef.current?.focus();
   }, [step]);
 
   const handleSend = async (e: string) => {
-    await new Promise((r) => setTimeout(r, 800));
+    await onRequestCode(e);
     setEmail(e);
     setStep(2);
   };
 
-  const handleVerify = async (_code: string): Promise<boolean> => {
-    await new Promise((r) => setTimeout(r, 600));
-    setStep(3);
-    return true;
+  const handleVerify = async (code: string): Promise<boolean> => {
+    const valid = await onVerify(code);
+    if (valid) {
+      setStep(3);
+    }
+    return valid;
   };
 
   const handleResend = async () => {
-    await new Promise((r) => setTimeout(r, 800));
+    await onResend(email);
+  };
+
+  const handleCancel = () => {
+    onCancel();
   };
 
   const handleSupport = () => {
-    window.open('mailto:support@revora.io?subject=2FA%20Recovery%20Help', '_blank');
+    // Support link is presentational; no backend integration in scope.
   };
 
-  const stepTitles: Record<Step, string> = {
+  const headings = {
     1: 'Recover your account',
     2: 'Check your recovery email',
     3: 'Recovery complete',
-  };
+  } as const;
 
   return (
-    <section aria-labelledby="tfar-heading" className="tfar-flow">
-      <StepIndicator current={step} />
-
-      <h2
-        id="tfar-heading"
-        ref={headingRef}
-        className="tfar-flow__title"
-        tabIndex={-1}
-      >
-        {stepTitles[step]}
+    <section aria-labelledby={headingId} className="tfar-container">
+      <h2 id={headingId} ref={headingRef} tabIndex={-1} className="tfar-heading">
+        {headings[step]}
       </h2>
+
+      <StepIndicator current={step} />
 
       {step === 1 && (
         <RequestEmailStep
@@ -439,21 +517,23 @@ export const TwoFactorRecoveryFlow: React.FC<TwoFactorRecoveryFlowProps> = ({
           onBack={() => setStep(1)}
           onSupport={handleSupport}
           email={email}
+          maxAttempts={maxAttempts}
+          lockoutSeconds={lockoutSeconds}
         />
       )}
-      {step === 3 && (
-        <RecoverySuccessStep onComplete={onComplete} />
-      )}
+      {step === 3 && <RecoverySuccessStep onComplete={onComplete} />}
 
-      {step < 3 && (
-        <button
-          type="button"
-          className="tfar-cancel"
-          onClick={onCancel}
-          aria-label="Cancel account recovery"
-        >
-          Cancel
-        </button>
+      {step !== 3 && (
+        <div className="tfar-cancel-area">
+          <button
+            type="button"
+            className="tfar-cancel-btn"
+            onClick={handleCancel}
+            aria-label="Cancel account recovery"
+          >
+            Cancel account recovery
+          </button>
+        </div>
       )}
     </section>
   );

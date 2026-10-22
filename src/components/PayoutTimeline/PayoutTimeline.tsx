@@ -78,7 +78,9 @@ export function getTodayMarkerPercent(
   const start = sorted[0].date;
   const end = sorted[sorted.length - 1].date;
   const span = daysBetween(start, end);
-  if (span <= 0) return 50;
+  // `span` is `NaN` when either boundary date is unparseable — treat that
+  // failure like a zero-length span so the marker stays deterministic.
+  if (!Number.isFinite(span) || span <= 0) return 50;
   const offset = daysBetween(start, todayIso);
   const pct = (offset / span) * 100;
   return Math.max(0, Math.min(100, pct));

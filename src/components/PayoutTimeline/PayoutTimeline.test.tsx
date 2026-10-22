@@ -233,3 +233,62 @@ describe('PayoutTimeline', () => {
     expect(container.querySelector('.payout-timeline__item--missed')).toBeTruthy();
   });
 });
+
+/**
+ * Issue #760 — regression suite for the empty / absent-result failure paths in
+ * PayoutTimeline (`if (sorted.length === 0) return null;` and the `useEffect`
+ * guard `return null;`). These pin the null contract so an empty schedule can
+ * never silently render a partial timeline or throw while scrolling.
+ */
+describe('regression #760 — PayoutEventStatus empty/failure contract', () => {
+  it('getTodayMarkerPercent returns null (not 0/NaN) for an empty schedule', () => {
+    expect(getTodayMarkerPercent([], '2026-03-01')).toBeNull();
+  });
+
+  it('renders nothing — and no scroll region — for an empty schedule', () => {
+    const { container } = render(
+      <PayoutTimeline events={[]} today="2026-03-01" autoScrollToToday />,
+    );
+
+    expect(container.firstChild).toBeNull();
+    expect(screen.queryByTestId('payout-timeline')).toBeNull();
+    expect(screen.queryByTestId('payout-timeline-scroll')).toBeNull();
+    expect(screen.queryByRole('region')).toBeNull();
+  });
+
+  it('does not attempt to scroll when the today marker is unavailable', () => {
+    render(<PayoutTimeline events={[]} autoScrollToToday />);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('does not scroll when auto-scroll is disabled (neighbouring path)', () => {
+    render(<PayoutTimeline events={EVENTS} today="2026-03-01" autoScrollToToday={false} />);
+    expect(Element.prototype.scrollIntoView).not.toHaveBeenCalled();
+  });
+
+  it('keeps the marker deterministic for unparseable event dates', () => {
+    const broken: PayoutEvent[] = [
+      { id: 'bad', date: 'not-a-date', label: 'Bad', status: 'missed' },
+      { id: 'ok', date: '2026-06-01', label: 'Ok', status: 'scheduled' },
+    ];
+
+    const percent = getTodayMarkerPercent(broken, '2026-03-01');
+
+    expect(percent).toBe(50);
+    expect(Number.isFinite(percent as number)).toBe(true);
+  });
+
+  it('handles the single-event boundary schedule deterministically', () => {
+    const single: PayoutEvent[] = [
+      { id: 'solo', date: '2026-03-01', label: 'Solo', status: 'paid' },
+    ];
+    const { container } = render(
+      <PayoutTimeline events={single} today="2026-02-01" autoScrollToToday={false} />,
+    );
+
+    expect(container.querySelectorAll('.payout-timeline__item')).toHaveLength(1);
+    expect(
+      screen.getByTestId('payout-timeline-today').style.getPropertyValue('--pt-today'),
+    ).toBe('0%');
+  });
+});

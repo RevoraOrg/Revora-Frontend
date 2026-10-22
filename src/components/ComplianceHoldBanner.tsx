@@ -76,6 +76,8 @@ export const ComplianceHoldBanner: React.FC<ComplianceHoldBannerProps> = ({
           ariaRole: "alert" as const,
           ariaLive: "assertive" as const,
         };
+      default:
+        throw new Error(`Invalid ComplianceSeverity: ${severity}`);
     }
   };
 

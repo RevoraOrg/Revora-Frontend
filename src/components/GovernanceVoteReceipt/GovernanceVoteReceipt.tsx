@@ -88,6 +88,13 @@ const VOTE_LABELS: Record<VoteChoice, string> = {
   abstain: 'Abstain',
 };
 
+function getVoteChoiceLabel(choice: VoteChoice | string): string {
+  if (choice in VOTE_LABELS) {
+    return VOTE_LABELS[choice as VoteChoice];
+  }
+  return choice ? String(choice) : 'Unknown';
+}
+
 function truncateHash(hash: string, head = 10, tail = 8): string {
   if (hash.length <= head + tail + 3) return hash;
   return `${hash.slice(0, head)}…${hash.slice(-tail)}`;
@@ -114,8 +121,9 @@ function buildShareText(
   txHash: string,
   votedAt: string,
 ): string {
+  const label = getVoteChoiceLabel(voteChoice);
   return [
-    `🗳 I voted ${VOTE_LABELS[voteChoice]} on "${proposalTitle}"`,
+    `🗳 I voted ${label} on "${proposalTitle}"`,
     `📅 ${formatTimestamp(votedAt)}`,
     `🔗 TX: ${txHash}`,
   ].join('\n');
@@ -134,10 +142,11 @@ function txStatusToBadgeVariant(status: TxStatus): OnchainBadgeVariant {
 
 const VoteChoiceBadge: React.FC<{ choice: VoteChoice }> = ({ choice }) => {
   const Icon = choice === 'for' ? ThumbsUp : choice === 'against' ? ThumbsDown : Minus;
+  const label = getVoteChoiceLabel(choice);
   return (
-    <span className={`gvr-choice-badge gvr-choice-badge--${choice}`} aria-label={`Vote: ${VOTE_LABELS[choice]}`}>
+    <span className={`gvr-choice-badge gvr-choice-badge--${choice || 'unknown'}`} aria-label={`Vote: ${label}`}>
       <Icon size={14} aria-hidden="true" />
-      {VOTE_LABELS[choice]}
+      {label}
     </span>
   );
 };

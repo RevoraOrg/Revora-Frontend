@@ -87,3 +87,20 @@ test('shows large export warning when estimate is high', async () => {
   
   expect(screen.queryByText(/Large export\. This may take several minutes/i)).not.toBeInTheDocument();
 });
+
+test('returns null and does not render when open is false', () => {
+  const { container } = render(<ExportDialog {...defaultProps} open={false} />);
+  expect(container.firstChild).toBeNull();
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+test('toggles rendering based on open prop', () => {
+  const { rerender, container } = render(<ExportDialog {...defaultProps} open={false} />);
+  expect(container.firstChild).toBeNull();
+
+  rerender(<ExportDialog {...defaultProps} open={true} />);
+  expect(screen.getByRole('dialog', { name: /Export Audit Trail/i })).toBeInTheDocument();
+
+  rerender(<ExportDialog {...defaultProps} open={false} />);
+  expect(container.firstChild).toBeNull();
+});

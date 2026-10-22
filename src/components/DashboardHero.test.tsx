@@ -24,6 +24,35 @@ describe('DashboardHero', () => {
     expect(screen.getByText('Explore Offerings')).toBeInTheDocument();
   });
 
+  it.each([{ values: [] }, { values: [100] }])(
+    'omits the sparkline when fewer than two points are provided: $values',
+    ({ values }) => {
+    render(
+      <BrowserRouter>
+        <DashboardHero {...defaultKPIs} sparklineData={values} />
+      </BrowserRouter>
+    );
+
+    expect(screen.queryByLabelText('Portfolio performance sparkline')).not.toBeInTheDocument();
+    }
+  );
+
+  it.each([
+    { values: [100, 200], points: '0,40 120,0', color: '#10b981' },
+    { values: [200, 100], points: '0,0 120,40', color: '#ef4444' },
+    { values: [100, 100], points: '0,40 120,40', color: '#10b981' },
+  ])('renders a deterministic sparkline for $values', ({ values, points, color }) => {
+    render(
+      <BrowserRouter>
+        <DashboardHero {...defaultKPIs} sparklineData={values} />
+      </BrowserRouter>
+    );
+
+    const sparkline = screen.getByLabelText('Portfolio performance sparkline');
+    expect(sparkline.querySelector('polyline')).toHaveAttribute('points', points);
+    expect(sparkline.querySelector('polyline')).toHaveAttribute('stroke', color);
+  });
+
   it('renders correctly for new investor', () => {
     const emptyKPIs = {
       totalValue: { label: 'Total Value', value: 0, type: 'currency', status: 'empty' } as KPIData,

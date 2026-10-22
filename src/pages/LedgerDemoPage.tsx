@@ -141,7 +141,7 @@ export const LedgerDemoPage: React.FC = () => {
         rowKey={(r) => r.id}
         rowDetail={(row) => <DetailContent row={row} />}
         pageSize={50}
-        defaultDensity="normal"
+        defaultDensity="cozy"
         ariaLabel="Ledger entries table"
         groupableColumns={[
           { key: 'date', label: 'Date' },

@@ -237,7 +237,7 @@ function LedgerTable<T>({
     [columns, visibleColumns],
   );
 
-  const rowHeight = ROW_HEIGHTS[density];
+  const rowHeight = ROW_HEIGHTS[density] ?? ROW_HEIGHTS.cozy;
 
   const [containerHeight, setContainerHeight] = useState(400);
   const scrollRef = useRef<HTMLDivElement>(null);

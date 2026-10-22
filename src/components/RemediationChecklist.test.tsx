@@ -15,6 +15,10 @@ describe("RemediationChecklist", () => {
     },
   ];
 
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders nothing when steps array is empty", () => {
     const { container } = render(<RemediationChecklist steps={[]} />);
     expect(container.firstChild).toBeNull();
@@ -135,18 +139,19 @@ describe("RemediationChecklist", () => {
   it("opens external URL when actionUrl is provided", () => {
     const stepWithUrl = {
       ...mockSteps[0],
+      onAction: undefined,
       actionUrl: "https://example.com",
     };
     
-    const mockOpen = vi.fn();
-    global.open = mockOpen;
+    const mockOpen = vi.spyOn(window, "open").mockImplementation(() => null);
     
     render(<RemediationChecklist steps={[stepWithUrl]} />);
     
-    const actionButton = screen.getByRole("button", { name: /Learn more/i });
+    const actionButton = screen.getByRole("button", { name: /Upload now for Upload government ID/i });
     fireEvent.click(actionButton);
     
     expect(mockOpen).toHaveBeenCalledWith("https://example.com", "_blank", "noopener,noreferrer");
+    mockOpen.mockRestore();
   });
 
   it("renders correct icon for completed steps", () => {
@@ -345,5 +350,91 @@ describe("RemediationChecklist", () => {
     
     const actionButton = screen.getByRole("button", { name: /Upload now for Upload government ID/i });
     expect(actionButton).toBeInTheDocument();
+  });
+
+  // ─── Issue #770 regression: additional boundary & branch coverage ─────────
+
+  it("renders nothing when steps is undefined", () => {
+    const { container } = render(
+      <RemediationChecklist steps={undefined as any} />
+    );
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("does not call window.open when actionUrl step is disabled", () => {
+    const disabledUrlStep = {
+      id: "url-disabled",
+      title: "Read guidelines",
+      completed: false,
+      actionLabel: "Open",
+      actionUrl: "https://example.com/guidelines",
+      onAction: undefined,
+      disabled: true,
+    };
+
+    const mockOpen = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<RemediationChecklist steps={[disabledUrlStep]} />);
+
+    const btn = screen.getByRole("button", { name: /Open for Read guidelines/i });
+    fireEvent.click(btn);
+
+    expect(mockOpen).not.toHaveBeenCalled();
+    mockOpen.mockRestore();
+  });
+
+  it("calls onAction and not window.open when both onAction and actionUrl are present", () => {
+    const handler = vi.fn();
+    const dualStep = {
+      id: "dual",
+      title: "Dual action step",
+      completed: false,
+      actionLabel: "Act",
+      actionUrl: "https://example.com",
+      onAction: handler,
+    };
+
+    const mockOpen = vi.spyOn(window, "open").mockImplementation(() => null);
+    render(<RemediationChecklist steps={[dualStep]} />);
+
+    const btn = screen.getByRole("button", { name: /Act for Dual action step/i });
+    fireEvent.click(btn);
+
+    expect(handler).toHaveBeenCalledWith("dual");
+    expect(mockOpen).not.toHaveBeenCalled();
+    mockOpen.mockRestore();
+  });
+
+  it("renders a step with only required fields (id, title, completed) without throwing", () => {
+    const minimalStep = { id: "min", title: "Minimal step", completed: false };
+
+    expect(() => {
+      render(<RemediationChecklist steps={[minimalStep]} />);
+    }).not.toThrow();
+
+    expect(screen.getByText("Minimal step")).toBeInTheDocument();
+    // No description, no action button
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+
+  it("progress bar has width 0% style when no steps are completed", () => {
+    const steps = [
+      { id: "a", title: "Step A", completed: false },
+      { id: "b", title: "Step B", completed: false },
+    ];
+
+    const { container } = render(<RemediationChecklist steps={steps} />);
+    const progressbar = container.querySelector('[role="progressbar"]');
+
+    expect(progressbar).toHaveStyle({ width: "0%" });
+  });
+
+  it("suppresses the title block when title is set to empty string", () => {
+    render(<RemediationChecklist steps={mockSteps} title="" />);
+
+    // The h3 element and progress bar should not be rendered
+    expect(screen.queryByRole("heading")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("progressbar")
+    ).not.toBeInTheDocument();
   });
 });

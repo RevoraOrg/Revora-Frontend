@@ -143,8 +143,8 @@ describe('KeyboardShortcutsOverlay', () => {
   });
 
   describe('conditional rendering', () => {
-    it('does not render when isOpen is false', () => {
-      render(
+    it('returns null and renders no dialog when isOpen is false', () => {
+      const { container } = render(
         <KeyboardShortcutsOverlay
           isOpen={false}
           onClose={noop}
@@ -153,11 +153,12 @@ describe('KeyboardShortcutsOverlay', () => {
         />,
       );
 
+      expect(container.firstChild).toBeNull();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('does not render when isMobile is true', () => {
-      render(
+    it('returns null and renders no dialog when isMobile is true', () => {
+      const { container } = render(
         <KeyboardShortcutsOverlay
           isOpen={true}
           onClose={noop}
@@ -166,11 +167,12 @@ describe('KeyboardShortcutsOverlay', () => {
         />,
       );
 
+      expect(container.firstChild).toBeNull();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
-    it('does not render when both isOpen false and isMobile true', () => {
-      render(
+    it('returns null and renders no dialog when both isOpen false and isMobile true', () => {
+      const { container } = render(
         <KeyboardShortcutsOverlay
           isOpen={false}
           onClose={noop}
@@ -179,7 +181,22 @@ describe('KeyboardShortcutsOverlay', () => {
         />,
       );
 
+      expect(container.firstChild).toBeNull();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    it('renders the dialog tree when the overlay is open on desktop', () => {
+      const { container } = render(
+        <KeyboardShortcutsOverlay
+          isOpen={true}
+          onClose={noop}
+          isMac={false}
+          isMobile={false}
+        />,
+      );
+
+      expect(container.firstChild).not.toBeNull();
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
     });
   });
 

@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { EmptyState } from "./designSystem/EmptyState";
 import { AccessibleChart } from "./designSystem/AccessibleChart";
+import LedgerTable from "./LedgerTable/LedgerTable";
+import type { Column } from "./LedgerTable/LedgerTable";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 

@@ -1,6 +1,6 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   ComplianceSettingsTab,
   REGIONS_BY_CONTINENT,
@@ -483,6 +483,54 @@ describe('ComplianceSettingsTab – Save Changes', () => {
     const saveBtn = screen.getByRole('button', { name: 'Save compliance settings' });
     expect(saveBtn.tagName).toBe('BUTTON');
     expect(saveBtn).not.toBeDisabled();
+  });
+
+  it('logs the current RegionStatus values when saving', async () => {
+    const saveLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    renderComponent();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Block Nigeria' }));
+    await user.click(screen.getByRole('button', { name: 'Restrict Iran' }));
+    await user.click(screen.getByRole('button', { name: 'Save compliance settings' }));
+
+    const expectedStatuses = Object.fromEntries(
+      Object.values(REGIONS_BY_CONTINENT)
+        .flat()
+        .map((region) => [
+          region.code,
+          region.code === 'NG'
+            ? 'blocked'
+            : region.code === 'IR'
+              ? 'restricted'
+              : 'allowed',
+        ])
+    );
+    expect(saveLog).toHaveBeenCalledWith(
+      'Saving compliance settings:',
+      expectedStatuses
+    );
+
+    saveLog.mockRestore();
+  });
+
+  it('keeps the current statuses when saving while the search has no results', async () => {
+    const saveLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+    renderComponent();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Block Nigeria' }));
+    await user.type(screen.getByLabelText('Search regions'), 'xyz_nonexistent');
+    expect(screen.getByText(/No regions match/i)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Save compliance settings' }));
+
+    expect(saveLog).toHaveBeenCalledWith(
+      'Saving compliance settings:',
+      expect.objectContaining({ NG: 'blocked' })
+    );
+
+    saveLog.mockRestore();
   });
 });
 

@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useRef } from 'react';
+import '../components/TwoFactorSetup.css';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   Eye,
   EyeOff,
@@ -13,7 +14,7 @@ import {
 import { Button } from '../components/Button';
 import '../components/TwoFactorSetup.css';
 
-const CODES = [
+const DEFAULT_CODES = [
   'REVR-A1B2-C3D4', 'REVR-E5F6-G7H8', 'REVR-I9J0-K1L2',
   'REVR-M3N4-O5P6', 'REVR-Q7R8-S9T0', 'REVR-U1V2-W3X4',
   'REVR-Y5Z6-A7B8', 'REVR-C9D0-E1F2', 'REVR-G3H4-I5J6',
@@ -22,12 +23,30 @@ const CODES = [
 
 const CODE_PLACEHOLDER = '••••••';
 
-const TwoFactorBackupCodesPage: React.FC = () => {
-  const [codes] = useState(CODES);
-  const [revealed, setRevealed] = useState<boolean[]>(() => new Array(CODES.length).fill(false));
+export interface TwoFactorBackupCodesPageProps {
+  initialCodes?: string[];
+  codes?: string[];
+}
+
+const TwoFactorBackupCodesPage: React.FC<TwoFactorBackupCodesPageProps> = ({
+  initialCodes,
+  codes: propCodes,
+}) => {
+  const codes = propCodes ?? initialCodes ?? DEFAULT_CODES;
+  const [revealed, setRevealed] = useState<boolean[]>(() => new Array(codes.length).fill(false));
   const [allRevealed, setAllRevealed] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const codesGridRef = useRef<HTMLDivElement>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+    };
+  }, []);
 
   const toggleReveal = useCallback((index: number) => {
     setRevealed(prev => {
@@ -49,9 +68,25 @@ const TwoFactorBackupCodesPage: React.FC = () => {
   const copyAllCodes = async () => {
     const revealedCodes = codes.filter((_, i) => revealed[i]);
     if (!revealedCodes.length) return;
-    await navigator.clipboard.writeText(revealedCodes.join('\n'));
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(revealedCodes.join('\n'));
+      setIsCopied(true);
+      setCopyError(null);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        setIsCopied(false);
+      }, 2000);
+    } catch {
+      setCopyError('Failed to copy recovery codes to clipboard.');
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
+      timerRef.current = setTimeout(() => {
+        setCopyError(null);
+      }, 4000);
+    }
   };
 
   const downloadCodes = () => {
@@ -63,8 +98,12 @@ const TwoFactorBackupCodesPage: React.FC = () => {
     const a = document.createElement('a');
     a.href = url;
     a.download = 'revora-recovery-codes.txt';
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => {
+      URL.revokeObjectURL(url);
+    }, 0);
   };
 
   const printCodes = () => {
@@ -124,15 +163,20 @@ const TwoFactorBackupCodesPage: React.FC = () => {
         </div>
       </div>
 
-      <div ref={codesGridRef} className="tfa-recovery-grid" style={{ gridTemplateColumns: 'repeat(5,1fr)' }}>
+      {copyError && (
+        <div role="status" aria-live="polite" className="mb-4 p-3 rounded bg-red-100 text-red-800 text-sm border border-red-300">
+          {copyError}
+        </div>
+      )}
+
+      <div ref={codesGridRef} className="tfa-recovery-grid">
         {codes.map((code, idx) => (
           <button
             key={code}
             type="button"
             onClick={() => toggleReveal(idx)}
-            className={`tfa-recovery-card ${revealed[idx] ? 'revealed' : 'hidden'}`}
+            className={`tfa-recovery-card ${revealed[idx] ? 'revealed' : 'concealed'}`}
             aria-pressed={revealed[idx]}
-            aria-label={`Code ${idx + 1}: ${revealed[idx] ? 'visible' : 'hidden'}`}
           >
             <div className="tfa-recovery-card__content">
               <div className="tfa-recovery-card__index">{idx + 1}</div>

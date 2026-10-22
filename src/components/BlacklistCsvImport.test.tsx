@@ -222,10 +222,31 @@ describe('BlacklistCsvImport', () => {
       expect(screen.getByText(/rollback/i)).toBeInTheDocument();
     });
 
-    it('calls onImport with clean rows', async () => {
+    it('does not call onImport when moving from preview to confirm', async () => {
       const { onImport } = await goToConfirmStep();
-      // onImport was called when clicking Import in preview step
-      expect(onImport).toHaveBeenCalled();
+      expect(onImport).not.toHaveBeenCalled();
+    });
+
+    it('calls onImport exactly once when confirming', async () => {
+      const { user, onImport } = await goToConfirmStep();
+      const confirmBtn = screen.getByRole('button', { name: /confirm import/i });
+      await user.click(confirmBtn);
+      expect(onImport).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls onImport only once on double-click of confirm', async () => {
+      const { user, onImport } = await goToConfirmStep();
+      const confirmBtn = screen.getByRole('button', { name: /confirm import/i });
+      await user.dblClick(confirmBtn);
+      expect(onImport).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows terminal imported state after commit', async () => {
+      const { user } = await goToConfirmStep();
+      const confirmBtn = screen.getByRole('button', { name: /confirm import/i });
+      await user.click(confirmBtn);
+      expect(screen.getByText(/imported 2 rows/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /confirm import/i })).not.toBeInTheDocument();
     });
 
     it('shows done button', async () => {

@@ -1,5 +1,6 @@
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, it, expect } from "vitest";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { OnchainBadge, type OnchainBadgeVariant } from "./OnchainBadge";
@@ -16,11 +17,24 @@ describe("OnchainBadge", () => {
     "reorged",
   ];
 
-  it.each(variants)("renders the %s variant with correct role and testid", (variant) => {
+  it.each(variants)("renders the %s variant as a static badge with no live role", (variant) => {
     render(<OnchainBadge variant={variant} />);
     const badge = screen.getByTestId(`onchain-badge-${variant}`);
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveAttribute("role", "status");
+    expect(badge).not.toHaveAttribute("role", "status");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("uses a separate live region only when the status changes", () => {
+    const { rerender } = render(<OnchainBadge variant="pending" />);
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    rerender(<OnchainBadge variant="confirming" currentConfirmations={3} targetConfirmations={12} />);
+    const liveRegion = screen.getByRole("status");
+    expect(liveRegion).toHaveAttribute("aria-live", "polite");
+    expect(liveRegion).toHaveTextContent(
+      "Transaction confirming - 3 of 12 confirmations received",
+    );
   });
 
   it("renders pending with Clock icon and Pending label", () => {
@@ -366,6 +380,84 @@ describe("OnchainBadge", () => {
       );
       fireEvent.focus(screen.getByTestId("onchain-badge-confirming"));
       expect(await axe(container)).toHaveNoViolations();
+    });
+
+    it("regression: Tab from the badge moves focus to the explorer link and it stays rendered", async () => {
+      const user = userEvent.setup();
+      render(
+        <OnchainBadge
+          variant="confirmed"
+          transactionHash={txHash}
+          metadata={metadata}
+        />,
+      );
+      const badge = screen.getByTestId("onchain-badge-confirmed");
+      expect(badge.tagName).toBe("BUTTON");
+      expect(badge).toHaveAttribute("aria-expanded", "false");
+
+      await user.tab();
+      expect(badge).toHaveFocus();
+      expect(badge).toHaveAttribute("aria-expanded", "true");
+      expect(screen.getByTestId("onchain-badge-tooltip")).toHaveClass("ob-tooltip--open");
+
+      const linkBeforeBlur = screen.getByTestId("ob-tooltip-explorer");
+      fireEvent.blur(badge, { relatedTarget: linkBeforeBlur });
+      expect(screen.getByTestId("onchain-badge-tooltip")).toHaveClass("ob-tooltip--open");
+
+      await user.tab();
+
+      const link = screen.getByTestId("ob-tooltip-explorer");
+      expect(link).toBeInTheDocument();
+      expect(link).toHaveFocus();
+      expect(screen.getByTestId("onchain-badge-tooltip")).toHaveClass("ob-tooltip--open");
+    });
+
+    it("regression: Escape closes and refocuses the badge", async () => {
+      const user = userEvent.setup();
+      const { container } = render(
+        <OnchainBadge
+          variant="confirmed"
+          transactionHash={txHash}
+          metadata={metadata}
+        />,
+      );
+      const badge = screen.getByTestId("onchain-badge-confirmed");
+      await user.tab();
+      expect(badge).toHaveFocus();
+      await user.tab();
+      const link = screen.getByTestId("ob-tooltip-explorer");
+      expect(link).toHaveFocus();
+      expect(await axe(container)).toHaveNoViolations();
+
+      await user.keyboard("{Escape}");
+      expect(screen.getByTestId("onchain-badge-tooltip")).not.toHaveClass("ob-tooltip--open");
+      expect(badge).toHaveAttribute("aria-expanded", "false");
+      expect(badge).toHaveFocus();
+    });
+
+    it("closes panel when tabbing out of explorer link to an external element", async () => {
+      const user = userEvent.setup();
+      render(
+        <div>
+          <OnchainBadge
+            variant="confirmed"
+            transactionHash={txHash}
+            metadata={metadata}
+          />
+          <button type="button" data-testid="after-btn">
+            Next
+          </button>
+        </div>,
+      );
+      const badge = screen.getByTestId("onchain-badge-confirmed");
+      await user.tab();
+      expect(badge).toHaveFocus();
+      await user.tab();
+      expect(screen.getByTestId("ob-tooltip-explorer")).toHaveFocus();
+
+      await user.tab();
+      expect(screen.getByTestId("after-btn")).toHaveFocus();
+      expect(screen.getByTestId("onchain-badge-tooltip")).not.toHaveClass("ob-tooltip--open");
     });
   });
 });

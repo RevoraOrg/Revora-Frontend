@@ -1,0 +1,18 @@
+{
+  "default_branch": "master",
+  "branches": [
+    "master",
+    "origin",
+    "security/issue-916-fix-export-revenue-report-pdf-uses-utf-16"
+  ],
+  "parent": {
+    "master": null,
+    "origin": "master",
+    "security/issue-916-fix-export-revenue-report-pdf-uses-utf-16": "master"
+  },
+  "order": [
+    "master",
+    "origin",
+    "security/issue-916-fix-export-revenue-report-pdf-uses-utf-16"
+  ]
+}

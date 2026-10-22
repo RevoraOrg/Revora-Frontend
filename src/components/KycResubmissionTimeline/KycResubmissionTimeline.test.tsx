@@ -18,7 +18,9 @@ describe('KYC business-day calculations', () => {
   it('normalizes SLA values and rejects invalid dates', () => {
     expect(addBusinessDays('2026-07-24', -2)).toEqual(new Date(2026, 6, 24));
     expect(addBusinessDays('2026-07-24', 1.9)).toEqual(new Date(2026, 6, 27));
-    expect(() => addBusinessDays('not-a-date', 3)).toThrow(/invalid date/);
+    expect(addBusinessDays('2026-07-24', 0)).toEqual(new Date(2026, 6, 24));
+    expect(() => addBusinessDays('not-a-date', 3)).toThrowError(new Error('KYC timeline received an invalid date'));
+    expect(() => addBusinessDays('', 0)).toThrowError(new Error('KYC timeline received an invalid date'));
   });
 
   it('provides every turnaround copy variant', () => {

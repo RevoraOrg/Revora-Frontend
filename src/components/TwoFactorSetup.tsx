@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useId, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useId, useCallback, useMemo } from 'react';
 import {
   Smartphone,
   MessageSquare,
@@ -20,6 +20,8 @@ import {
 import { Button } from './Button';
 import { FormError } from './FormError';
 import { WizardStepper, type WizardStep } from './WizardStepper';
+import { verifyTotpCode, type VerifyTwoFactorCode } from './twoFactorVerification';
+import QRCode from 'qrcode';
 import './TwoFactorSetup.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -36,9 +38,15 @@ interface TwoFactorSetupProps {
   totpSecret?: string;
   /** Pre-generated recovery codes (8 codes recommended) */
   recoveryCodes?: string[];
+  /**
+   * Optional verification boundary for server-backed TOTP/SMS validation.
+   * When omitted, TOTP codes are verified locally against `totpSecret` using
+   * RFC 6238. SMS verification requires callers to provide this handler.
+   */
+  verifyCode?: VerifyTwoFactorCode;
 }
 
-// ─── Demo/stub data ───────────────────────────────────────────────────────────
+// ─── Standalone fallback data ─────────────────────────────────────────────────
 
 const DEFAULT_SECRET = 'JBSWY3DPEHPK3PXP';
 const DEFAULT_RECOVERY_CODES = [
@@ -53,6 +61,35 @@ const DEFAULT_RECOVERY_CODES = [
   'REVR-G3H4-I5J6',
   'REVR-K7L8-M9N0',
 ];
+
+const verifyCodeLocally: VerifyTwoFactorCode = ({ method, code, secret }) => {
+  if (method !== 'totp' || !secret) {
+    throw new Error('A server verification handler is required for this method.');
+  }
+  return verifyTotpCode(secret, code);
+};
+
+// ─── TOTP URI + local QR generation ───────────────────────────────────────────
+
+/**
+ * Build the otpauth:// URI for authenticator enrolment.
+ *
+ * The label and issuer are URL-encoded so that special characters (e.g. `@`,
+ * `:`, spaces) in the account email cannot break the URI structure. The secret
+ * is base32 and safe, but is encoded defensively as well.
+ */
+export const buildTotpUri = (secret: string, accountLabel = 'Revora'): string => {
+  const issuer = 'Revora';
+  const label = `${issuer}:${accountLabel}`;
+  const params = new URLSearchParams({
+    secret,
+    issuer,
+    algorithm: 'SHA1',
+    digits: '6',
+    period: '30',
+  });
+  return `otpauth://totp/${encodeURIComponent(label)}?${params.toString()}`;
+};
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
@@ -141,6 +178,8 @@ const Step1: React.FC<Step1Props> = ({ onSelect }) => (
 interface Step2Props {
   method: Method;
   secret: string;
+  /** Account label (usually the user's email) embedded in the otpauth URI */
+  accountLabel?: string;
   onNext: () => void;
   onBack: () => void;
 }
@@ -148,7 +187,37 @@ interface Step2Props {
 const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
   const [showManual, setShowManual] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const secretId = useId();
+
+  const otpauthUri = useMemo(
+    () => buildTotpUri(secret, accountLabel),
+    [secret, accountLabel]
+  );
+
+  // Render the QR code locally to a data URL — never send the secret off-device.
+  useEffect(() => {
+    let cancelled = false;
+    setQrError(null);
+    QRCode.toDataURL(otpauthUri, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 180,
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQrDataUrl(null);
+          setQrError('Could not generate the QR code. Use the manual key below.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [otpauthUri]);
 
   const handleCopy = async () => {
     try {
@@ -192,10 +261,6 @@ const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
   }
 
   // TOTP QR flow
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-    `otpauth://totp/Revora?secret=${secret}&issuer=Revora`
-  )}`;
-
   return (
     <div className="space-y-4 animate-fade-in">
       <p className="text-muted text-sm">
@@ -204,15 +269,24 @@ const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
 
       {/* QR code */}
       <div className="tfa-qr-wrapper" role="img" aria-label="QR code for authenticator app setup. Use the manual key below if you cannot scan.">
-        <img
-          src={qrUrl}
-          alt=""
-          aria-hidden="true"
-          width={180}
-          height={180}
-          className="tfa-qr-img"
-        />
+        {qrDataUrl ? (
+          <img
+            src={qrDataUrl}
+            alt=""
+            aria-hidden="true"
+            width={180}
+            height={180}
+            className="tfa-qr-img"
+          />
+        ) : (
+          <div className="tfa-qr-img tfa-qr-placeholder" aria-hidden="true" />
+        )}
       </div>
+      {qrError && (
+        <p className="text-error text-xs" role="alert">
+          {qrError}
+        </p>
+      )}
 
       {/* Manual key toggle */}
       <button
@@ -272,11 +346,14 @@ const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
 // ─── Step 3: Verify code ──────────────────────────────────────────────────────
 
 interface Step3Props {
+  method: Method;
+  secret: string;
+  verifyCode: VerifyTwoFactorCode;
   onNext: () => void;
   onBack: () => void;
 }
 
-const Step3: React.FC<Step3Props> = ({ onNext, onBack }) => {
+const Step3: React.FC<Step3Props> = ({ method, secret, verifyCode, onNext, onBack }) => {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -294,13 +371,29 @@ const Step3: React.FC<Step3Props> = ({ onNext, onBack }) => {
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (code.length < 6) {
+    if (!/^\d{6}$/.test(code)) {
       setError('Please enter the 6-digit code from your authenticator app.');
       return;
     }
+
     setIsVerifying(true);
-    // Stub: treat any 6-digit code as valid
-    await new Promise((r) => setTimeout(r, 600));
+    setError(null);
+
+    let verified: boolean;
+    try {
+      verified = await verifyCode({ method, code, secret });
+    } catch {
+      setIsVerifying(false);
+      setError('We could not verify the code right now. Please try again.');
+      return;
+    }
+
+    if (!verified) {
+      setIsVerifying(false);
+      setError('The verification code is invalid or has expired.');
+      return;
+    }
+
     setIsVerifying(false);
     onNext();
   };
@@ -557,8 +650,8 @@ const Step4: React.FC<Step4Props> = ({ codes, onNext, onBack }) => {
   };
 
   const confirmRegenerate = () => {
-    // In real implementation, would call API to regenerate codes
-    console.log('Regenerating recovery codes...');
+    // Recovery-code rotation is owned by the caller/backend; the confirmation
+    // remains a UX boundary until that operation is supplied to this component.
     setShowRegenerateConfirm(false);
   };
 
@@ -843,6 +936,7 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
   onCancel,
   totpSecret = DEFAULT_SECRET,
   recoveryCodes = DEFAULT_RECOVERY_CODES,
+  verifyCode = verifyCodeLocally,
 }) => {
   const [step, setStep] = useState<Step>(1);
   const [method, setMethod] = useState<Method>('totp');
@@ -886,7 +980,15 @@ export const TwoFactorSetup: React.FC<TwoFactorSetupProps> = ({
       {step === 2 && (
         <Step2 method={method} secret={totpSecret} onNext={next} onBack={back} />
       )}
-      {step === 3 && <Step3 onNext={next} onBack={back} />}
+      {step === 3 && (
+        <Step3
+          method={method}
+          secret={totpSecret}
+          verifyCode={verifyCode}
+          onNext={next}
+          onBack={back}
+        />
+      )}
       {step === 4 && <Step4 codes={recoveryCodes} onNext={next} onBack={back} />}
       {step === 5 && <Step5 onComplete={onComplete} />}
 

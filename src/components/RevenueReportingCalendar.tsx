@@ -981,7 +981,7 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
     );
   };
 
-  const [monthLabel, yearStr] = viewMonth.split("-");
+  const [yearStr, monthLabel] = viewMonth.split("-");
   const monthName = new Date(
     Number(yearStr),
     Number(monthLabel) - 1,

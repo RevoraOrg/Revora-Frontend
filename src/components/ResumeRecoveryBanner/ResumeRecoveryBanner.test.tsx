@@ -113,6 +113,37 @@ describe("localStorage helpers", () => {
     expect(readRecoveryFrame("/err", 7)).toBeNull();
     spy.mockRestore();
   });
+
+  it("returns null in non-browser environments (window is undefined)", () => {
+    const originalWindow = global.window;
+    // @ts-ignore
+    delete global.window;
+    
+    expect(readRecoveryFrame("/ssr", 7)).toBeNull();
+    
+    global.window = originalWindow;
+  });
+
+  it("fails silently when saveRecoveryFrame throws", () => {
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(
+      () => {
+        throw new Error("quota exceeded");
+      },
+    );
+    const frame = makeFrame();
+    expect(() => saveRecoveryFrame(frame)).not.toThrow();
+    spy.mockRestore();
+  });
+
+  it("fails silently when dismissRecoveryForever throws", () => {
+    const spy = vi.spyOn(Storage.prototype, "setItem").mockImplementation(
+      () => {
+        throw new Error("quota exceeded");
+      },
+    );
+    expect(() => dismissRecoveryForever("/err")).not.toThrow();
+    spy.mockRestore();
+  });
 });
 
 // ---------------------------------------------------------------------------

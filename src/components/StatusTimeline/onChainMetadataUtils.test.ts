@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
+  DEFAULT_HASH_HEAD,
+  DEFAULT_HASH_TAIL,
   truncateHash,
   formatBlockNumber,
   formatConfirmations,
@@ -9,15 +11,21 @@ import {
 } from './onChainMetadataUtils';
 
 describe('truncateHash', () => {
-  it('truncates long hashes with ellipsis', () => {
-    expect(truncateHash('abcdef1234567890deadbeef')).toBe('abcdef…beef');
+  it('truncates long hashes with the default head and tail contract', () => {
+    const hash = 'abcdef1234567890deadbeef';
+    expect(truncateHash(hash)).toBe(
+      `${hash.slice(0, DEFAULT_HASH_HEAD)}…${hash.slice(-DEFAULT_HASH_TAIL)}`,
+    );
   });
 
-  it('returns short hashes unchanged', () => {
+  it('returns short hashes unchanged at the default boundary', () => {
+    const boundaryHash = `${'a'.repeat(DEFAULT_HASH_HEAD)}${'b'.repeat(DEFAULT_HASH_TAIL)}`;
+    expect(truncateHash(boundaryHash)).toBe(boundaryHash);
     expect(truncateHash('abc123')).toBe('abc123');
   });
 
   it('returns empty for blank input', () => {
+    expect(truncateHash('')).toBe('');
     expect(truncateHash('   ')).toBe('');
   });
 });
@@ -101,5 +109,6 @@ describe('resolveExplorerUrl', () => {
 
   it('returns undefined without hash or URL', () => {
     expect(resolveExplorerUrl({})).toBeUndefined();
+    expect(resolveExplorerUrl({ transactionHash: '   ' })).toBeUndefined();
   });
 });

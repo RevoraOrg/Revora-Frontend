@@ -190,26 +190,67 @@ function CameraActiveView({
   onSwitchToUpload: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const onLoadedMetadata = () => {
+      if (video.videoWidth > 0) {
+        setIsVideoReady(true);
+      }
+    };
+
+    if (video.videoWidth > 0) {
+      setIsVideoReady(true);
+    }
+
+    video.addEventListener('loadedmetadata', onLoadedMetadata);
+    return () => {
+      video.removeEventListener('loadedmetadata', onLoadedMetadata);
+    };
+  }, [videoRef]);
+
+  const handleLoadedMetadata = useCallback((e: React.SyntheticEvent<HTMLVideoElement>) => {
+    if (e.currentTarget.videoWidth > 0) {
+      setIsVideoReady(true);
+    }
+  }, []);
 
   const handleCapture = useCallback(() => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas) return;
+    if (!video || !canvas || !isVideoReady || isCapturing) return;
 
+    setIsCapturing(true);
+    setCaptureError(null);
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      setIsCapturing(false);
+      setCaptureError('Failed to capture document. Please try again.');
+      return;
+    }
 
     ctx.drawImage(video, 0, 0);
     canvas.toBlob((blob) => {
-      if (!blob) return;
+      if (!blob) {
+        setCaptureError('Failed to capture document. Please try again.');
+        setIsCapturing(false);
+        return;
+      }
+      setCaptureError(null);
+      setIsCapturing(false);
       const file = new File([blob], `document-capture-${Date.now()}.jpg`, {
         type: 'image/jpeg',
       });
       onCapture(file);
     }, 'image/jpeg');
-  }, [onCapture]);
+  }, [videoRef, isVideoReady, isCapturing, onCapture]);
 
   return (
     <div className="kdc-camera-active" data-testid="camera-active">
@@ -221,10 +262,16 @@ function CameraActiveView({
           muted
           className="kdc-video"
           data-testid="camera-video"
+          onLoadedMetadata={handleLoadedMetadata}
         />
         <ViewfinderFrame documentType={documentType} />
       </div>
       <canvas ref={canvasRef} className="kdc-canvas" aria-hidden="true" />
+      {captureError && (
+        <div className="kdc-capture-error" role="alert">
+          {captureError}
+        </div>
+      )}
       <TipCarousel className="kdc-tip-below-video" />
       <div className="kdc-camera-actions">
         <button
@@ -232,6 +279,8 @@ function CameraActiveView({
           className="kdc-btn kdc-btn--capture"
           onClick={handleCapture}
           aria-label="Take photo"
+          aria-busy={isCapturing}
+          disabled={!isVideoReady || isCapturing}
         >
           <Camera size={24} aria-hidden="true" />
         </button>
@@ -408,15 +457,43 @@ export const KycDocumentCapture: React.FC<KycDocumentCaptureProps> = ({
   const [capturedUrl, setCapturedUrl] = useState<string | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const capturedUrlRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
 
-  // Cleanup stream on unmount
+  // Track mounted state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Cleanup stream and object URL on unmount
   useEffect(() => {
     return () => {
-      if (streamRef.current) {
+      if (streamRef.current && typeof streamRef.current.getTracks === 'function') {
         streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (capturedUrlRef.current) {
+        URL.revokeObjectURL(capturedUrlRef.current);
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (cameraState === 'active' && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      try {
+        const playPromise = video.play?.();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      } catch {
+        // Ignore play interruption or unsupported environments
+      }
+    }
+  }, [cameraState]);
 
   const requestCamera = useCallback(async () => {
     setCameraState('requesting');
@@ -424,12 +501,14 @@ export const KycDocumentCapture: React.FC<KycDocumentCaptureProps> = ({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
       });
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
       }
+      streamRef.current = stream;
       setCameraState('active');
     } catch (err) {
+      if (!isMountedRef.current) return;
       if ((err as DOMException).name === 'NotAllowedError') {
         setCameraState('denied');
       } else {
@@ -439,7 +518,7 @@ export const KycDocumentCapture: React.FC<KycDocumentCaptureProps> = ({
   }, []);
 
   const stopCamera = useCallback(() => {
-    if (streamRef.current) {
+    if (streamRef.current && typeof streamRef.current.getTracks === 'function') {
       streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
     }
@@ -451,6 +530,7 @@ export const KycDocumentCapture: React.FC<KycDocumentCaptureProps> = ({
   const handleCapture = useCallback(
     (file: File) => {
       const url = URL.createObjectURL(file);
+      capturedUrlRef.current = url;
       setCapturedUrl(url);
       stopCamera();
     },
@@ -458,12 +538,13 @@ export const KycDocumentCapture: React.FC<KycDocumentCaptureProps> = ({
   );
 
   const handleRetake = useCallback(() => {
-    if (capturedUrl) {
-      URL.revokeObjectURL(capturedUrl);
-      setCapturedUrl(null);
+    if (capturedUrlRef.current) {
+      URL.revokeObjectURL(capturedUrlRef.current);
+      capturedUrlRef.current = null;
     }
+    setCapturedUrl(null);
     setCameraState('prompt');
-  }, [capturedUrl]);
+  }, []);
 
   const handleConfirmCapture = useCallback(() => {
     if (capturedUrl && onCapture) {
@@ -481,16 +562,22 @@ export const KycDocumentCapture: React.FC<KycDocumentCaptureProps> = ({
           // Parent component should handle the URL
         });
     }
+    if (capturedUrlRef.current) {
+      URL.revokeObjectURL(capturedUrlRef.current);
+      capturedUrlRef.current = null;
+    }
     handleRetake();
   }, [capturedUrl, onCapture, handleRetake]);
 
   const handleUseFileUpload = useCallback(() => {
+    stopCamera();
     externalUseFileUpload?.();
-  }, [externalUseFileUpload]);
+  }, [externalUseFileUpload, stopCamera]);
 
   const handleFileCapture = useCallback(
     (file: File) => {
       const url = URL.createObjectURL(file);
+      capturedUrlRef.current = url;
       setCapturedUrl(url);
     },
     [],

@@ -355,7 +355,7 @@ describe('FinancialTermsForm – submit', () => {
     expect(screen.getByText('Financial terms saved')).toBeInTheDocument();
   });
 
-  it('returns to form after clicking "Edit terms"', async () => {
+  it('preserves every submitted value after clicking "Edit terms"', async () => {
     const user = userEvent.setup();
     renderForm();
     await fillAllFields(user);
@@ -363,6 +363,44 @@ describe('FinancialTermsForm – submit', () => {
     await user.click(screen.getByTestId('ftf-edit-btn'));
     expect(screen.getByTestId('ftf-container')).toBeInTheDocument();
     expect(screen.queryByTestId('ftf-success')).not.toBeInTheDocument();
+    for (const [field, value] of Object.entries(VALID_INPUTS)) {
+      expect(screen.getByTestId(`ftf-input-${field}`)).toHaveValue(value);
+    }
+    expect(screen.queryByTestId('ftf-cross-error')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ftf-error-summary')).not.toBeInTheDocument();
+  });
+
+  it('recomputes cross-field validation while editing saved terms and allows resubmission', async () => {
+    const onSubmit = vi.fn();
+    const user = userEvent.setup();
+    renderForm({ onSubmit });
+    await fillAllFields(user);
+    await user.click(screen.getByTestId('ftf-submit-btn'));
+    await user.click(screen.getByTestId('ftf-edit-btn'));
+
+    const minInvestment = screen.getByTestId('ftf-input-minInvestment');
+    await user.clear(minInvestment);
+    await user.type(minInvestment, VALID_INPUTS.maxInvestment);
+    expect(screen.getByTestId('ftf-cross-error')).toBeInTheDocument();
+    await user.click(screen.getByTestId('ftf-submit-btn'));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('ftf-error-summary')).toBeInTheDocument();
+
+    await user.clear(minInvestment);
+    await user.type(minInvestment, '2000');
+    expect(screen.queryByTestId('ftf-cross-error')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ftf-error-summary')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('ftf-submit-btn'));
+    expect(onSubmit).toHaveBeenCalledTimes(2);
+    expect(onSubmit).toHaveBeenLastCalledWith({
+      revenueShareRate: 8,
+      revenueCap: 500000,
+      paymentFrequency: 3,
+      minInvestment: 2000,
+      maxInvestment: 50000,
+      offeringDuration: 24,
+    });
+    expect(screen.getByTestId('ftf-success')).toBeInTheDocument();
   });
 
   it('error summary uses singular "field needs" for one error', async () => {
@@ -383,6 +421,23 @@ describe('FinancialTermsForm – submit', () => {
 /* ─── Reset ─────────────────────────────────────────────────────────────── */
 
 describe('FinancialTermsForm – reset', () => {
+  it('explicitly clears all saved values and validation after returning to edit', async () => {
+    const user = userEvent.setup();
+    renderForm();
+    await fillAllFields(user);
+    await user.click(screen.getByTestId('ftf-submit-btn'));
+    await user.click(screen.getByTestId('ftf-edit-btn'));
+    expect(screen.getByTestId('ftf-input-minInvestment')).toHaveValue(VALID_INPUTS.minInvestment);
+    await user.click(screen.getByTestId('ftf-reset-btn'));
+
+    for (const field of Object.keys(VALID_INPUTS)) {
+      expect(screen.getByTestId(`ftf-input-${field}`)).toHaveValue('');
+      expect(screen.queryByTestId(`ftf-feedback-${field}`)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByTestId('ftf-cross-error')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ftf-error-summary')).not.toBeInTheDocument();
+  });
+
   it('clears all inputs on reset', async () => {
     const user = userEvent.setup();
     renderForm();

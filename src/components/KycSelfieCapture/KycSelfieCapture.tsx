@@ -59,6 +59,8 @@ export default function KycSelfieCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const capturedImageRef = useRef<string | null>(null);
+  const isMountedRef = useRef(true);
   const [cameraState, setCameraState] = useState<SelfieCameraState>('primer');
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
@@ -66,11 +68,22 @@ export default function KycSelfieCapture({
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [captureError, setCaptureError] = useState<string | null>(null);
 
-  // Cleanup stream on unmount
+  // Track mounted state
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  // Cleanup stream and object URL on unmount
   useEffect(() => {
     return () => {
       if (streamRef.current && typeof streamRef.current.getTracks === 'function') {
         streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+      if (capturedImageRef.current) {
+        URL.revokeObjectURL(capturedImageRef.current);
       }
     };
   }, []);
@@ -136,9 +149,14 @@ export default function KycSelfieCapture({
         },
         audio: false,
       });
+      if (!isMountedRef.current) {
+        stream.getTracks().forEach((t) => t.stop());
+        return;
+      }
       streamRef.current = stream;
       setCameraState('active');
     } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       if (err instanceof DOMException || err instanceof Error) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           setCameraState('denied');
@@ -196,18 +214,23 @@ export default function KycSelfieCapture({
   }, [isVideoReady, isCapturing, stopStream]);
 
   const handleRetake = useCallback(() => {
-    if (capturedImage) {
-      URL.revokeObjectURL(capturedImage);
+    if (capturedImageRef.current) {
+      URL.revokeObjectURL(capturedImageRef.current);
+      capturedImageRef.current = null;
     }
     setCapturedImage(null);
     setCapturedFile(null);
     setCaptureError(null);
     startCamera();
-  }, [capturedImage, startCamera]);
+  }, [startCamera]);
 
   const handleConfirm = useCallback(() => {
     if (capturedFile && onCapture) {
       onCapture(capturedFile);
+    }
+    if (capturedImageRef.current) {
+      URL.revokeObjectURL(capturedImageRef.current);
+      capturedImageRef.current = null;
     }
   }, [capturedFile, onCapture]);
 

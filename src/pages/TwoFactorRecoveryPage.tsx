@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { AuthLayout } from '../components/AuthLayout';
 import { TwoFactorRecoveryFlow } from '../components/TwoFactorRecoveryFlow';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+/**
+ * DEMO ONLY: This page wires the recovery flow to an in-memory demo backend.
+ * Replace the demo handlers below with real API calls before shipping to production.
+ */
+
+const DEMO_VALID_CODE = '123456';
 
 export const TwoFactorRecoveryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -16,6 +23,21 @@ export const TwoFactorRecoveryPage: React.FC = () => {
     navigate('/login');
   };
 
+  // DEMO HANDLERS: simulate network latency and validate against a fixed code.
+  // Replace with real API calls (e.g. `POST /api/2fa/recovery/request`).
+  const handleRequestCode = async (_email: string): Promise<void> => {
+    await new Promise((r) => setTimeout(r, 800));
+  };
+
+  const handleVerify = async (code: string): Promise<boolean> => {
+    await new Promise((r) => setTimeout(r, 600));
+    return code === DEMO_VALID_CODE;
+  };
+
+  const handleResend = async (_email: string): Promise<void> => {
+    await new Promise((r) => setTimeout(r, 800));
+  };
+
   return (
     <AuthLayout
       title="Two-factor recovery"
@@ -24,6 +46,9 @@ export const TwoFactorRecoveryPage: React.FC = () => {
       <TwoFactorRecoveryFlow
         onComplete={handleComplete}
         onCancel={handleCancel}
+        onRequestCode={handleRequestCode}
+        onVerify={handleVerify}
+        onResend={handleResend}
       />
       <Link
         to="/login"

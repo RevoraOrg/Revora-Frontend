@@ -3,8 +3,8 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { KycDocumentCapture, DocumentType } from './KycDocumentCapture';
 
@@ -17,9 +17,38 @@ Object.defineProperty(navigator, 'mediaDevices', {
   configurable: true,
 });
 
+const createMockStream = (trackStopSpy: ReturnType<typeof vi.fn>) => ({
+  getTracks: () => [{ stop: trackStopSpy }],
+});
+
+const setupCanvasMock = () => {
+  const mockContext = {
+    drawImage: vi.fn(),
+  };
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockContext);
+  HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+    callback(new Blob(['mock'], { type: 'image/jpeg' }));
+  });
+};
+
 describe('KycDocumentCapture', () => {
+  let trackStopSpy: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     mockGetUserMedia.mockReset();
+    trackStopSpy = vi.fn();
+    Object.defineProperty(global, 'URL', {
+      value: {
+        createObjectURL: vi.fn(() => 'blob:mock-url'),
+        revokeObjectURL: vi.fn(),
+      },
+      configurable: true,
+    });
+    setupCanvasMock();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   describe('Initial State', () => {
@@ -152,10 +181,8 @@ describe('KycDocumentCapture', () => {
     });
 
     it('shows denied state for unavailable cameras', async () => {
-      mockGetUserMedia.mockRejectedValue(
-        Object.assign(new Error('No camera found'), {
-          name: 'NotFoundError',
-        }),
+      mockGetUserMedia.mockRejectedValueOnce(
+        new DOMException('No camera found', 'NotFoundError')
       );
 
       render(<KycDocumentCapture />);
@@ -189,6 +216,7 @@ describe('KycDocumentCapture', () => {
       mockGetUserMedia.mockRejectedValue(
         new DOMException('Permission denied', 'NotAllowedError'),
       );
+      mockGetUserMedia.mockResolvedValueOnce(createMockStream(trackStopSpy));
 
       render(<KycDocumentCapture />);
       fireEvent.click(screen.getByText('Enable Camera'));

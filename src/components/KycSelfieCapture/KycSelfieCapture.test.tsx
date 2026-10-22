@@ -1,12 +1,48 @@
 // @vitest-environment jsdom
 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import KycSelfieCapture from "./KycSelfieCapture";
 
 afterEach(cleanup);
 
+const createMockStream = (trackStopSpy: ReturnType<typeof vi.fn>) => ({
+  getTracks: () => [{ stop: trackStopSpy }],
+});
+
+const setupCanvasMock = () => {
+  const mockContext = {
+    translate: vi.fn(),
+    scale: vi.fn(),
+    drawImage: vi.fn(),
+  };
+  HTMLCanvasElement.prototype.getContext = vi.fn().mockReturnValue(mockContext);
+  HTMLCanvasElement.prototype.toBlob = vi.fn((callback) => {
+    callback(new Blob(['mock'], { type: 'image/png' }));
+  });
+};
+
 describe("KycSelfieCapture", () => {
+  let mockGetUserMedia: ReturnType<typeof vi.fn>;
+  let trackStopSpy: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    trackStopSpy = vi.fn();
+    mockGetUserMedia = vi.fn().mockResolvedValue(createMockStream(trackStopSpy));
+    Object.defineProperty(navigator, "mediaDevices", {
+      value: { getUserMedia: mockGetUserMedia },
+      configurable: true,
+    });
+    Object.defineProperty(global, "URL", {
+      value: {
+        createObjectURL: vi.fn(() => "blob:mock-url"),
+        revokeObjectURL: vi.fn(),
+      },
+      configurable: true,
+    });
+    setupCanvasMock();
+  });
+
   it("renders the permission primer by default", () => {
     render(<KycSelfieCapture />);
     expect(screen.getByText("Verify Your Identity")).toBeTruthy();
@@ -51,14 +87,9 @@ describe("KycSelfieCapture", () => {
   });
 
   it("shows denied state when camera permission is not granted", async () => {
-    // Mock getUserMedia to reject with NotAllowedError
-    const mockGetUserMedia = vi.fn().mockRejectedValue(
+    mockGetUserMedia.mockRejectedValueOnce(
       new DOMException("Permission denied", "NotAllowedError")
     );
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: { getUserMedia: mockGetUserMedia },
-      configurable: true,
-    });
 
     render(<KycSelfieCapture />);
     fireEvent.click(screen.getByRole("button", { name: /allow camera access/i }));
@@ -69,13 +100,9 @@ describe("KycSelfieCapture", () => {
   });
 
   it("shows unavailable state when no camera hardware", async () => {
-    const mockGetUserMedia = vi.fn().mockRejectedValue(
+    mockGetUserMedia.mockRejectedValueOnce(
       new DOMException("Not found", "NotFoundError")
     );
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: { getUserMedia: mockGetUserMedia },
-      configurable: true,
-    });
 
     render(<KycSelfieCapture />);
     fireEvent.click(screen.getByRole("button", { name: /allow camera access/i }));
@@ -86,13 +113,9 @@ describe("KycSelfieCapture", () => {
   });
 
   it("shows error state on generic camera error", async () => {
-    const mockGetUserMedia = vi.fn().mockRejectedValue(
+    mockGetUserMedia.mockRejectedValueOnce(
       new DOMException("Unknown error", "NotReadableError")
     );
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: { getUserMedia: mockGetUserMedia },
-      configurable: true,
-    });
 
     render(<KycSelfieCapture />);
     fireEvent.click(screen.getByRole("button", { name: /allow camera access/i }));
@@ -103,13 +126,9 @@ describe("KycSelfieCapture", () => {
   });
 
   it("shows retry and upload buttons in denied state", async () => {
-    const mockGetUserMedia = vi.fn().mockRejectedValue(
+    mockGetUserMedia.mockRejectedValueOnce(
       new DOMException("Permission denied", "NotAllowedError")
     );
-    Object.defineProperty(navigator, "mediaDevices", {
-      value: { getUserMedia: mockGetUserMedia },
-      configurable: true,
-    });
 
     render(<KycSelfieCapture />);
     fireEvent.click(screen.getByRole("button", { name: /allow camera access/i }));

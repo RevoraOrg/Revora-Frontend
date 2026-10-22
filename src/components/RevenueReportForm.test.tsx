@@ -2,6 +2,7 @@
  * RevenueReportForm.test.tsx
  * Issue #627 – exportable report UX: format picker, scope selector,
  * async progress, failure recovery, and concurrency guard.
+ * Issue #914 – revenue parsing correctness (NaN, negative, rounding)
  */
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -120,5 +121,118 @@ describe("RevenueReportForm – export affordance", () => {
       expect(screen.getByText(/Download started/i)).toBeInTheDocument();
     });
     expect(clickSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("RevenueReportForm – revenue parsing correctness (regression tests for #914)", () => {
+  it("rejects NaN input like '1.2.3' with inline error", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1.2.3");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Invalid number format/i);
+    });
+    expect(screen.getByRole("button", { name: /Submit report/i })).not.toBeDisabled();
+  });
+
+  it("rejects negative input like '-500' with inline error", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "-500");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Revenue cannot be negative/i);
+    });
+  });
+
+  it("rejects non-numeric input like 'abc' with inline error", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "abc");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Please enter a valid number/i);
+    });
+  });
+
+  it("rejects single decimal separator '.' with inline error", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), ".");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Please enter a valid number/i);
+    });
+  });
+
+  it("parses en-US format '1,234.56' correctly and shows payout 98.76", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1,234.56");
+
+    // Check preview shows correct gross revenue
+    await waitFor(() => {
+      expect(screen.getByText(/\$1,234\.56/)).toBeInTheDocument();
+    });
+
+    // Check payout estimate: 1234.56 * 0.08 = 98.7648 -> rounded to 98.76
+    await waitFor(() => {
+      expect(screen.getByText(/\$98\.76/)).toBeInTheDocument();
+    });
+  });
+
+  it("parses de-DE format '1.234,56' correctly and shows payout 98.76", async () => {
+    const { user } = setup();
+    // Change locale to de-DE
+    await user.selectOptions(screen.getByRole("combobox", { name: /Locale/i }), "de-DE");
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1.234,56");
+
+    // Check preview shows correct gross revenue (in EUR with de-DE formatting)
+    // The formatted value should appear somewhere in the document
+    await waitFor(() => {
+      expect(screen.getByText(/1\.234,56/)).toBeInTheDocument();
+    });
+
+    // Check payout estimate: 1234.56 * 0.08 = 98.7648 -> rounded to 98.76
+    await waitFor(() => {
+      expect(screen.getByText(/98,76/)).toBeInTheDocument();
+    });
+  });
+
+  it("rejects too many decimal places like '1.234'", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1.234");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Maximum 2 decimal places allowed/i);
+    });
+  });
+
+  it("rejects malformed separators like '1,,234'", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1,,234");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(/Invalid number format/i);
+    });
+  });
+
+  it("disables export when revenue input is invalid", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1.2.3");
+
+    const exportButton = screen.getByRole("button", { name: /Export CSV/i });
+    expect(exportButton).toBeDisabled();
+    expect(screen.getByText(/Enter a valid gross revenue amount greater than zero to enable export/i)).toBeInTheDocument();
+  });
+
+  it("enables export when revenue input is valid", async () => {
+    const { user } = setup();
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "1234.56");
+
+    const exportButton = screen.getByRole("button", { name: /Export CSV/i });
+    expect(exportButton).not.toBeDisabled();
   });
 });

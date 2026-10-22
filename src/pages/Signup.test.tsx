@@ -1,3 +1,4 @@
+import { WalletConnectionProvider } from '../components/WalletConnection/WalletConnectionContext';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { Signup } from './Signup';
 const renderSignup = () => {
   return render(
     <MemoryRouter>
-      <Signup />
+      <WalletConnectionProvider><Signup /></WalletConnectionProvider>
     </MemoryRouter>
   );
 };

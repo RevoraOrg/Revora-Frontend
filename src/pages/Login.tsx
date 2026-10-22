@@ -1,7 +1,8 @@
+import { ConnectWalletButton } from '../components/WalletConnection/ConnectWalletButton';
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
-import { Mail, Lock, Wallet, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { FormError } from '../components/FormError';
@@ -57,10 +58,7 @@ export const Login: React.FC = () => {
         className={`space-y-4 ${error ? "animate-shake" : ""}`}
         noValidate
       >
-        <button type="button" className="btn-primary w-full" disabled={isSubmitting}>
-          <Wallet size={18} />
-          Connect Stellar Wallet
-        </button>
+        <ConnectWalletButton disabled={isSubmitting} />
 
         <div className="relative my-6 py-2 flex items-center">
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>

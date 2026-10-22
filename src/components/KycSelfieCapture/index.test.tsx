@@ -12,10 +12,23 @@ import DirectKycSelfieCapture from './KycSelfieCapture';
 
 expect.extend(toHaveNoViolations);
 
+beforeEach(() => {
+  window.HTMLMediaElement.prototype.play = vi.fn().mockResolvedValue(undefined);
+});
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
 });
+
+const simulateVideoLoadedMetadata = (videoWidth = 720, videoHeight = 960) => {
+  const video = document.querySelector('video') as HTMLVideoElement;
+  if (video) {
+    Object.defineProperty(video, 'videoWidth', { value: videoWidth, configurable: true, writable: true });
+    Object.defineProperty(video, 'videoHeight', { value: videoHeight, configurable: true, writable: true });
+    fireEvent(video, new Event('loadedmetadata'));
+  }
+};
 
 describe('KycSelfieCapture index module - public contract & exported behavior', () => {
   it('exposes KycSelfieCapture as default named export matching the direct implementation', () => {
@@ -201,6 +214,8 @@ describe('KycSelfieCapture index export - primary state transitions', () => {
         expect(screen.getByRole('button', { name: /capture photo/i })).toBeTruthy();
       });
 
+      simulateVideoLoadedMetadata();
+
       fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
 
       await waitFor(() => {
@@ -221,6 +236,8 @@ describe('KycSelfieCapture index export - primary state transitions', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /capture photo/i })).toBeTruthy();
       });
+
+      simulateVideoLoadedMetadata();
 
       fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
 
@@ -247,6 +264,8 @@ describe('KycSelfieCapture index export - primary state transitions', () => {
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /capture photo/i })).toBeTruthy();
       });
+
+      simulateVideoLoadedMetadata();
 
       fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
 
@@ -401,6 +420,8 @@ describe('KycSelfieCapture index export - representative invalid inputs & bounda
       expect(screen.getByRole('button', { name: /capture photo/i })).toBeTruthy();
     });
 
+    simulateVideoLoadedMetadata();
+
     // Capture photo
     fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
 
@@ -465,6 +486,8 @@ describe('KycSelfieCapture index export - representative invalid inputs & bounda
       expect(screen.getByRole('button', { name: /capture photo/i })).toBeTruthy();
     });
 
+    simulateVideoLoadedMetadata();
+
     // Clicking capture when 2d context fails returns cleanly without crashing
     expect(() => {
       fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
@@ -503,9 +526,19 @@ describe('KycSelfieCapture index export - representative invalid inputs & bounda
       expect(screen.getByRole('button', { name: /capture photo/i })).toBeTruthy();
     });
 
+    simulateVideoLoadedMetadata();
+
     expect(() => {
       fireEvent.click(screen.getByRole('button', { name: /capture photo/i }));
     }).not.toThrow();
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toBeTruthy();
+      expect(screen.getByText(/Failed to capture photo/i)).toBeTruthy();
+    });
+
+    // Stream tracks should still be active for retry (not stopped)
+    expect(mockStream.getTracks()[0].stop).not.toHaveBeenCalled();
   });
 
   it('stops media tracks on unmount when stream is active', async () => {

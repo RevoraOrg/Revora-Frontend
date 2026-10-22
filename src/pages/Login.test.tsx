@@ -1,3 +1,4 @@
+import { WalletConnectionProvider } from '../components/WalletConnection/WalletConnectionContext';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
@@ -6,7 +7,7 @@ import { Login } from './Login';
 const renderLogin = () => {
   return render(
     <MemoryRouter>
-      <Login />
+      <WalletConnectionProvider><Login /></WalletConnectionProvider>
     </MemoryRouter>
   );
 };

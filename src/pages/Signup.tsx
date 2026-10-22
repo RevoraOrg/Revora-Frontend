@@ -1,8 +1,9 @@
+import { ConnectWalletButton } from '../components/WalletConnection/ConnectWalletButton';
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
 import { PasswordStrength } from '../components/PasswordStrength';
 import { evaluatePasswordStrength } from '../utils/passwordStrength';
-import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle, Wallet } from 'lucide-react';
+import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Button } from '../components/Button';
@@ -115,10 +116,7 @@ export const Signup: React.FC = () => {
         </div>
       ) : (
         <form onSubmit={handleSubmit} className={`space-y-4 ${Object.keys(errors).length > 0 ? 'animate-shake' : ''}`} noValidate>
-          <button type="button" className="btn-primary w-full" disabled={isSubmitting}>
-            <Wallet size={18} />
-            Connect Stellar Wallet
-          </button>
+          <ConnectWalletButton disabled={isSubmitting} />
 
           <div className="relative my-6 py-2 flex items-center">
             <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>

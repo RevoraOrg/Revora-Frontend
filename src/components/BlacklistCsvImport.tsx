@@ -492,9 +492,13 @@ function PreviewStep({
 function ConfirmStep({
   rows,
   onConfirm,
+  isCommitting,
+  committed,
 }: {
   rows: PreviewRow[];
   onConfirm: () => void;
+  isCommitting: boolean;
+  committed: boolean;
 }) {
   const conflictCount = rows.filter((r) => r.conflictReason).length;
   const cleanCount = rows.length - conflictCount;
@@ -529,10 +533,22 @@ function ConfirmStep({
         </p>
       </div>
 
-      <Button variant="primary" onClick={onConfirm} className="bci-confirm-btn">
-        <CheckCircle2 size={16} aria-hidden="true" />
-        Confirm Import
-      </Button>
+      {committed ? (
+        <div className="bci-confirm-done" role="status" aria-live="polite">
+          <CheckCircle2 size={16} aria-hidden="true" />
+          Imported {cleanCount} row{cleanCount !== 1 ? 's' : ''}
+        </div>
+      ) : (
+        <Button
+          variant="primary"
+          onClick={onConfirm}
+          className="bci-confirm-btn"
+          disabled={isCommitting}
+        >
+          <CheckCircle2 size={16} aria-hidden="true" />
+          Confirm Import
+        </Button>
+      )}
     </div>
   );
 }
@@ -551,6 +567,8 @@ export const BlacklistCsvImport: React.FC<BlacklistCsvImportProps> = ({
   const [mapping, setMapping] = useState<ColumnMapping>({ address: '' });
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCommitting, setIsCommitting] = useState(false);
+  const [committed, setCommitted] = useState(false);
 
   const stepIdx = STEPS.indexOf(step);
 
@@ -568,11 +586,18 @@ export const BlacklistCsvImport: React.FC<BlacklistCsvImportProps> = ({
     setStep('preview');
   }, [rawRows, mapping, existingAddresses]);
 
-  const handleConfirm = useCallback(() => {
+  const goToConfirm = useCallback(() => {
+    setStep('confirm');
+  }, []);
+
+  const commitImport = useCallback(() => {
+    if (isCommitting || committed) return;
+    setIsCommitting(true);
     const cleanRows = previewRows.filter((r) => !r.conflictReason);
     onImport?.(cleanRows);
-    setStep('confirm');
-  }, [previewRows, onImport]);
+    setCommitted(true);
+    setIsCommitting(false);
+  }, [previewRows, onImport, isCommitting, committed]);
 
   const handleBack = useCallback(() => {
     if (stepIdx > 0) setStep(STEPS[stepIdx - 1]);
@@ -608,7 +633,14 @@ export const BlacklistCsvImport: React.FC<BlacklistCsvImportProps> = ({
             onPageChange={setCurrentPage}
           />
         )}
-        {step === 'confirm' && <ConfirmStep rows={previewRows} onConfirm={handleConfirm} />}
+        {step === 'confirm' && (
+          <ConfirmStep
+            rows={previewRows}
+            onConfirm={commitImport}
+            isCommitting={isCommitting}
+            committed={committed}
+          />
+        )}
       </div>
 
       <div className="bci-footer">
@@ -625,7 +657,7 @@ export const BlacklistCsvImport: React.FC<BlacklistCsvImportProps> = ({
           </Button>
         )}
         {step === 'preview' && (
-          <Button variant="primary" onClick={handleConfirm}>
+          <Button variant="primary" onClick={goToConfirm}>
             Import
             <ChevronRight size={14} aria-hidden="true" />
           </Button>

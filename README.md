@@ -5,7 +5,8 @@ Revora is a revenue-sharing platform on the [Stellar](https://stellar.org) netwo
 track their portfolio and review an on-chain ledger of distributions.
 
 This repository is the web front end (React + Vite + TypeScript). It is a **demo UI**: all data is
-sample data generated in the browser, and no real wallets, funds or customers are involved.
+sample data generated in the browser. Login and Signup can connect to Freighter to display
+your Stellar address and network; no transactions are signed or submitted. Revora uses TESTNET.
 
 **Live site:** https://revora-frontend-omega.vercel.app
 
@@ -82,3 +83,18 @@ on every push and pull request to `master`.
 
 Some tests and type checks are not enforced in CI; `src/pages/AuditTrail.tsx` and
 `src/pages/DistributionDashboard.tsx` have syntax errors and are not wired into any route.
+
+## Stellar wallet connection
+
+The Login and Signup wallet buttons open a controlled Freighter connection dialog. Install
+[Freighter](https://www.freighter.app/), approve access, and select TESTNET in the extension.
+The shared context refreshes the account and network every three seconds while connected.
+Disconnect clears this app's connection state; extension permissions can be revoked in Freighter.
+Cancelling or closing the dialog ignores pending results but cannot close the extension's prompt.
+Wallet state is kept in memory and is not treated as an authenticated email session.
+
+Run the SDK-mocked wallet and accessibility tests with:
+
+```bash
+npx vitest run src/components/WalletConnection src/pages/Login.test.tsx src/pages/Signup.test.tsx
+```

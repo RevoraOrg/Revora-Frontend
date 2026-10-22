@@ -208,6 +208,10 @@ export const FinancialTermsForm: React.FC<FinancialTermsFormProps> = ({
     [handleSubmit, onSubmit],
   );
 
+  const handleEdit = useCallback(() => {
+    setSubmitted(false);
+  }, []);
+
   const handleReset = useCallback(() => {
     reset();
     setSubmitted(false);
@@ -243,7 +247,7 @@ export const FinancialTermsForm: React.FC<FinancialTermsFormProps> = ({
           <button
             type="button"
             className="ftf__reset-btn"
-            onClick={handleReset}
+            onClick={handleEdit}
             data-testid="ftf-edit-btn"
           >
             Edit terms

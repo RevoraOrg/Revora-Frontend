@@ -443,6 +443,15 @@
   background: #f1f5f9;
 }
 
+.kdc-capture-error {
+  color: var(--error, #ef4444);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--error-bg, rgba(239, 68, 68, 0.1));
+  border-radius: var(--radius-md);
+}
+
 .kdc-btn--full {
   width: 100%;
 }

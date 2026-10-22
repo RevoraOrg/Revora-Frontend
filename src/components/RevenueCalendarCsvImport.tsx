@@ -504,9 +504,11 @@ function PreviewStep({
 function ConfirmStep({
   rows,
   onConfirm,
+  isCommitting,
 }: {
   rows: PreviewRow[];
   onConfirm: () => void;
+  isCommitting: boolean;
 }) {
   const conflictCount = rows.filter((r) => r.conflictReason).length;
   const cleanCount = rows.length - conflictCount;
@@ -534,7 +536,12 @@ function ConfirmStep({
         </div>
       )}
 
-      <Button variant="primary" onClick={onConfirm} className="rcci-confirm-btn">
+      <Button
+        variant="primary"
+        onClick={onConfirm}
+        className="rcci-confirm-btn"
+        disabled={isCommitting}
+      >
         <CheckCircle2 size={16} aria-hidden="true" />
         Confirm Import
       </Button>
@@ -555,6 +562,8 @@ export const RevenueCalendarCsvImport: React.FC<RevenueCalendarCsvImportProps> =
   const [mapping, setMapping] = useState<ColumnMapping>({ date: '', revenue: '' });
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isCommitting, setIsCommitting] = useState(false);
+  const committedRef = useRef(false);
 
   const stepIdx = STEPS.indexOf(step);
 
@@ -572,10 +581,16 @@ export const RevenueCalendarCsvImport: React.FC<RevenueCalendarCsvImportProps> =
     setStep('preview');
   }, [rawRows, mapping]);
 
-  const handleConfirm = useCallback(() => {
+  const goToConfirm = useCallback(() => {
+    setStep('confirm');
+  }, []);
+
+  const commitImport = useCallback(() => {
+    if (committedRef.current) return;
+    committedRef.current = true;
+    setIsCommitting(true);
     const cleanRows = previewRows.filter((r) => !r.conflictReason);
     onImport?.(cleanRows);
-    setStep('confirm');
   }, [previewRows, onImport]);
 
   const handleBack = useCallback(() => {
@@ -612,7 +627,13 @@ export const RevenueCalendarCsvImport: React.FC<RevenueCalendarCsvImportProps> =
             onPageChange={setCurrentPage}
           />
         )}
-        {step === 'confirm' && <ConfirmStep rows={previewRows} onConfirm={handleConfirm} />}
+        {step === 'confirm' && (
+          <ConfirmStep
+            rows={previewRows}
+            onConfirm={commitImport}
+            isCommitting={isCommitting}
+          />
+        )}
       </div>
 
       <div className="rcci-footer">
@@ -629,7 +650,7 @@ export const RevenueCalendarCsvImport: React.FC<RevenueCalendarCsvImportProps> =
           </Button>
         )}
         {step === 'preview' && (
-          <Button variant="primary" onClick={handleConfirm}>
+          <Button variant="primary" onClick={goToConfirm}>
             Import
             <ChevronRight size={14} aria-hidden="true" />
           </Button>

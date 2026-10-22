@@ -23,6 +23,7 @@ import {
   toPdfBytes,
   toXlsxBytes,
 } from "../utils/reportExport";
+import { parseMoneyInput, computePayoutEstimateCents, formatCentsAsCurrency } from "../utils/parseMoneyInput";
 
 const currencyOptions = [
   { value: "USD", label: "USD - US Dollar" },
@@ -100,15 +101,16 @@ export function RevenueReportForm() {
   const [exportState, setExportState] = useState<"idle" | "success" | "error">("idle");
   const [exportError, setExportError] = useState("");
 
-  const revenueValue = Number(grossRevenue.replace(/[^0-9.]/g, ""));
-  const revenueError = grossRevenue.trim() === "" || revenueValue <= 0;
-  const payoutEstimate = useMemo(() => {
-    if (revenueError) {
-      return 0;
-    }
-    // Example payout rate: 8%
-    return Math.round(revenueValue * 0.08);
-  }, [revenueError, revenueValue]);
+  const parseResult = useMemo(
+    () => parseMoneyInput(grossRevenue, locale),
+    [grossRevenue, locale]
+  );
+  const revenueError = !parseResult.ok;
+  const revenueCents = parseResult.ok ? parseResult.cents : 0;
+  const payoutEstimateCents = useMemo(
+    () => (revenueError ? 0 : computePayoutEstimateCents(revenueCents)),
+    [revenueError, revenueCents]
+  );
 
   const hasUploadingFiles = attachedFiles.some((f) => f.status === "uploading");
 
@@ -118,7 +120,17 @@ export function RevenueReportForm() {
     setErrorMessage("");
 
     if (revenueError) {
-      setErrorMessage("Please enter a valid gross revenue amount greater than zero.");
+      const errorMessages: Record<string, string> = {
+        EMPTY: "Please enter a gross revenue amount.",
+        NAN: "Please enter a valid number.",
+        NEGATIVE: "Revenue cannot be negative.",
+        TOO_MANY_DECIMALS: "Maximum 2 decimal places allowed.",
+        MALFORMED_SEPARATORS: "Invalid number format. Check separators.",
+        INVALID_LOCALE: "Invalid locale configuration.",
+      };
+      setErrorMessage(
+        errorMessages[parseResult.error ?? "NAN"] ?? "Please enter a valid gross revenue amount greater than zero."
+      );
       setSubmissionState("error");
       return;
     }
@@ -161,11 +173,11 @@ export function RevenueReportForm() {
       const rows = buildReportExportRows(exportScope, {
         reportPeriod,
         periodLabel: selectedPeriodLabel,
-        grossRevenue: revenueValue,
+        grossRevenue: revenueCents / 100, // Convert back to dollars for export
         currency,
         locale,
         notes,
-        payoutEstimate,
+        payoutEstimate: payoutEstimateCents / 100, // Convert back to dollars for export
       });
       const fileName = reportExportFileName(exportScope, exportFormat, reportPeriod);
 
@@ -349,14 +361,14 @@ export function RevenueReportForm() {
                 <div className="rounded-2xl bg-slate-950/60 p-4">
                   <p className="text-sm text-muted">Gross revenue</p>
                   <p className="mt-1 text-lg font-semibold">
-                    {revenueError ? "—" : formatCurrency(revenueValue, currency, locale)}
+                    {revenueError ? "—" : formatCentsAsCurrency(revenueCents, currency, locale)}
                   </p>
                 </div>
 
                 <div className="rounded-2xl bg-slate-950/60 p-4">
                   <p className="text-sm text-muted">Estimated payout</p>
                   <p className="mt-1 text-xl font-semibold text-success">
-                    {revenueError ? "Enter revenue to preview" : formatCurrency(payoutEstimate, currency, locale)}
+                    {revenueError ? "Enter revenue to preview" : formatCentsAsCurrency(payoutEstimateCents, currency, locale)}
                   </p>
                 </div>
               </div>
@@ -385,11 +397,11 @@ export function RevenueReportForm() {
                 </div>
                 <div className="rounded-2xl bg-slate-950/80 p-4">
                   <p className="text-xs text-muted uppercase tracking-[0.18em]">Reported</p>
-                  <p className="mt-2 font-semibold">{formatCurrency(revenueValue, currency)}</p>
+                  <p className="mt-2 font-semibold">{formatCentsAsCurrency(revenueCents, currency, locale)}</p>
                 </div>
                 <div className="rounded-2xl bg-slate-950/80 p-4">
                   <p className="text-xs text-muted uppercase tracking-[0.18em]">Payout estimate</p>
-                  <p className="mt-2 font-semibold text-success">{formatCurrency(payoutEstimate, currency)}</p>
+                  <p className="mt-2 font-semibold text-success">{formatCentsAsCurrency(payoutEstimateCents, currency, locale)}</p>
                 </div>
                 {attachedFiles.length > 0 && (
                   <div className="rounded-2xl bg-slate-950/80 p-4">

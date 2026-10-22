@@ -16,8 +16,14 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CommandItem } from '../components/CommandPalette/commandPaletteData';
+import { COMMAND_BY_ID } from '../components/CommandPalette/commandPaletteData';
 
 export const RECENT_LIMIT = 5;
+
+export interface RecentCommandEntry {
+  id: string;
+  timestamp: number;
+}
 
 /** Stable storage key for a given user. Pass '' / undefined for anonymous. */
 export function recentCommandsKey(userId?: string): string {
@@ -33,20 +39,71 @@ export function clearRecentCommandsForUser(userId?: string): void {
   }
 }
 
-function loadRecent(userId?: string): CommandItem[] {
+function parseStoredEntries(raw: string): RecentCommandEntry[] {
   try {
-    const raw = localStorage.getItem(recentCommandsKey(userId));
-    if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as CommandItem[]) : [];
+    if (!Array.isArray(parsed)) return [];
+
+    const entries: RecentCommandEntry[] = [];
+    const seenIds = new Set<string>();
+
+    for (const item of parsed) {
+      if (!item) continue;
+
+      let id: string | undefined;
+      let timestamp = Date.now();
+
+      if (typeof item === 'string') {
+        id = item;
+      } else if (typeof item === 'object') {
+        if (typeof item.id === 'string') {
+          id = item.id;
+        }
+        if (typeof item.timestamp === 'number') {
+          timestamp = item.timestamp;
+        }
+      }
+
+      if (id && !seenIds.has(id)) {
+        seenIds.add(id);
+        entries.push({ id, timestamp });
+      }
+    }
+
+    return entries.slice(0, RECENT_LIMIT);
   } catch {
     return [];
   }
 }
 
-function saveRecent(items: CommandItem[], userId?: string): void {
+function loadRecent(userId?: string): CommandItem[] {
   try {
-    localStorage.setItem(recentCommandsKey(userId), JSON.stringify(items));
+    const raw = localStorage.getItem(recentCommandsKey(userId));
+    if (!raw) return [];
+    const entries = parseStoredEntries(raw);
+
+    const items: CommandItem[] = [];
+    const validEntries: RecentCommandEntry[] = [];
+
+    for (const entry of entries) {
+      const catalogItem = COMMAND_BY_ID.get(entry.id);
+      if (catalogItem) {
+        items.push(catalogItem);
+        validEntries.push(entry);
+      }
+    }
+
+    saveRecentEntries(validEntries, userId);
+
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentEntries(entries: RecentCommandEntry[], userId?: string): void {
+  try {
+    localStorage.setItem(recentCommandsKey(userId), JSON.stringify(entries));
   } catch {
     // quota exceeded or storage unavailable — ignore
   }
@@ -102,10 +159,16 @@ export function useCommandPalette(
   const addRecent = useCallback(
     (item: CommandItem) => {
       setRecentCommands((prev) => {
+        // Resolve canonical item from catalog if available
+        const canonical = COMMAND_BY_ID.get(item.id) ?? item;
         // Remove any existing entry for the same command id then prepend
         const filtered = prev.filter((r) => r.id !== item.id);
-        const next = [item, ...filtered].slice(0, RECENT_LIMIT);
-        saveRecent(next, userId);
+        const next = [canonical, ...filtered].slice(0, RECENT_LIMIT);
+        const entries: RecentCommandEntry[] = next.map((cmd) => ({
+          id: cmd.id,
+          timestamp: Date.now(),
+        }));
+        saveRecentEntries(entries, userId);
         return next;
       });
     },

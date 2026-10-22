@@ -11,6 +11,7 @@ import {
   clearRecentCommandsForUser,
 } from './useCommandPalette';
 import type { CommandItem } from '../components/CommandPalette/commandPaletteData';
+import { COMMAND_BY_ID } from '../components/CommandPalette/commandPaletteData';
 
 const ITEM_A: CommandItem = { id: 'nav:dashboard', group: 'navigate', label: 'Dashboard' };
 const ITEM_B: CommandItem = { id: 'action:sign-out', group: 'actions', label: 'Sign Out' };
@@ -162,26 +163,26 @@ describe('useCommandPalette', () => {
     });
 
     it(`caps list at RECENT_LIMIT (${RECENT_LIMIT})`, () => {
-      render(<Harness />);
-      const items: CommandItem[] = Array.from({ length: RECENT_LIMIT + 2 }, (_, i) => ({
-        id: `item:${i}`,
-        group: 'actions' as const,
-        label: `Item ${i}`,
-      }));
-      items.forEach((item) => {
-        fireEvent.click(screen.getByTestId('add-a')); // use hooks
-        // Can't pass dynamic items through this harness, so test via localStorage
-      });
-      // Re-test with storage directly
-      const stored: CommandItem[] = items;
+      // Test 1: simulate stored entries exceeding limit with catalog items
+      const catalogIds = [
+        'nav:home',
+        'nav:dashboard',
+        'nav:discovery',
+        'nav:revenue',
+        'nav:payout-schedule',
+        'nav:audit-trail',
+        'nav:sessions',
+      ];
       const key = recentCommandsKey(undefined);
-      // simulate adding more than RECENT_LIMIT items
-      localStorage.setItem(key, JSON.stringify(stored.slice(0, RECENT_LIMIT + 2)));
-      // The hook loads from storage; remount to pick it up
+      localStorage.setItem(
+        key,
+        JSON.stringify(catalogIds.map((id, idx) => ({ id, timestamp: idx }))),
+      );
+
+      // Mount hook and verify loaded recents are capped at RECENT_LIMIT
       const { unmount } = render(<Harness />);
-      // loaded count should not exceed RECENT_LIMIT
-      const count = parseInt(screen.getAllByTestId('recent-count')[0].textContent ?? '0');
-      expect(count).toBeLessThanOrEqual(RECENT_LIMIT + 2); // loaded raw; cap enforced on add
+      const count = parseInt(screen.getByTestId('recent-count').textContent ?? '0');
+      expect(count).toBe(RECENT_LIMIT);
       unmount();
     });
 
@@ -199,11 +200,111 @@ describe('useCommandPalette', () => {
       expect(localStorage.getItem(recentCommandsKey('u1'))).toBeNull();
     });
 
-    it('persists recents to localStorage', () => {
+    it('persists recents as id and timestamp to localStorage', () => {
       render(<Harness userId="u2" />);
       fireEvent.click(screen.getByTestId('add-a'));
       const stored = JSON.parse(localStorage.getItem(recentCommandsKey('u2'))!);
       expect(stored[0].id).toBe(ITEM_A.id);
+      expect(typeof stored[0].timestamp).toBe('number');
+      expect(stored[0].label).toBeUndefined();
+      expect(stored[0].group).toBeUndefined();
+    });
+
+    it('drops unknown command ids that no longer exist in catalog', () => {
+      const key = recentCommandsKey('user-unknown');
+      localStorage.setItem(
+        key,
+        JSON.stringify([
+          { id: 'unknown:deleted-command', timestamp: 123 },
+          { id: 'nav:dashboard', timestamp: 456 },
+          { id: 'non-existent:action', timestamp: 789 },
+        ]),
+      );
+
+      let hookResult: ReturnType<typeof useCommandPalette>;
+      function TestUnknown() {
+        hookResult = useCommandPalette({ userId: 'user-unknown' });
+        return null;
+      }
+      render(<TestUnknown />);
+
+      expect(hookResult!.recentCommands).toHaveLength(1);
+      expect(hookResult!.recentCommands[0].id).toBe('nav:dashboard');
+
+      // Check that localStorage was migrated to drop unknown ids
+      const migrated = JSON.parse(localStorage.getItem(key)!);
+      expect(migrated).toHaveLength(1);
+      expect(migrated[0].id).toBe('nav:dashboard');
+    });
+
+    it('migrates legacy stored format (full object array) to id and timestamp format', () => {
+      const key = recentCommandsKey('legacy-user');
+      const legacyObjects = [
+        {
+          id: 'nav:dashboard',
+          group: 'navigate',
+          label: 'Dashboard',
+          description: '/dashboard',
+          icon: 'LayoutDashboard',
+        },
+        {
+          id: 'nav:home',
+          group: 'navigate',
+          label: 'Home',
+          icon: 'Home',
+        },
+      ];
+      localStorage.setItem(key, JSON.stringify(legacyObjects));
+
+      let hookResult: ReturnType<typeof useCommandPalette>;
+      function TestLegacy() {
+        hookResult = useCommandPalette({ userId: 'legacy-user' });
+        return null;
+      }
+      render(<TestLegacy />);
+
+      expect(hookResult!.recentCommands).toHaveLength(2);
+      expect(hookResult!.recentCommands[0].id).toBe('nav:dashboard');
+      expect(hookResult!.recentCommands[1].id).toBe('nav:home');
+
+      // Verify localStorage was updated to new schema
+      const migrated = JSON.parse(localStorage.getItem(key)!);
+      expect(migrated).toHaveLength(2);
+      expect(migrated[0].id).toBe('nav:dashboard');
+      expect(typeof migrated[0].timestamp).toBe('number');
+      expect(migrated[0].label).toBeUndefined();
+    });
+
+    it('rehydrates recent commands from catalog and preserves onExecute after reload (regression)', () => {
+      const catalogDashboard = COMMAND_BY_ID.get('nav:dashboard')!;
+      const originalOnExecute = catalogDashboard.onExecute;
+      const mockOnExecute = vi.fn();
+      catalogDashboard.onExecute = mockOnExecute;
+
+      try {
+        // 1. First session: add command to recents
+        const { unmount } = render(<Harness userId="regression-user" />);
+        fireEvent.click(screen.getByTestId('add-a'));
+        unmount();
+
+        // 2. Simulated reload: mount new hook instance for same user
+        let hookResult: ReturnType<typeof useCommandPalette>;
+        function TestReload() {
+          hookResult = useCommandPalette({ userId: 'regression-user' });
+          return null;
+        }
+        render(<TestReload />);
+
+        // 3. Selecting/executing the reloaded recent item must call onExecute
+        expect(hookResult!.recentCommands).toHaveLength(1);
+        expect(hookResult!.recentCommands[0].id).toBe('nav:dashboard');
+        expect(hookResult!.recentCommands[0].onExecute).toBeDefined();
+        expect(typeof hookResult!.recentCommands[0].onExecute).toBe('function');
+        hookResult!.recentCommands[0].onExecute?.();
+        expect(mockOnExecute).toHaveBeenCalledTimes(1);
+      } finally {
+        catalogDashboard.onExecute = originalOnExecute;
+      }
     });
   });
 
@@ -251,6 +352,24 @@ describe('useCommandPalette', () => {
       localStorage.setItem(recentCommandsKey(), JSON.stringify({ foo: 'bar' }));
       expect(() => render(<Harness />)).not.toThrow();
       expect(screen.getByTestId('recent-count')).toHaveTextContent('0');
+    });
+
+    it('handles string id items and null/invalid entries in stored array', () => {
+      localStorage.setItem(
+        recentCommandsKey(),
+        JSON.stringify(['nav:dashboard', null, 123, { id: 456 }, {}]),
+      );
+      expect(() => render(<Harness />)).not.toThrow();
+      expect(screen.getByTestId('recent-ids')).toHaveTextContent('nav:dashboard');
+    });
+
+    it('handles localStorage.setItem throwing inside loadRecent gracefully', () => {
+      localStorage.setItem(recentCommandsKey(), JSON.stringify([{ id: 'nav:dashboard', timestamp: 123 }]));
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('quota');
+      });
+      expect(() => render(<Harness />)).not.toThrow();
+      expect(screen.getByTestId('recent-ids')).toHaveTextContent('nav:dashboard');
     });
   });
 });

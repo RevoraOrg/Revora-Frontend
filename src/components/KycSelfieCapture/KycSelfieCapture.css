@@ -255,6 +255,21 @@
   pointer-events: none;
 }
 
+.ksc-capture-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.ksc-capture-error {
+  color: var(--error, #ef4444);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--error-bg, rgba(239, 68, 68, 0.1));
+  border-radius: var(--radius-md);
+}
+
 /* ─── Preview & Retake ───────────────────────────────────────────────── */
 
 .ksc-preview {

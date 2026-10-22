@@ -61,11 +61,12 @@ describe('Primary state transitions across all variants (via index export)', () 
     'reorged',
   ];
 
-  it.each(allVariants)('renders %s variant with role="status" and distinct testid', (variant) => {
+  it.each(allVariants)('renders %s variant as static badge with no live role and distinct testid', (variant) => {
     render(<OnchainBadge variant={variant} />);
     const badge = screen.getByTestId(`onchain-badge-${variant}`);
     expect(badge).toBeInTheDocument();
-    expect(badge).toHaveAttribute('role', 'status');
+    expect(badge).not.toHaveAttribute('role', 'status');
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
     expect(badge).toHaveClass('onchain-badge', `onchain-badge--${variant}`, 'onchain-badge--md');
   });
 

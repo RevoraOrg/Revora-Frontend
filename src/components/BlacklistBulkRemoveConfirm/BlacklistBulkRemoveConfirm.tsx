@@ -15,6 +15,7 @@ export interface BlacklistBulkRemoveConfirmProps {
   onClose: () => void;
   onConfirm: (reason: string, initials: string) => Promise<void>;
   entries: BlacklistEntry[];
+  onUndo?: (entries: BlacklistEntry[]) => Promise<void> | void;
 }
 
 const PRESETS = [
@@ -29,8 +30,10 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
   onClose,
   onConfirm,
   entries,
+  onUndo,
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const previousActiveElementRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
   const descriptionId = useId();
 
@@ -44,6 +47,10 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
 
   useEffect(() => {
     if (!isOpen) {
+      if (previousActiveElementRef.current && typeof previousActiveElementRef.current.focus === 'function') {
+        previousActiveElementRef.current.focus();
+        previousActiveElementRef.current = null;
+      }
       setReason('');
       setSelectedPreset('');
       setInitials('');
@@ -53,18 +60,15 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
       return;
     }
 
+    previousActiveElementRef.current = document.activeElement as HTMLElement | null;
+
     // Delay the enable of the destructive button by 750ms
     const timer = setTimeout(() => {
       setDelayActive(false);
     }, 750);
 
-    const activeElement = document.activeElement as HTMLElement | null;
     if (dialogRef.current) {
       dialogRef.current.focus();
-    }
-
-    if (activeElement && activeElement instanceof HTMLElement) {
-      activeElement.blur();
     }
 
     return () => clearTimeout(timer);
@@ -75,14 +79,40 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        event.preventDefault();
-        onClose();
+        if (!isSubmitting) {
+          event.preventDefault();
+          onClose();
+        }
+        return;
+      }
+
+      if (event.key === 'Tab') {
+        const focusableElements = dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+
+        if (focusableElements && focusableElements.length > 0) {
+          const firstElement = focusableElements[0];
+          const lastElement = focusableElements[focusableElements.length - 1];
+
+          if (event.shiftKey) {
+            if (document.activeElement === firstElement || document.activeElement === dialogRef.current) {
+              event.preventDefault();
+              lastElement.focus();
+            }
+          } else {
+            if (document.activeElement === lastElement) {
+              event.preventDefault();
+              firstElement.focus();
+            }
+          }
+        }
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, isSubmitting, onClose]);
 
   const handlePresetClick = (preset: string) => {
     setSelectedPreset(preset);
@@ -98,22 +128,29 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
   const isFormValid = hasEntries && isReasonValid && initials.trim().length >= 2;
 
   const handleConfirm = async () => {
-    if (!isFormValid || delayActive) return;
+    if (!isFormValid || delayActive || isSubmitting) return;
 
     setIsSubmitting(true);
     setSubmitError(null);
     try {
       await onConfirm(reason, initials);
 
-      // Wire up undo banner
-      registerUndo({
-        message: `Removed ${entries.length} entries from blacklist`,
-        actionLabel: 'Undo',
-        onUndo: () => {
-          // In a real implementation, this would call an API to restore the entries
-          console.log('Undo removing entries');
-        },
-      });
+      // Wire up undo banner if onUndo is provided
+      if (onUndo) {
+        registerUndo({
+          message: `Removed ${entries.length} entries from blacklist`,
+          actionLabel: 'Undo',
+          onUndo: async () => {
+            try {
+              await onUndo(entries);
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'Failed to undo removing entries.';
+              console.error('Failed to undo removing entries', error);
+              setSubmitError(message);
+            }
+          },
+        });
+      }
 
       onClose();
     } catch (error) {
@@ -124,12 +161,18 @@ export const BlacklistBulkRemoveConfirm: React.FC<BlacklistBulkRemoveConfirmProp
     }
   };
 
+  const handleBackdropClick = () => {
+    if (!isSubmitting) {
+      onClose();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
     <div
       className="blacklist-bulk-remove-modal"
-      onClick={onClose}
+      onClick={handleBackdropClick}
       role="presentation"
     >
       <div

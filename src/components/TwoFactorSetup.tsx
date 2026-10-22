@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useId, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useId, useCallback, useMemo } from 'react';
 import {
   Smartphone,
   MessageSquare,
@@ -21,6 +21,7 @@ import { Button } from './Button';
 import { FormError } from './FormError';
 import { WizardStepper, type WizardStep } from './WizardStepper';
 import { verifyTotpCode, type VerifyTwoFactorCode } from './twoFactorVerification';
+import QRCode from 'qrcode';
 import './TwoFactorSetup.css';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -66,6 +67,28 @@ const verifyCodeLocally: VerifyTwoFactorCode = ({ method, code, secret }) => {
     throw new Error('A server verification handler is required for this method.');
   }
   return verifyTotpCode(secret, code);
+};
+
+// ─── TOTP URI + local QR generation ───────────────────────────────────────────
+
+/**
+ * Build the otpauth:// URI for authenticator enrolment.
+ *
+ * The label and issuer are URL-encoded so that special characters (e.g. `@`,
+ * `:`, spaces) in the account email cannot break the URI structure. The secret
+ * is base32 and safe, but is encoded defensively as well.
+ */
+export const buildTotpUri = (secret: string, accountLabel = 'Revora'): string => {
+  const issuer = 'Revora';
+  const label = `${issuer}:${accountLabel}`;
+  const params = new URLSearchParams({
+    secret,
+    issuer,
+    algorithm: 'SHA1',
+    digits: '6',
+    period: '30',
+  });
+  return `otpauth://totp/${encodeURIComponent(label)}?${params.toString()}`;
 };
 
 // ─── Step indicator ───────────────────────────────────────────────────────────
@@ -155,6 +178,8 @@ const Step1: React.FC<Step1Props> = ({ onSelect }) => (
 interface Step2Props {
   method: Method;
   secret: string;
+  /** Account label (usually the user's email) embedded in the otpauth URI */
+  accountLabel?: string;
   onNext: () => void;
   onBack: () => void;
 }
@@ -162,7 +187,37 @@ interface Step2Props {
 const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
   const [showManual, setShowManual] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
   const secretId = useId();
+
+  const otpauthUri = useMemo(
+    () => buildTotpUri(secret, accountLabel),
+    [secret, accountLabel]
+  );
+
+  // Render the QR code locally to a data URL — never send the secret off-device.
+  useEffect(() => {
+    let cancelled = false;
+    setQrError(null);
+    QRCode.toDataURL(otpauthUri, {
+      errorCorrectionLevel: 'M',
+      margin: 1,
+      width: 180,
+    })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setQrDataUrl(null);
+          setQrError('Could not generate the QR code. Use the manual key below.');
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [otpauthUri]);
 
   const handleCopy = async () => {
     try {
@@ -206,10 +261,6 @@ const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
   }
 
   // TOTP QR flow
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
-    `otpauth://totp/Revora?secret=${secret}&issuer=Revora`
-  )}`;
-
   return (
     <div className="space-y-4 animate-fade-in">
       <p className="text-muted text-sm">
@@ -218,15 +269,24 @@ const Step2: React.FC<Step2Props> = ({ method, secret, onNext, onBack }) => {
 
       {/* QR code */}
       <div className="tfa-qr-wrapper" role="img" aria-label="QR code for authenticator app setup. Use the manual key below if you cannot scan.">
-        <img
-          src={qrUrl}
-          alt=""
-          aria-hidden="true"
-          width={180}
-          height={180}
-          className="tfa-qr-img"
-        />
+        {qrDataUrl ? (
+          <img
+            src={qrDataUrl}
+            alt=""
+            aria-hidden="true"
+            width={180}
+            height={180}
+            className="tfa-qr-img"
+          />
+        ) : (
+          <div className="tfa-qr-img tfa-qr-placeholder" aria-hidden="true" />
+        )}
       </div>
+      {qrError && (
+        <p className="text-error text-xs" role="alert">
+          {qrError}
+        </p>
+      )}
 
       {/* Manual key toggle */}
       <button

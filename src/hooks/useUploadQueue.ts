@@ -30,18 +30,12 @@ function reducer(state: UploadFile[], action: Action): UploadFile[] {
         })),
       ];
     case 'SET_STATUS':
-      if (!state.some((f) => f.id === action.id)) {
-        return state;
-      }
       return state.map((f) =>
         f.id === action.id
           ? { ...f, status: action.status, errorMessage: action.errorMessage }
           : f,
       );
     case 'SET_PROGRESS':
-      if (!state.some((f) => f.id === action.id)) {
-        return state;
-      }
       return state.map((f) =>
         f.id === action.id ? { ...f, progress: Math.max(0, Math.min(100, action.progress)) } : f,
       );
@@ -86,16 +80,13 @@ export function useUploadQueue(): UseUploadQueueReturn {
   }, [queue]);
 
   useEffect(() => {
+    const controllers = controllersRef.current;
+    const inFlight = inFlightRef.current;
     return () => {
-      controllersRef.current.forEach((controller) => {
-        try {
-          controller.abort();
-        } catch {
-          /* ignore */
-        }
-      });
-      controllersRef.current.clear();
-      inFlightRef.current.clear();
+      // Abort every in-flight upload so nothing dispatches after unmount.
+      controllers.forEach((controller) => controller.abort());
+      controllers.clear();
+      inFlight.clear();
     };
   }, []);
 
@@ -105,29 +96,25 @@ export function useUploadQueue(): UseUploadQueueReturn {
   }, []);
 
   const removeFile = useCallback((id: string) => {
-    const controller = controllersRef.current.get(id);
-    if (controller) {
-      try {
-        controller.abort();
-      } catch {
-        /* ignore */
-      }
-      controllersRef.current.delete(id);
-    }
+    // Abort an in-flight upload for this item before dropping it.
+    controllersRef.current.get(id)?.abort();
+    controllersRef.current.delete(id);
     inFlightRef.current.delete(id);
     dispatch({ type: 'REMOVE', id });
   }, []);
 
   const runUpload = useCallback(
+    // Callers (uploadFiles / retryFile) skip ids already in inFlightRef.
     async (item: UploadFile, uploader: Uploader, dispatchFn: React.Dispatch<Action>) => {
-      if (inFlightRef.current.has(item.id)) {
-        return;
-      }
       const controller = new AbortController();
       controllersRef.current.set(item.id, controller);
       inFlightRef.current.add(item.id);
       dispatchFn({ type: 'SET_STATUS', id: item.id, status: 'uploading' });
       dispatchFn({ type: 'SET_PROGRESS', id: item.id, progress: 0 });
+      // An upload is stale once aborted (removed/unmounted) or no longer queued;
+      // stale uploads must not write status back into the queue.
+      const isStale = () =>
+        controller.signal.aborted || !queueRef.current.some((f) => f.id === item.id);
       try {
         await uploader(
           item.file,
@@ -139,29 +126,11 @@ export function useUploadQueue(): UseUploadQueueReturn {
           },
           controller.signal,
         );
-        if (controller.signal.aborted) {
-          inFlightRef.current.delete(item.id);
-          controllersRef.current.delete(item.id);
-          return;
-        }
-        if (!queueRef.current.some((f) => f.id === item.id)) {
-          inFlightRef.current.delete(item.id);
-          controllersRef.current.delete(item.id);
-          return;
-        }
+        if (isStale()) return;
         dispatchFn({ type: 'SET_PROGRESS', id: item.id, progress: 100 });
         dispatchFn({ type: 'SET_STATUS', id: item.id, status: 'success' });
       } catch (err) {
-        if (controller.signal.aborted) {
-          inFlightRef.current.delete(item.id);
-          controllersRef.current.delete(item.id);
-          return;
-        }
-        if (!queueRef.current.some((f) => f.id === item.id)) {
-          inFlightRef.current.delete(item.id);
-          controllersRef.current.delete(item.id);
-          return;
-        }
+        if (isStale()) return;
         const msg = err instanceof Error ? err.message : 'Upload failed';
         dispatchFn({ type: 'SET_STATUS', id: item.id, status: 'error', errorMessage: msg });
       } finally {

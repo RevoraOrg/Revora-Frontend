@@ -136,13 +136,11 @@ export interface FieldValidationResult {
 
 function getLocaleSeparators(locale: string): { decimal: string; group: string } {
   try {
-    const parts = new Intl.NumberFormat(locale).formatToParts(1000.1);
-    let decimal = '.';
-    let group = ',';
-    for (const part of parts) {
-      if (part.type === 'decimal') decimal = part.value;
-      if (part.type === 'group') group = part.value;
-    }
+    // Use a 7-digit sample: some locales (e.g. es) only group 5+ digit numbers.
+    const parts = new Intl.NumberFormat(locale).formatToParts(1234567.1);
+    const decimal = parts.find((p) => p.type === 'decimal')?.value ?? '.';
+    // Never let the group fallback collide with the decimal separator.
+    const group = parts.find((p) => p.type === 'group')?.value ?? (decimal === ',' ? '.' : ',');
     return { decimal, group };
   } catch {
     return { decimal: '.', group: ',' };
@@ -177,17 +175,13 @@ export function parseLocaleNumber(raw: string, locale?: string): number | null {
   let working = normalizedWhitespace;
 
   if (locale) {
+    // Explicit locale: drop its group separator (and any whitespace grouping,
+    // e.g. fr-FR NBSP), then map its decimal separator to '.'.
     const { decimal, group } = getLocaleSeparators(locale);
-    const groupRe = new RegExp(escapeRegExp(group === ' ' ? ' ' : group), 'g');
-    working = working.replace(groupRe, '');
-    if (group === ' ') {
-      working = working.replace(/\s+/g, '');
-    }
+    working = working.replace(new RegExp(escapeRegExp(group), 'g'), '').replace(/\s+/g, '');
     if (decimal !== '.') {
-      const decRe = new RegExp(escapeRegExp(decimal), 'g');
-      working = working.replace(decRe, '.');
+      working = working.replace(new RegExp(escapeRegExp(decimal), 'g'), '.');
     }
-    working = working.replace(/\s+/g, '');
   } else {
     const dotCount = (working.match(/\./g) ?? []).length;
     const commaCount = (working.match(/,/g) ?? []).length;
@@ -204,21 +198,10 @@ export function parseLocaleNumber(raw: string, locale?: string): number | null {
         working = working.replace(/,/g, '');
       }
     } else if (commaCount === 1) {
-      // Single comma — decimal separator if followed by 1-3 digits at end (or if no other pattern)
-      if (/,(\d{1,3})$/.test(working)) {
-        // Check if it's likely thousands (grouped in threes) vs decimal
-        const before = working.slice(0, working.lastIndexOf(','));
-        if (before.includes(',') || before.includes('.')) {
-          working = working.replace(/,/g, '');
-        } else if ((before.match(/\d/g) || []).length % 3 === 0 && before.length > 0 && before.replace(/[^0-9]/g, '').length > 0 && !/,\d{1,2}$/.test(working)) {
-          // Could be thousands in some locales, but default to decimal only for 1-2 digits? Keep original heuristic but be more careful
-          working = working.replace(',', '.');
-        } else if (/,\d{3}$/.test(working)) {
-          // Ambiguous case - treat as thousands if grouped
-          working = working.replace(/,/g, '');
-        } else {
-          working = working.replace(',', '.');
-        }
+      // Single comma — decimal separator if followed by 1-2 digits at end,
+      // otherwise a thousands separator (e.g. "1,000", "123,456").
+      if (/,\d{1,2}$/.test(working)) {
+        working = working.replace(',', '.');
       } else {
         working = working.replace(/,/g, '');
       }
@@ -232,8 +215,6 @@ export function parseLocaleNumber(raw: string, locale?: string): number | null {
       // Multiple dots — thousands separators (e.g. "1.000.000")
       working = working.replace(/\./g, '');
     }
-
-    working = working.replace(/[^\d.]/g, '');
   }
 
   working = working.replace(/[^\d.]/g, '');
@@ -256,6 +237,7 @@ export function parseLocaleNumber(raw: string, locale?: string): number | null {
 export function validateField(
   field: FinancialTermsField,
   rawValue: string,
+  locale?: string,
 ): FieldValidationResult {
   const c = FIELD_CONSTRAINTS[field];
 
@@ -267,7 +249,7 @@ export function validateField(
     };
   }
 
-  const num = parseLocaleNumber(rawValue);
+  const num = parseLocaleNumber(rawValue, locale);
 
   if (num === null) {
     return {
@@ -337,9 +319,10 @@ export function validateField(
 export function validateInvestmentRange(
   minRaw: string,
   maxRaw: string,
+  locale?: string,
 ): string | null {
-  const minVal = parseLocaleNumber(minRaw);
-  const maxVal = parseLocaleNumber(maxRaw);
+  const minVal = parseLocaleNumber(minRaw, locale);
+  const maxVal = parseLocaleNumber(maxRaw, locale);
   if (minVal === null || maxVal === null) return null;
   if (minVal >= maxVal) {
     return `Maximum investment ($${formatNumber(maxVal)}) must be greater than minimum investment ($${formatNumber(minVal)}). Increase the maximum or decrease the minimum.`;
@@ -387,6 +370,7 @@ export function validateFinancialTermsForm(
   const crossFieldError = validateInvestmentRange(
     values.minInvestment,
     values.maxInvestment,
+    locale,
   );
 
   const hasFieldErrors = Object.values(fields).some((r) => r.severity === 'error');

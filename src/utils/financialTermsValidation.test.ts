@@ -11,7 +11,7 @@
  * - Form-level validation summary
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   parseLocaleNumber,
   validateField,
@@ -696,5 +696,153 @@ describe('edge cases for complete coverage', () => {
   it('handles one above guardrail high', () => {
     const result = validateField('revenueShareRate', '30.1');
     expect(result.severity).toBe('warning');
+  });
+});
+
+/* ─── Locale-aware parsing & step validation (Issue #918) ─────────────── */
+
+describe('parseLocaleNumber with an explicit locale', () => {
+  it('parses en-US grouping and decimals', () => {
+    expect(parseLocaleNumber('1,234.56', 'en-US')).toBe(1234.56);
+    expect(parseLocaleNumber('1,000', 'en-US')).toBe(1000);
+    expect(parseLocaleNumber('10.5', 'en-US')).toBe(10.5);
+  });
+
+  it('parses de-DE grouping and decimal comma', () => {
+    expect(parseLocaleNumber('1.234,56', 'de-DE')).toBe(1234.56);
+    expect(parseLocaleNumber('1.000.000', 'de-DE')).toBe(1000000);
+    expect(parseLocaleNumber('10,5', 'de-DE')).toBe(10.5);
+  });
+
+  it('parses fr-FR whitespace grouping (space, NBSP, narrow NBSP)', () => {
+    expect(parseLocaleNumber('1 234,5', 'fr-FR')).toBe(1234.5);
+    expect(parseLocaleNumber('1 234,5', 'fr-FR')).toBe(1234.5);
+    expect(parseLocaleNumber('1 000 000', 'fr-FR')).toBe(1000000);
+  });
+
+  it('disambiguates the same input differently per locale', () => {
+    expect(parseLocaleNumber('1,500', 'en-US')).toBe(1500);
+    expect(parseLocaleNumber('1,500', 'de-DE')).toBe(1.5);
+    expect(parseLocaleNumber('1.500', 'en-US')).toBe(1.5);
+    expect(parseLocaleNumber('1.500', 'de-DE')).toBe(1500);
+  });
+
+  it('falls back to "." decimal and "," group for an invalid locale tag', () => {
+    expect(parseLocaleNumber('1,234.5', 'not a locale!!')).toBe(1234.5);
+  });
+
+  it('detects grouping for locales that only group large numbers (es)', () => {
+    expect(parseLocaleNumber('2.000,5', 'es')).toBe(2000.5);
+    expect(parseLocaleNumber('20,5', 'es')).toBe(20.5);
+  });
+
+  it('never lets a missing group separator collide with a comma decimal', () => {
+    const spy = vi
+      .spyOn(Intl.NumberFormat.prototype, 'formatToParts')
+      .mockReturnValue([
+        { type: 'integer', value: '1234567' },
+        { type: 'decimal', value: ',' },
+        { type: 'fraction', value: '1' },
+      ]);
+    try {
+      expect(parseLocaleNumber('20,5', 'xx')).toBe(20.5);
+      expect(parseLocaleNumber('2.000,5', 'xx')).toBe(2000.5);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('defaults both separators when the locale reports neither', () => {
+    const spy = vi
+      .spyOn(Intl.NumberFormat.prototype, 'formatToParts')
+      .mockReturnValue([{ type: 'integer', value: '1234567' }]);
+    try {
+      expect(parseLocaleNumber('1,234.5', 'xx')).toBe(1234.5);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('still rejects negatives, letters and empty strings', () => {
+    expect(parseLocaleNumber('-1', 'de-DE')).toBeNull();
+    expect(parseLocaleNumber('12a', 'de-DE')).toBeNull();
+    expect(parseLocaleNumber(' ', 'de-DE')).toBeNull();
+    expect(parseLocaleNumber('.', 'de-DE')).toBeNull();
+  });
+});
+
+describe('parseLocaleNumber single-comma heuristic (no locale)', () => {
+  it('treats a comma followed by exactly three digits as a thousands separator', () => {
+    expect(parseLocaleNumber('123,456')).toBe(123456);
+    expect(parseLocaleNumber('12,345')).toBe(12345);
+  });
+
+  it('treats a comma followed by one or two digits as a decimal separator', () => {
+    expect(parseLocaleNumber('123,4')).toBe(123.4);
+    expect(parseLocaleNumber('123,45')).toBe(123.45);
+  });
+
+  it('strips plain whitespace grouping', () => {
+    expect(parseLocaleNumber('1 000 000')).toBe(1000000);
+  });
+});
+
+describe('validateField with locale and step constraints', () => {
+  it('threads the locale through to parsing', () => {
+    const result = validateField('revenueShareRate', '10,5', 'de-DE');
+    expect(result.severity).toBe('ok');
+    expect(result.numericValue).toBe(10.5);
+    expect(validateField('revenueCap', '1.000.000', 'de-DE').numericValue).toBe(1000000);
+  });
+
+  it('rejects non-integer values for whole-number fields (step 1)', () => {
+    const result = validateField('paymentFrequency', '2.5');
+    expect(result.severity).toBe('error');
+    expect(result.message).toContain('increments of 1');
+    expect(result.numericValue).toBe(2.5);
+  });
+
+  it('accepts integral values written with a trailing .0 for step 1', () => {
+    expect(validateField('paymentFrequency', '3.0').severity).toBe('ok');
+  });
+
+  it('rejects values that are not a multiple of a fractional step', () => {
+    const result = validateField('revenueShareRate', '10.55');
+    expect(result.severity).toBe('error');
+    expect(result.message).toContain('increments of 0.1');
+  });
+
+  it('accepts multiples of a fractional step despite float error', () => {
+    expect(validateField('revenueShareRate', '0.3').severity).not.toBe('error');
+    expect(validateField('revenueShareRate', '12.7').severity).toBe('ok');
+  });
+
+  it('flags European decimals on whole-number fields as a step error', () => {
+    const result = validateField('revenueCap', '1.000.000,50');
+    expect(result.severity).toBe('error');
+    expect(result.numericValue).toBe(1000000.5);
+  });
+});
+
+describe('locale-aware form and cross-field validation', () => {
+  it('validateInvestmentRange honours the locale', () => {
+    // en-US: 1,500 < 2,000 → ok; de-DE: 1.500 (=1500) > 2 → error
+    expect(validateInvestmentRange('1,500', '2,000', 'en-US')).toBeNull();
+    expect(validateInvestmentRange('1.500', '2', 'de-DE')).toMatch(/must be greater than/);
+  });
+
+  it('validateFinancialTermsForm passes the locale to every field', () => {
+    const values: FinancialTermsValues = {
+      revenueShareRate: '10,5',
+      revenueCap: '1.000.000',
+      paymentFrequency: '3',
+      minInvestment: '1.000',
+      maxInvestment: '50.000',
+      offeringDuration: '12',
+    };
+    const summary = validateFinancialTermsForm(values, 'de-DE');
+    expect(summary.fields.revenueShareRate.numericValue).toBe(10.5);
+    expect(summary.fields.minInvestment.numericValue).toBe(1000);
+    expect(summary.crossFieldError).toBeNull();
   });
 });

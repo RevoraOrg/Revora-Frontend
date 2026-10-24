@@ -72,7 +72,7 @@ function getEnvVarWithFallback<T>(
  * Network configuration with environment variable overrides.
  * Override with VITE_STELLAR_NETWORK, VITE_STELLAR_RPC_URL, etc.
  */
-export const NETWORK = getEnvVarWithFallback(
+export const NETWORK = getEnvVarWithFallback<NetworkType>(
   'VITE_STELLAR_NETWORK',
   DEFAULT_NETWORK,
   isValidNetwork,

@@ -167,4 +167,19 @@ describe('useFinancialTermsForm', () => {
     expect(result.current.touched.revenueCap).toBe(false);
     expect(result.current.touched.paymentFrequency).toBe(false);
   });
+
+  it('parses values using the supplied locale', () => {
+    const { result } = renderHook(() => useFinancialTermsForm('de-DE'));
+    act(() => {
+      result.current.handleChange('revenueShareRate', '10,5');
+      result.current.handleBlur('revenueShareRate');
+    });
+    const field = result.current.getFieldValidation('revenueShareRate');
+    expect(field?.severity).toBe('ok');
+    expect(field?.numericValue).toBe(10.5);
+
+    let summary: ReturnType<typeof result.current.handleSubmit> | undefined;
+    act(() => { summary = result.current.handleSubmit(); });
+    expect(summary?.fields.revenueShareRate.numericValue).toBe(10.5);
+  });
 });

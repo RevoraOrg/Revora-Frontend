@@ -11,7 +11,7 @@
  * - the closed branch short-circuits before it reads `conflicts`, so a missing
  *   list cannot throw, and
  * - the neighbouring normal path: soft-vs-hard conflict gating, note/date
- *   propagation, and the state carried across a close/reopen transition.
+ *   propagation, and the state reset across a close/reopen transition.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -38,7 +38,7 @@ function renderModal(props: Partial<React.ComponentProps<typeof PayoutReschedule
       isOpen
       onClose={noop}
       onConfirm={noop}
-      initialDate="2026-07-28"
+      initialDate="2099-07-28"
       conflicts={[]}
       {...props}
     />,
@@ -86,7 +86,8 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
   it('keeps Confirm enabled when only soft conflicts are present', async () => {
     const onConfirm = vi.fn();
     const user = userEvent.setup();
-    renderModal({ conflicts: [SOFT_CONFLICT], onConfirm });
+    // Pass a distinct currentDate so the pre-filled date counts as a change.
+    renderModal({ conflicts: [SOFT_CONFLICT], onConfirm, currentDate: '2099-07-01' });
 
     expect(screen.getByText(SOFT_CONFLICT.message)).toBeInTheDocument();
     const confirm = screen.getByRole('button', { name: 'Confirm Reschedule' });
@@ -99,7 +100,7 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
   it('blocks Confirm and does not call onConfirm when a hard conflict exists', async () => {
     const onConfirm = vi.fn();
     const user = userEvent.setup();
-    renderModal({ conflicts: [SOFT_CONFLICT, HARD_CONFLICT], onConfirm });
+    renderModal({ conflicts: [SOFT_CONFLICT, HARD_CONFLICT], onConfirm, currentDate: '2099-07-01' });
 
     const confirm = screen.getByRole('button', { name: 'Confirm Reschedule' });
     expect(confirm).toBeDisabled();
@@ -113,15 +114,15 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
     const { container } = renderModal({ conflicts: [], onConfirm });
 
     const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement;
-    expect(dateInput.value).toBe('2026-07-28');
+    expect(dateInput.value).toBe('2099-07-28');
 
-    fireEvent.change(dateInput, { target: { value: '2026-08-15' } });
+    fireEvent.change(dateInput, { target: { value: '2099-08-15' } });
     fireEvent.change(screen.getByPlaceholderText('Reason for rescheduling...'), {
       target: { value: 'Holder asked for a later window' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Confirm Reschedule' }));
 
-    expect(onConfirm).toHaveBeenCalledWith('2026-08-15', 'Holder asked for a later window');
+    expect(onConfirm).toHaveBeenCalledWith('2099-08-15', 'Holder asked for a later window');
   });
 
   it('calls onClose from Cancel without confirming', async () => {
@@ -136,7 +137,7 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
     expect(onConfirm).not.toHaveBeenCalled();
   });
 
-  it('preserves unsaved input across a close/reopen state transition', async () => {
+  it('resets unsaved input to initialDate across a close/reopen state transition', async () => {
     function Harness() {
       const [open, setOpen] = useState(false);
       return (
@@ -148,7 +149,7 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
             isOpen={open}
             onClose={() => setOpen(false)}
             onConfirm={noop}
-            initialDate="2026-07-28"
+            initialDate="2099-07-28"
             conflicts={[]}
           />
         </div>
@@ -162,7 +163,7 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
 
     await user.click(screen.getByRole('button', { name: 'open modal' }));
     const dateInput = container.querySelector('input[type="date"]') as HTMLInputElement;
-    fireEvent.change(dateInput, { target: { value: '2026-09-01' } });
+    fireEvent.change(dateInput, { target: { value: '2099-09-01' } });
     fireEvent.change(screen.getByPlaceholderText('Reason for rescheduling...'), {
       target: { value: 'draft note' },
     });
@@ -172,7 +173,7 @@ describe('PayoutRescheduleModal conflict handling (normal path)', () => {
 
     await user.click(screen.getByRole('button', { name: 'open modal' }));
     const reopenedInput = container.querySelector('input[type="date"]') as HTMLInputElement;
-    expect(reopenedInput.value).toBe('2026-09-01');
-    expect(screen.getByPlaceholderText('Reason for rescheduling...')).toHaveValue('draft note');
+    expect(reopenedInput.value).toBe('2099-07-28');
+    expect(screen.getByPlaceholderText('Reason for rescheduling...')).toHaveValue('');
   });
 });

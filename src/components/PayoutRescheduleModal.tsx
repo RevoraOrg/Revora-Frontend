@@ -108,15 +108,20 @@ export const PayoutRescheduleModal: React.FC<PayoutRescheduleModalProps> = ({
   const conflicts = computedConflicts;
   const hasHardConflict = conflicts.some((c) => c.type === 'hard' || c.severity === 'hard');
 
+  // Compare against the user's local calendar day (not UTC) so "today" is
+  // never flagged as past for users west of UTC.
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = [
+    today.getFullYear(),
+    String(today.getMonth() + 1).padStart(2, '0'),
+    String(today.getDate()).padStart(2, '0'),
+  ].join('-');
   const isEmpty = !newDate;
-  const isPast = newDate ? newDate < todayStr : false;
-  const isUnchanged = currentDate ? newDate === currentDate : initialDate ? newDate === initialDate && currentDate === undefined ? false : currentDate ? newDate === currentDate : false : false;
-  // If currentDate not provided, treat as unchanged only if equals initial and we want to be strict? Issue says "invalid dates" - empty/past/unchanged
-  const unchanged = currentDate !== undefined ? newDate === currentDate : newDate === initialDate && note === '';
-  const invalid = isEmpty || isPast || newDate === (currentDate ?? initialDate);
+  const isPast = !isEmpty && newDate < todayStr;
+  const isUnchanged = !isEmpty && newDate === (currentDate ?? initialDate);
+  const invalid = isEmpty || isPast || isUnchanged;
   const canConfirm = !hasHardConflict && !invalid;
+  const dateErrorId = `${dateId}-error`;
 
   return (
     <div
@@ -147,9 +152,10 @@ export const PayoutRescheduleModal: React.FC<PayoutRescheduleModalProps> = ({
               onChange={(e) => setNewDate(e.target.value)}
               className="w-full p-2 bg-slate-800 border border-slate-700 rounded-lg"
               aria-invalid={invalid}
+              aria-describedby={invalid ? dateErrorId : undefined}
             />
-            {(isEmpty || isPast || (currentDate !== undefined ? newDate === currentDate : newDate === initialDate)) && (
-              <p className="text-xs text-red-400 mt-1">
+            {invalid && (
+              <p id={dateErrorId} className="text-xs text-red-400 mt-1">
                 {isEmpty ? 'Date is required' : isPast ? 'Date cannot be in the past' : 'Date must be different from the current date'}
               </p>
             )}

@@ -238,4 +238,108 @@ describe('useUploadQueue', () => {
     expect(result.current.successCount).toBe(5);
     expect(result.current.errorCount).toBe(5);
   });
+
+  describe('duplicate prevention and cancellation', () => {
+    function deferredUploader() {
+      const calls: Array<{
+        resolve: () => void;
+        reject: (e: unknown) => void;
+        onProgress: (pct: number) => void;
+        signal?: AbortSignal;
+      }> = [];
+      const uploader = vi.fn<Uploader>(
+        (_file, onProgress, signal) =>
+          new Promise<void>((resolve, reject) => {
+            calls.push({ resolve, reject, onProgress, signal });
+          }),
+      );
+      return { uploader, calls };
+    }
+
+    it('passes an AbortSignal to the uploader', () => {
+      const { result } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile()]); });
+      const { uploader, calls } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      expect(calls[0].signal).toBeInstanceOf(AbortSignal);
+      expect(calls[0].signal?.aborted).toBe(false);
+    });
+
+    it('does not start a second upload for an item already in flight', () => {
+      const { result } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile()]); });
+      const { uploader } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      act(() => { result.current.uploadFiles(uploader); });
+      expect(uploader).toHaveBeenCalledTimes(1);
+    });
+
+    it('retryFile is a no-op while the item is still uploading', () => {
+      const { result } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile()]); });
+      const { uploader } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      const id = result.current.queue[0].id;
+      act(() => { result.current.retryFile(id, uploader); });
+      expect(uploader).toHaveBeenCalledTimes(1);
+    });
+
+    it('removing an uploading item aborts it and ignores a late success', async () => {
+      const { result } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile('a.pdf'), makeFile('b.pdf')]); });
+      const { uploader, calls } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      const removedId = result.current.queue[0].id;
+
+      act(() => { result.current.removeFile(removedId); });
+      expect(calls[0].signal?.aborted).toBe(true);
+      expect(calls[1].signal?.aborted).toBe(false);
+
+      await act(async () => {
+        calls[0].onProgress(80);
+        calls[0].resolve();
+      });
+      expect(result.current.queue).toHaveLength(1);
+      expect(result.current.queue[0].file.name).toBe('b.pdf');
+      expect(result.current.queue[0].status).toBe('uploading');
+      expect(result.current.successCount).toBe(0);
+    });
+
+    it('removing an uploading item ignores a late rejection', async () => {
+      const { result } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile()]); });
+      const { uploader, calls } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      act(() => { result.current.removeFile(result.current.queue[0].id); });
+
+      await act(async () => { calls[0].reject(new Error('aborted')); });
+      expect(result.current.queue).toHaveLength(0);
+      expect(result.current.errorCount).toBe(0);
+    });
+
+    it('aborts in-flight uploads on unmount', () => {
+      const { result, unmount } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile('a.pdf'), makeFile('b.pdf')]); });
+      const { uploader, calls } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      unmount();
+      expect(calls.map((c) => c.signal?.aborted)).toEqual([true, true]);
+    });
+
+    it('allows retrying an item after its upload settles', async () => {
+      const { result } = renderHook(() => useUploadQueue());
+      act(() => { result.current.addFiles([makeFile()]); });
+      const { uploader, calls } = deferredUploader();
+      act(() => { result.current.uploadFiles(uploader); });
+      await act(async () => { calls[0].reject(new Error('boom')); });
+      expect(result.current.queue[0].status).toBe('error');
+
+      const id = result.current.queue[0].id;
+      act(() => { result.current.retryFile(id, uploader); });
+      expect(uploader).toHaveBeenCalledTimes(2);
+      await act(async () => { calls[1].resolve(); });
+      expect(result.current.queue[0].status).toBe('success');
+      expect(result.current.queue[0].progress).toBe(100);
+    });
+  });
 });

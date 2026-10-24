@@ -228,12 +228,12 @@ describe('StatusTimeline barrel (src/components/StatusTimeline/index.ts)', () =>
   });
 
   describe('explorer URL helpers', () => {
-    it('defaults to the public network and percent-encodes the hash', () => {
+    it('defaults to the app (testnet) network and percent-encodes the hash', () => {
       expect(barrel.buildStellarExplorerTxUrl(' a b/2 ')).toBe(
-        'https://stellar.expert/explorer/public/tx/a%20b%2F2',
+        'https://stellar.expert/explorer/testnet/tx/a%20b%2F2',
       );
-      expect(barrel.buildStellarExplorerTxUrl('abc', 'testnet')).toBe(
-        'https://stellar.expert/explorer/testnet/tx/abc',
+      expect(barrel.buildStellarExplorerTxUrl('abc', 'public')).toBe(
+        'https://stellar.expert/explorer/public/tx/abc',
       );
     });
 
@@ -248,11 +248,11 @@ describe('StatusTimeline barrel (src/components/StatusTimeline/index.ts)', () =>
 
     it('derives from the transaction hash when no explicit URL is supplied', () => {
       expect(barrel.resolveExplorerUrl({ transactionHash: ' abc ' })).toBe(
-        'https://stellar.expert/explorer/public/tx/abc',
+        'https://stellar.expert/explorer/testnet/tx/abc',
       );
       expect(
-        barrel.resolveExplorerUrl({ transactionHash: 'abc', network: 'testnet' }),
-      ).toBe('https://stellar.expert/explorer/testnet/tx/abc');
+        barrel.resolveExplorerUrl({ transactionHash: 'abc', network: 'public' }),
+      ).toBe('https://stellar.expert/explorer/public/tx/abc');
     });
 
     it('returns undefined when neither an explicit URL nor a hash is present', () => {

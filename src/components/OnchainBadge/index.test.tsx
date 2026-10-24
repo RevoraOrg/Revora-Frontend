@@ -380,7 +380,7 @@ describe('Representative invalid inputs and boundary edge cases', () => {
       expect(link).toHaveAttribute('rel', 'noopener noreferrer');
     });
 
-    it('resolves public explorer URL when network is public or omitted', () => {
+    it('resolves public explorer URL when network is public and app default (testnet) when omitted', () => {
       const { rerender } = render(
         <OnchainBadge
           variant="confirmed"
@@ -398,7 +398,7 @@ describe('Representative invalid inputs and boundary edge cases', () => {
       badge = screen.getByTestId('onchain-badge-confirmed');
       fireEvent.mouseEnter(badge);
       link = screen.getByTestId('ob-tooltip-explorer');
-      expect(link).toHaveAttribute('href', 'https://stellar.expert/explorer/public/tx/txhashdefault');
+      expect(link).toHaveAttribute('href', 'https://stellar.expert/explorer/testnet/tx/txhashdefault');
     });
 
     it('prefers explicit explorerUrl over default transactionHash link', () => {

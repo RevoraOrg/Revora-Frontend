@@ -13,6 +13,7 @@ import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
 import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
 import TwoFactorBackupCodesPage from "./pages/TwoFactorBackupCodesPage";
+import { SecuritySettingsPage } from "./pages/SecuritySettingsPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
@@ -109,6 +110,7 @@ export const routes: RouteObject[] = [
       { path: "/forgot-password", element: <ForgotPassword /> },
       { path: "/recover-2fa", element: <TwoFactorRecoveryPage /> },
       { path: "/settings/2fa/backup-codes", element: <TwoFactorBackupCodesPage /> },
+      { path: "/settings/security", element: <SecuritySettingsPage /> },
 
       // Startup routes
       { path: "/startup", element: <Navigate to="/startup/dashboard" replace /> },
@@ -166,6 +168,7 @@ function AppLayout() {
           <NavLink to="/startup" className="site-link">Startup</NavLink>
           <NavLink to="/investor" className="site-link">Investor</NavLink>
           <NavLink to="/admin" className="site-link">Admin</NavLink>
+          <NavLink to="/settings/security" className="site-link">Security</NavLink>
           <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>

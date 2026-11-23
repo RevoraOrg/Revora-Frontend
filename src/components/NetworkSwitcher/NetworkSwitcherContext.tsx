@@ -1,4 +1,11 @@
-import React, { createContext, useState, useCallback, useMemo, useRef } from 'react';
+import React, {
+  createContext,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from 'react';
 import {
   DEFAULT_APP_CHAIN_ID,
   getChainMetadata,
@@ -66,6 +73,14 @@ export interface NetworkSwitcherProviderProps {
   initialIsWalletConnected?: boolean;
   initialIsModalOpen?: boolean;
   initialDismissedForChainId?: number | null;
+  /** Controlled connected chain ID (synced from external wallet context when provided) */
+  connectedChainId?: number | string;
+  /** Controlled app target chain ID (synced when provided) */
+  appChainId?: number | string;
+  /** Controlled wallet connection status (synced from external wallet context when provided) */
+  isWalletConnected?: boolean;
+  /** Controlled wallet name (synced when provided) */
+  walletName?: string;
   onWalletSwitchRequested?: (targetChainId: number) => Promise<void>;
   onAppChainChanged?: (newChainId: number) => void;
 }
@@ -78,25 +93,39 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
   initialIsWalletConnected,
   initialIsModalOpen = false,
   initialDismissedForChainId = null,
+  connectedChainId: connectedChainIdProp,
+  appChainId: appChainIdProp,
+  isWalletConnected: isWalletConnectedProp,
+  walletName: walletNameProp,
   onWalletSwitchRequested,
   onAppChainChanged,
 }) => {
-  const hasExplicitConnectedChain = initialConnectedChainId !== undefined;
+  const effectiveInitialConnected =
+    connectedChainIdProp !== undefined
+      ? connectedChainIdProp
+      : initialConnectedChainId;
+  const hasExplicitConnectedChain = effectiveInitialConnected !== undefined;
   const defaultConnectedChainId = hasExplicitConnectedChain
-    ? parseChainId(initialConnectedChainId)
+    ? parseChainId(effectiveInitialConnected)
     : 1;
 
   const [connectedChainId, setConnectedChainIdState] = useState<number>(
     defaultConnectedChainId,
   );
   const [appChainId, setAppChainIdState] = useState<number>(() =>
-    parseChainId(initialAppChainId),
+    parseChainId(
+      appChainIdProp !== undefined ? appChainIdProp : initialAppChainId,
+    ),
   );
-  const [walletName, setWalletNameState] = useState<string>(initialWalletName);
+  const [walletName, setWalletNameState] = useState<string>(
+    walletNameProp !== undefined ? walletNameProp : initialWalletName,
+  );
   const [isWalletConnected, setIsWalletConnectedState] = useState<boolean>(
-    initialIsWalletConnected !== undefined
-      ? initialIsWalletConnected
-      : hasExplicitConnectedChain,
+    isWalletConnectedProp !== undefined
+      ? isWalletConnectedProp
+      : initialIsWalletConnected !== undefined
+        ? initialIsWalletConnected
+        : hasExplicitConnectedChain,
   );
   const [isModalOpen, setIsModalOpen] = useState<boolean>(initialIsModalOpen);
   const [dismissedForChainId, setDismissedForChainId] = useState<number | null>(
@@ -106,6 +135,40 @@ export const NetworkSwitcherProvider: React.FC<NetworkSwitcherProviderProps> = (
   // Latest connected chain, read by closeModal/dismissModal so those callbacks stay referentially stable.
   const connectedChainIdRef = useRef(connectedChainId);
   connectedChainIdRef.current = connectedChainId;
+
+  const prevConnectedPropRef = useRef<number | undefined>(
+    connectedChainIdProp !== undefined
+      ? parseChainId(connectedChainIdProp)
+      : undefined,
+  );
+
+  useEffect(() => {
+    if (connectedChainIdProp === undefined) return;
+    const parsed = parseChainId(connectedChainIdProp);
+    if (prevConnectedPropRef.current !== parsed) {
+      prevConnectedPropRef.current = parsed;
+      setConnectedChainIdState(parsed);
+      setDismissedForChainId(null);
+    }
+  }, [connectedChainIdProp]);
+
+  useEffect(() => {
+    if (appChainIdProp === undefined) return;
+    setAppChainIdState(parseChainId(appChainIdProp));
+  }, [appChainIdProp]);
+
+  useEffect(() => {
+    if (isWalletConnectedProp === undefined) return;
+    setIsWalletConnectedState(isWalletConnectedProp);
+    if (!isWalletConnectedProp) {
+      setDismissedForChainId(null);
+    }
+  }, [isWalletConnectedProp]);
+
+  useEffect(() => {
+    if (walletNameProp === undefined) return;
+    setWalletNameState(walletNameProp);
+  }, [walletNameProp]);
 
   const isMismatch = useMemo(() => {
     if (!isWalletConnected) return false;

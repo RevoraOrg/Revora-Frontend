@@ -355,4 +355,85 @@ describe("toPdfBytes", () => {
     const showCount = (content.match(/\bTj\b/g) ?? []).length;
     expect(showCount).toBeGreaterThan(1);
   });
+
+  it("declares WinAnsiEncoding and encodes Euro, accented characters, and unsupported replacements", () => {
+    const bytes = toPdfBytes([
+      ["Period", "Amount", "Notes"],
+      ["May 2026", "€1.000", "café naïve — ₭500 😀"],
+    ]);
+    assertPdfByteAccuracy(bytes);
+
+    const text = new TextDecoder("latin1").decode(bytes);
+    expect(text).toContain("/Encoding /WinAnsiEncoding");
+
+    const streamMatch = /stream\n([\s\S]*)\nendstream/.exec(text);
+    expect(streamMatch).not.toBeNull();
+    const content = streamMatch![1];
+
+    // Euro (€ -> 0x80) and em-dash (— -> 0x97) are single WinAnsi bytes.
+    expect(content).toContain("\x801.000");
+    expect(content).toContain("\x97");
+    // Latin-1 accented characters (é -> 0xE9, ï -> 0xEF) are preserved as single bytes.
+    expect(content).toContain("caf\xe9 na\xefve");
+    // Unsupported characters (₭ and emoji) are replaced with '?'.
+    expect(content).toContain("?500 ?");
+  });
+
+  it("paginates reports above 35 rows into multiple pages with valid /Kids, /Count, and xref offsets", () => {
+    const rows = Array.from({ length: 40 }, (_, i) => [
+      `Row ${i + 1}`,
+      String((i + 1) * 100),
+    ]);
+    const bytes = toPdfBytes(rows);
+    assertPdfByteAccuracy(bytes);
+
+    const text = new TextDecoder("latin1").decode(bytes);
+
+    // Parse /Pages object for /Kids and /Count.
+    const pagesMatch = /\/Type \/Pages \/Kids \[([^\]]+)\] \/Count (\d+)/.exec(text);
+    expect(pagesMatch).not.toBeNull();
+    const kids = pagesMatch![1].trim().split(/\s+(?=\d+ 0 R)/);
+    const pageCount = Number(pagesMatch![2]);
+    expect(pageCount).toBe(2);
+    expect(kids).toHaveLength(2);
+
+    // Verify each /Kids reference resolves to a /Type /Page object with its own /Contents.
+    const contentIds = new Set<string>();
+    for (const kid of kids) {
+      const objNum = kid.split(" ")[0];
+      const pageRe = new RegExp(
+        `${objNum} 0 obj\\n<< /Type /Page .*?/Contents (\\d+ 0 R) >>`
+      );
+      const pageMatch = pageRe.exec(text);
+      expect(pageMatch, `Kid ${kid} must be a /Type /Page object`).not.toBeNull();
+      contentIds.add(pageMatch![1]);
+    }
+    expect(contentIds.size).toBe(2);
+
+    // Verify y-coordinates stay within [50, 760] on all pages and all 40 rows are present.
+    const streams = [...text.matchAll(/stream\n([\s\S]*?)\nendstream/g)].map((m) => m[1]);
+    expect(streams).toHaveLength(2);
+    const allContent = streams.join("\n");
+    for (const match of allContent.matchAll(/1 0 0 1 50 (-?\d+) Tm/g)) {
+      const y = Number(match[1]);
+      expect(y).toBeGreaterThanOrEqual(50);
+      expect(y).toBeLessThanOrEqual(760);
+    }
+    expect(allContent).toContain("(Row 1   100) Tj");
+    expect(allContent).toContain("(Row 40   4000) Tj");
+  });
+
+  it("handles empty rows input and empty inner rows", () => {
+    const emptyBytes = toPdfBytes([]);
+    assertPdfByteAccuracy(emptyBytes);
+    const emptyText = new TextDecoder("latin1").decode(emptyBytes);
+    expect(emptyText).toContain("/Count 1");
+    expect(emptyText).toContain("(Revenue Report) Tj");
+
+    const sparseBytes = toPdfBytes([["Period", "Notes"], [], ["May 2026", "ok"]]);
+    assertPdfByteAccuracy(sparseBytes);
+    const sparseText = new TextDecoder("latin1").decode(sparseBytes);
+    expect(sparseText).toContain("() Tj");
+    expect(sparseText).toContain("(May 2026   ok) Tj");
+  });
 });

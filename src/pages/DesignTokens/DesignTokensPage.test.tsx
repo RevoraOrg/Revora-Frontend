@@ -31,6 +31,15 @@ describe("contrastRatio", () => {
     const ratio = contrastRatio("#3b82f6", "#020617");
     expect(ratio).toBeGreaterThan(1);
   });
+  it("supports 3-character lowercase shorthand hex (#fff)", () => {
+    expect(contrastRatio("#fff", "#000")).toBe(21);
+  });
+  it("supports 3-character uppercase shorthand hex (#FFF)", () => {
+    expect(contrastRatio("#FFF", "#000")).toBe(21);
+  });
+  it("returns null for invalid hex characters (#ggg)", () => {
+    expect(contrastRatio("#ggg", "#000")).toBeNull();
+  });
 });
 
 describe("wcagGrade", () => {

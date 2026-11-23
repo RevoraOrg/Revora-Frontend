@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import { SessionManagement } from './SessionManagement';
+import { MOCK_SESSIONS } from './sessionsMock';
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -175,5 +176,91 @@ describe('SessionManagement revoke success paths', () => {
     expect(onRevokeAll).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('dialog', { name: 'Sign out everywhere?' })).not.toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Signed out of all other devices');
+  });
+});
+
+describe('SessionManagement canonical props (sessions / onRevoke / onRevokeAll)', () => {
+  it('renders with no props and falls back to MOCK_SESSIONS', () => {
+    render(
+      <MemoryRouter>
+        <SessionManagement />
+      </MemoryRouter>,
+    );
+    // MOCK_SESSIONS has sess-1 as the current session (MacBook Pro 16)
+    expect(screen.getByTestId('session-sess-1')).toBeInTheDocument();
+    expect(screen.getByText('MacBook Pro 16')).toBeInTheDocument();
+  });
+
+  it('renders sessions supplied via the canonical sessions prop', () => {
+    render(
+      <MemoryRouter>
+        <SessionManagement sessions={SESSIONS} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByTestId('session-cur')).toBeInTheDocument();
+    expect(screen.getByTestId('session-phone')).toBeInTheDocument();
+    expect(screen.getByTestId('session-tablet')).toBeInTheDocument();
+  });
+
+  it('invokes the canonical onRevoke prop with the session id on confirm', async () => {
+    const onRevoke = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <SessionManagement sessions={SESSIONS} onRevoke={onRevoke} />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'View details for Phone' }));
+    await user.click(screen.getByRole('button', { name: 'Revoke session' }));
+    const dialog = screen.getByRole('dialog', { name: 'Revoke session?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Revoke' }));
+
+    expect(onRevoke).toHaveBeenCalledOnce();
+    expect(onRevoke).toHaveBeenCalledWith('phone');
+    expect(screen.queryByTestId('session-phone')).not.toBeInTheDocument();
+  });
+
+  it('invokes the canonical onRevokeAll prop on confirm', async () => {
+    const onRevokeAll = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <SessionManagement sessions={SESSIONS} onRevokeAll={onRevokeAll} />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /sign out of all other devices/i }));
+    const dialog = screen.getByRole('dialog', { name: 'Sign out everywhere?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Sign out everywhere' }));
+
+    expect(onRevokeAll).toHaveBeenCalledOnce();
+    expect(screen.queryByRole('dialog', { name: 'Sign out everywhere?' })).not.toBeInTheDocument();
+  });
+
+  it('protects the current session — it cannot be revoked via "Sign out everywhere"', async () => {
+    const onRevokeAll = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <SessionManagement sessions={SESSIONS} onRevokeAll={onRevokeAll} />
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('button', { name: /sign out of all other devices/i }));
+    const dialog = screen.getByRole('dialog', { name: 'Sign out everywhere?' });
+    await user.click(within(dialog).getByRole('button', { name: 'Sign out everywhere' }));
+
+    // Current session must remain
+    expect(screen.getByTestId('session-cur')).toBeInTheDocument();
+    // Other sessions must be gone
+    expect(screen.queryByTestId('session-phone')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('session-tablet')).not.toBeInTheDocument();
+  });
+
+  it('MOCK_SESSIONS exported from sessionsMock.ts contains the expected default entries', () => {
+    expect(MOCK_SESSIONS).toHaveLength(4);
+    expect(MOCK_SESSIONS.some((s) => s.isCurrent)).toBe(true);
+    expect(MOCK_SESSIONS.filter((s) => !s.isCurrent)).toHaveLength(3);
   });
 });

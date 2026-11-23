@@ -2,10 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Wallet } from "lucide-react";
 import { Button } from "../Button";
 import { ConnectWalletModal } from "./ConnectWalletModal";
-import {
-  TESTNET_PASSPHRASE,
-  useWalletConnection,
-} from "./WalletConnectionContext";
+import { useWalletConnection } from "./WalletConnectionContext";
 
 export function ConnectWalletButton({
   disabled = false,
@@ -37,11 +34,6 @@ export function ConnectWalletButton({
       {wallet.address && (
         <div className="wallet-account" role="status">
           <p>Connected network: {wallet.network || "Custom network"}</p>
-          {wallet.networkPassphrase !== TESTNET_PASSPHRASE && (
-            <p role="alert">
-              Switch Freighter to TESTNET. Revora uses the Stellar test network.
-            </p>
-          )}
           <Button variant="secondary" type="button" onClick={wallet.disconnect}>
             Disconnect wallet
           </Button>

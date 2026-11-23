@@ -119,7 +119,14 @@ export function buildStellarLabUrl(contractId: string = CONTRACT_ID): string {
   return `${STELLAR_LAB_BASE}/contract/${contractId}`;
 }
 
-export function buildTransactionExplorerUrl(txHash: string): string {
+export function isValidTxHash(txHash: string): boolean {
+  return typeof txHash === 'string' && /^[0-9a-fA-F]{64}$/.test(txHash);
+}
+
+export function buildTransactionExplorerUrl(txHash: string): string | null {
+  if (!isValidTxHash(txHash)) {
+    return null;
+  }
   return `${EXPLORER_BASE}/tx/${txHash}`;
 }
 

@@ -19,6 +19,7 @@ import {
   buildContractExplorerUrl,
   buildStellarLabUrl,
   buildTransactionExplorerUrl,
+  isValidTxHash,
 } from './stellar';
 
 describe('stellar constants', () => {
@@ -58,9 +59,33 @@ describe('stellar constants', () => {
     expect(url).toBe(`${DEFAULT_STELLAR_LAB_BASE}/contract/${DEFAULT_CONTRACT_ID}`);
   });
 
-  it('builds transaction explorer URLs', () => {
-    const txHash = 'abc123';
+  it('validates 64-character hex transaction hashes', () => {
+    expect(isValidTxHash('a'.repeat(64))).toBe(true);
+    expect(isValidTxHash('0123456789abcdefABCDEF'.repeat(2) + '0123456789abcdef0123')).toBe(true);
+    expect(isValidTxHash('')).toBe(false);
+    expect(isValidTxHash('abc123')).toBe(false);
+    expect(isValidTxHash('a'.repeat(63))).toBe(false);
+    expect(isValidTxHash('a'.repeat(65))).toBe(false);
+    expect(isValidTxHash('g'.repeat(64))).toBe(false);
+    expect(isValidTxHash(`${'a'.repeat(60)}/../`)).toBe(false);
+  });
+
+  it('builds transaction explorer URLs for valid 64-hex hashes', () => {
+    const txHash = '0123456789abcdef'.repeat(4);
     const url = buildTransactionExplorerUrl(txHash);
     expect(url).toBe(`${DEFAULT_EXPLORER_BASE}/tx/${txHash}`);
+
+    const upperHash = '0123456789ABCDEF'.repeat(4);
+    expect(buildTransactionExplorerUrl(upperHash)).toBe(`${DEFAULT_EXPLORER_BASE}/tx/${upperHash}`);
+  });
+
+  it('returns null from buildTransactionExplorerUrl for invalid hashes', () => {
+    expect(buildTransactionExplorerUrl('')).toBeNull();
+    expect(buildTransactionExplorerUrl('abc123')).toBeNull();
+    expect(buildTransactionExplorerUrl('a'.repeat(63))).toBeNull();
+    expect(buildTransactionExplorerUrl('a'.repeat(65))).toBeNull();
+    expect(buildTransactionExplorerUrl('z'.repeat(64))).toBeNull();
+    expect(buildTransactionExplorerUrl('../evil?x=1')).toBeNull();
+    expect(buildTransactionExplorerUrl(` ${'a'.repeat(64)} `)).toBeNull();
   });
 });

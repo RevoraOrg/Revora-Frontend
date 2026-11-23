@@ -108,6 +108,77 @@ export const SUPPORTED_CHAINS: Record<number, ChainMetadata> = {
 
 export const DEFAULT_APP_CHAIN_ID = 137; // Polygon PoS default for Revora
 
+export const STELLAR_CUSTOM_CHAIN_ID = 100000;
+export const STELLAR_TESTNET_CHAIN_ID = 100001;
+export const STELLAR_PUBLIC_CHAIN_ID = 100002;
+export const STELLAR_FUTURENET_CHAIN_ID = 100003;
+export const DEFAULT_STELLAR_APP_CHAIN_ID = STELLAR_TESTNET_CHAIN_ID;
+
+export const STELLAR_CHAINS: Record<number, ChainMetadata> = {
+  [STELLAR_TESTNET_CHAIN_ID]: {
+    id: STELLAR_TESTNET_CHAIN_ID,
+    hexId: '0x186a1',
+    name: 'Stellar Testnet',
+    shortName: 'Testnet',
+    nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+    blockExplorerUrl: 'https://stellar.expert/explorer/testnet',
+    color: '#7c3aed',
+    accentColor: '#a78bfa',
+    isTestnet: true,
+  },
+  [STELLAR_PUBLIC_CHAIN_ID]: {
+    id: STELLAR_PUBLIC_CHAIN_ID,
+    hexId: '0x186a2',
+    name: 'Stellar Mainnet',
+    shortName: 'Mainnet',
+    nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+    blockExplorerUrl: 'https://stellar.expert/explorer/public',
+    color: '#0ea5e9',
+    accentColor: '#38bdf8',
+    isTestnet: false,
+  },
+  [STELLAR_FUTURENET_CHAIN_ID]: {
+    id: STELLAR_FUTURENET_CHAIN_ID,
+    hexId: '0x186a3',
+    name: 'Stellar Futurenet',
+    shortName: 'Futurenet',
+    nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+    blockExplorerUrl: 'https://stellar.expert/explorer/futurenet',
+    color: '#f59e0b',
+    accentColor: '#fbbf24',
+    isTestnet: true,
+  },
+  [STELLAR_CUSTOM_CHAIN_ID]: {
+    id: STELLAR_CUSTOM_CHAIN_ID,
+    hexId: '0x186a0',
+    name: 'Custom Stellar Network',
+    shortName: 'Custom',
+    nativeCurrency: { name: 'Lumens', symbol: 'XLM', decimals: 7 },
+    blockExplorerUrl: '',
+    color: '#94a3b8',
+    accentColor: '#cbd5e1',
+  },
+};
+
+export const STELLAR_CHAIN_ID_BY_PASSPHRASE: Record<string, number> = {
+  'Test SDF Network ; September 2015': STELLAR_TESTNET_CHAIN_ID,
+  'Public Global Stellar Network ; September 2015': STELLAR_PUBLIC_CHAIN_ID,
+  'Test SDF Future Network ; October 2022': STELLAR_FUTURENET_CHAIN_ID,
+};
+
+/**
+ * Derives Stellar chain metadata from a Stellar network passphrase.
+ * Returns null when no passphrase is available (wallet disconnected).
+ */
+export function getChainFromPassphrase(
+  passphrase: string | null | undefined,
+): ChainMetadata | null {
+  if (!passphrase) return null;
+  const chainId =
+    STELLAR_CHAIN_ID_BY_PASSPHRASE[passphrase] ?? STELLAR_CUSTOM_CHAIN_ID;
+  return STELLAR_CHAINS[chainId];
+}
+
 /**
  * Returns metadata for a chain ID, or a safe fallback for unknown chains (edge case handling).
  */
@@ -116,6 +187,10 @@ export function getChainMetadata(chainId: number | string): ChainMetadata {
 
   if (numericId in SUPPORTED_CHAINS) {
     return SUPPORTED_CHAINS[numericId];
+  }
+
+  if (numericId in STELLAR_CHAINS) {
+    return STELLAR_CHAINS[numericId];
   }
 
   return {

@@ -140,6 +140,8 @@ export const LedgerDemoPage: React.FC = () => {
         columns={columns}
         rowKey={(r) => r.id}
         rowDetail={(row) => <DetailContent row={row} />}
+        detailMode="drawer"
+        drawer={{ deepLinkParam: 'entry' }}
         pageSize={50}
         defaultDensity="cozy"
         ariaLabel="Ledger entries table"

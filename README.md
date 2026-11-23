@@ -25,6 +25,7 @@ Deployed on the Stellar **testnet** (no real funds):
 - Startup: issuer dashboard, monthly revenue reporting, offering registration wizard with document uploader, governance proposal creation and vote receipt
 - Investor: offering discovery with filters, portfolio summary (allocation, performance), virtualized ledger table, payout schedule (Gantt/timeline)
 - Admin: alerts inbox, scheduled exports
+- Keyboard navigation: open the command palette with Cmd/Ctrl+K, search and navigate to app pages, and press `?` to view shortcuts (Escape closes either overlay)
 - Design system: tokens, density modes, empty/error states, status timelines, notification bell, command palette, RTL and accessibility guidelines
 
 ## Quickstart

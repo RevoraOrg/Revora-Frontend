@@ -3,11 +3,14 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Login } from './Login';
+import { I18nProvider } from '../i18n/I18nProvider';
 
 const renderLogin = () => {
   return render(
     <MemoryRouter>
-      <WalletConnectionProvider><Login /></WalletConnectionProvider>
+      <I18nProvider>
+        <WalletConnectionProvider><Login /></WalletConnectionProvider>
+      </I18nProvider>
     </MemoryRouter>
   );
 };

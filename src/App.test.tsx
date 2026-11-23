@@ -1,21 +1,36 @@
 import type { ReactElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { WalletConnectionProvider } from "./components/WalletConnection/WalletConnectionContext";
+import { I18nProvider } from "./i18n/I18nProvider";
+import { COMMAND_GROUPS } from "./components/CommandPalette/commandPaletteData";
 
 function withProviders(ui: ReactElement) {
-  return <WalletConnectionProvider>{ui}</WalletConnectionProvider>;
+  return (
+    <I18nProvider>
+      <WalletConnectionProvider>{ui}</WalletConnectionProvider>
+    </I18nProvider>
+  );
 }
 
 function renderAtPath(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] });
-  return render(withProviders(<RouterProvider router={router} />));
+  return {
+    ...render(withProviders(<RouterProvider router={router} />)),
+    router,
+  };
 }
 import userEvent from '@testing-library/user-event';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 import { App, routes } from './App';
 
 describe('App Components Accessibility', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.documentElement.lang = 'en-US';
+    document.documentElement.dir = 'ltr';
+  });
+
   it('renders standard links and buttons correctly', () => {
     renderAtPath("/");
     
@@ -33,6 +48,85 @@ describe('App Components Accessibility', () => {
     renderAtPath("/");
     const heading = screen.getByRole('heading', { name: /Revora on Stellar/i });
     expect(heading).toBeInTheDocument();
+  });
+
+  it('opens the command palette with Ctrl+K and exposes the shortcut on the header trigger', async () => {
+    renderAtPath("/");
+
+    const trigger = screen.getByRole('button', { name: /open command palette/i });
+    expect(trigger).toHaveAttribute('aria-keyshortcuts', 'Control+k');
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+
+    expect(await screen.findByPlaceholderText('Search commands…')).toBeInTheDocument();
+  });
+
+  it('searches and navigates to the investor ledger', async () => {
+    const { router } = renderAtPath("/");
+    const user = userEvent.setup();
+
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const search = await screen.findByPlaceholderText('Search commands…');
+    await user.type(search, 'ledger');
+    await user.keyboard('{ArrowDown}{Enter}');
+
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/investor/ledger');
+    });
+  });
+
+  it('closes the palette with Escape and restores focus', async () => {
+    renderAtPath("/");
+    const user = userEvent.setup();
+    const trigger = screen.getByRole('button', { name: /open command palette/i });
+    trigger.focus();
+
+    fireEvent.keyDown(window, { key: 'k', ctrlKey: true });
+    const search = await screen.findByPlaceholderText('Search commands…');
+    await user.keyboard('{Escape}');
+
+    expect(screen.queryByPlaceholderText('Search commands…')).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
+  it('opens the shortcuts overlay with ? and restores focus after Escape', async () => {
+    renderAtPath("/");
+    const trigger = screen.getByRole('button', { name: /open command palette/i });
+    trigger.focus();
+
+    fireEvent.keyDown(window, { key: '?' });
+    const dialog = await screen.findByRole('dialog', { name: 'Keyboard Shortcuts' });
+    fireEvent.keyDown(dialog, { key: 'Escape' });
+
+    await waitFor(() => expect(trigger).toHaveFocus());
+    expect(screen.queryByRole('dialog', { name: 'Keyboard Shortcuts' })).not.toBeInTheDocument();
+  });
+
+  it('only exposes navigation commands for registered routes', () => {
+    const routePaths = new Set(
+      routes.flatMap((route) =>
+        route.children?.map((child) => child.path).filter(
+          (path): path is string => Boolean(path && path !== '*'),
+        ) ?? [],
+      ),
+    );
+    const navigationCommands = COMMAND_GROUPS.find((group) => group.key === 'navigate')?.items ?? [];
+
+    expect(navigationCommands.length).toBeGreaterThan(0);
+    for (const command of navigationCommands) {
+      expect(command.description).toBeDefined();
+      expect(routePaths.has(command.description ?? '')).toBe(true);
+    }
+  });
+
+  it('switches the active locale and updates document direction', async () => {
+    renderAtPath("/");
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Language' }), 'ar-SA');
+
+    expect(await screen.findByRole('heading', { name: /ريفورا على Stellar/ })).toBeInTheDocument();
+    expect(document.documentElement.lang).toBe('ar-SA');
+    expect(document.documentElement.dir).toBe('rtl');
   });
 
   it.each([

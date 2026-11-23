@@ -3,11 +3,14 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { Signup } from './Signup';
+import { I18nProvider } from '../i18n/I18nProvider';
 
 const renderSignup = () => {
   return render(
     <MemoryRouter>
-      <WalletConnectionProvider><Signup /></WalletConnectionProvider>
+      <I18nProvider>
+        <WalletConnectionProvider><Signup /></WalletConnectionProvider>
+      </I18nProvider>
     </MemoryRouter>
   );
 };

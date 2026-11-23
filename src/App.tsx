@@ -37,8 +37,9 @@ import {
   buildContractExplorerUrl,
   buildStellarLabUrl,
 } from "./constants/stellar";
-import { LIVE_URL, REPO_URL } from "./constants/links";
 
+const LIVE_URL = "https://revora-frontend-omega.vercel.app";
+const REPO_URL = "https://github.com/RevoraOrg/Revora-Frontend";
 const STELLAR_LAB_URL = buildStellarLabUrl();
 const STELLAR_EXPERT_URL = buildContractExplorerUrl();
 

@@ -617,4 +617,126 @@ describe('LedgerTable – row-detail side drawer (Issue #628)', () => {
     expect(results).toHaveNoViolations();
     expect(container).toBeInTheDocument();
   });
+
+  describe('Virtualized keyboard navigation and ARIA semantics', () => {
+    const manyEntries: LedgerEntry[] = Array.from({ length: 60 }, (_, i) => ({
+      id: `ENT-${String(i + 1).padStart(4, '0')}`,
+      date: '2026-01-01',
+      amount: (i + 1) * 10,
+      status: 'confirmed',
+    }));
+
+    it('exposes aria-rowcount and per-row aria-rowindex across pages', () => {
+      renderDrawerTable({ data: manyEntries, pageSize: 50 });
+      const grid = screen.getByRole('grid');
+      expect(grid).toHaveAttribute('aria-rowcount', '60');
+
+      const page1Rows = screen.getAllByRole('row').filter((r) => r.hasAttribute('aria-rowindex'));
+      expect(page1Rows[0]).toHaveAttribute('aria-rowindex', '1');
+      expect(page1Rows[1]).toHaveAttribute('aria-rowindex', '2');
+
+      fireEvent.click(screen.getByLabelText('Next page'));
+      const page2Rows = screen.getAllByRole('row').filter((r) => r.hasAttribute('aria-rowindex'));
+      expect(page2Rows[0]).toHaveAttribute('aria-rowindex', '51');
+    });
+
+    it('implements roving tabindex across rows and moves DOM focus on ArrowDown/ArrowUp', () => {
+      render(
+        <LedgerTable
+          data={manyEntries}
+          columns={ledgerColumns}
+          rowKey={(r) => r.id}
+          pageSize={50}
+          ariaLabel="Roving table"
+        />,
+      );
+
+      const getDataRows = () =>
+        screen.getAllByRole('row').filter((r) => r.hasAttribute('aria-rowindex'));
+
+      const initialRows = getDataRows();
+      expect(initialRows[0]).toHaveAttribute('tabindex', '0');
+      expect(initialRows[1]).toHaveAttribute('tabindex', '-1');
+
+      fireEvent.keyDown(initialRows[0], { key: 'ArrowDown' });
+      const afterFirstDown = getDataRows();
+      expect(afterFirstDown[0]).toHaveAttribute('tabindex', '0');
+      expect(afterFirstDown[0]).toHaveFocus();
+
+      fireEvent.keyDown(afterFirstDown[0], { key: 'ArrowDown' });
+      const afterSecondDown = getDataRows();
+      expect(afterSecondDown[0]).toHaveAttribute('tabindex', '-1');
+      expect(afterSecondDown[1]).toHaveAttribute('tabindex', '0');
+      expect(afterSecondDown[1]).toHaveFocus();
+
+      fireEvent.keyDown(afterSecondDown[1], { key: 'ArrowUp' });
+      const afterUp = getDataRows();
+      expect(afterUp[0]).toHaveAttribute('tabindex', '0');
+      expect(afterUp[0]).toHaveFocus();
+    });
+
+    it('supports PageDown, PageUp, Ctrl+End, and Ctrl+Home and scrolls focused rows into view', () => {
+      render(
+        <LedgerTable
+          data={manyEntries}
+          columns={ledgerColumns}
+          rowKey={(r) => r.id}
+          pageSize={50}
+          ariaLabel="Virtualized nav table"
+        />,
+      );
+
+      const grid = screen.getByRole('grid');
+      // Jump to last row on the page (row 50, outside initial virtual window)
+      fireEvent.keyDown(grid, { key: 'End', ctrlKey: true });
+      const lastRow = screen.getByText('ENT-0050').closest('[role="row"]') as HTMLElement;
+      expect(lastRow).toBeInTheDocument();
+      expect(lastRow).toHaveAttribute('aria-rowindex', '50');
+      expect(lastRow).toHaveAttribute('tabindex', '0');
+      expect(lastRow).toHaveFocus();
+      expect(grid.scrollTop).toBeGreaterThan(0);
+
+      // PageUp moves back by a viewport of rows and keeps the target row rendered
+      fireEvent.keyDown(lastRow, { key: 'PageUp' });
+      const afterPageUp = screen
+        .getAllByRole('row')
+        .find((r) => r.getAttribute('tabindex') === '0') as HTMLElement;
+      expect(Number(afterPageUp.getAttribute('aria-rowindex'))).toBeLessThan(50);
+      expect(afterPageUp).toHaveFocus();
+
+      // PageDown moves forward again
+      fireEvent.keyDown(afterPageUp, { key: 'PageDown' });
+      const afterPageDown = screen
+        .getAllByRole('row')
+        .find((r) => r.getAttribute('tabindex') === '0') as HTMLElement;
+      expect(Number(afterPageDown.getAttribute('aria-rowindex'))).toBeGreaterThan(
+        Number(afterPageUp.getAttribute('aria-rowindex')),
+      );
+
+      // Ctrl+Home jumps back to the first row and scrolls to the top
+      fireEvent.keyDown(afterPageDown, { key: 'Home', ctrlKey: true });
+      const firstRow = screen.getByText('ENT-0001').closest('[role="row"]') as HTMLElement;
+      expect(firstRow).toHaveAttribute('aria-rowindex', '1');
+      expect(firstRow).toHaveAttribute('tabindex', '0');
+      expect(firstRow).toHaveFocus();
+      expect(grid.scrollTop).toBe(0);
+    });
+
+    it('opens the drawer with Enter from a focused row', () => {
+      renderDrawerTable();
+      const firstRow = screen.getByText('ENT-0001').closest('[role="row"]') as HTMLElement;
+      act(() => {
+        firstRow.focus();
+      });
+      fireEvent.keyDown(firstRow, { key: 'Enter' });
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByTestId('drawer-detail')).toHaveTextContent('ENT-0001');
+    });
+
+    it('has no axe violations on the full virtualized table', async () => {
+      const { container } = renderDrawerTable({ data: manyEntries, pageSize: 50 });
+      const results = await axe(container);
+      expect(results).toHaveNoViolations();
+    });
+  });
 });

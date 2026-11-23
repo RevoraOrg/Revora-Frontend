@@ -506,10 +506,26 @@ describe('UploadQueue – edge cases', () => {
   });
 
   it('renders progress ring for each status variant without crashing', () => {
-    const statuses: Array<UploadFile['status']> = ['pending', 'uploading', 'success', 'error'];
+    const statuses: Array<UploadFile['status']> = ['pending', 'uploading', 'retrying', 'success', 'error'];
     const queue = statuses.map((status) => makeItem({ status, progress: status === 'success' ? 100 : 50 }));
-    renderQueue({ queue, totalCount: 4, successCount: 1, errorCount: 1, uploadingCount: 1 });
-    expect(screen.getAllByTestId('upload-queue-row')).toHaveLength(4);
+    renderQueue({ queue, totalCount: 5, successCount: 1, errorCount: 1, uploadingCount: 1 });
+    expect(screen.getAllByTestId('upload-queue-row')).toHaveLength(5);
+  });
+
+  it('surfaces retrying state in row, summary bar, and live region', () => {
+    const queue = [
+      makeItem({ status: 'retrying', progress: 0 }),
+      makeItem({ status: 'pending', progress: 0 }),
+    ];
+    renderQueue({ queue, totalCount: 2, uploadingCount: 0 });
+    const rows = screen.getAllByTestId('upload-queue-row');
+    expect(rows[0]).toHaveAttribute('data-status', 'retrying');
+    expect(rows[0].className).toContain('upload-queue__row--retrying');
+    expect(screen.getByText('Retrying…')).toBeInTheDocument();
+    expect(screen.getByText(/retrying 1 of 2 files/i)).toBeInTheDocument();
+    expect(screen.getByText('1 retrying')).toBeInTheDocument();
+    expect(screen.queryByTestId('upload-all-btn')).not.toBeInTheDocument();
+    expect(screen.getByTestId('upload-live-region').textContent).toContain('Retrying 1 file');
   });
 
   it('summary bar fill uses success colour class when all complete with no errors', () => {

@@ -32,5 +32,6 @@ Edge cases
 - Virtualized list: ensure header remains sticky and in sync with column alignments.
 
 Next steps
-- Implement `src/pages/Ledger.tsx` header cell and resize hook.
+- Implement the header cell and resize hook in the shared
+  `src/components/LedgerTable/LedgerTable.tsx` component.
 - Add unit + visual tests and axe accessibility tests.

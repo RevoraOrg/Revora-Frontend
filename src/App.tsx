@@ -66,14 +66,13 @@ function SiteFooter() {
         )}
         {isError && (
           <div className="site-footer__status-error">
-            <span className="text-muted" style={{ color: '#ef4444' }}>
+            <span>
               Failed to load contract data: {error}
             </span>
             <button
               type="button"
               onClick={retry}
-              className="link-styled"
-              style={{ background: 'none', border: 'none', padding: 0, marginLeft: '0.5rem', cursor: 'pointer' }}
+              className="link-styled site-footer__retry"
             >
               Retry
             </button>

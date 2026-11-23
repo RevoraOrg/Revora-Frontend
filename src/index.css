@@ -1264,6 +1264,11 @@ html, body { overflow-x: clip; }
 .site-header__nav { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; }
 .site-link { color: var(--text-muted); text-decoration: none; font-size: 0.875rem; padding: 0.25rem 0; }
 .site-link:hover { color: var(--text-main); text-decoration: underline; }
+.site-link[aria-current="page"] {
+  color: var(--text-main);
+  font-weight: 600;
+  border-bottom: 2px solid var(--primary);
+}
 .site-footer {
   display: flex;
   flex-direction: column;

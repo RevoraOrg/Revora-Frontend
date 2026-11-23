@@ -106,4 +106,30 @@ describe('App Components Accessibility', () => {
     expect(screen.getByRole('heading', { level: 1, name: /offering registration/i })).toBeInTheDocument();
     expect(screen.getByText('Upload KYC documents')).toBeInTheDocument();
   });
+
+  it('sets aria-current="page" on the Investor nav link for /investor/portfolio', () => {
+    renderAtPath('/investor/portfolio');
+
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const activeLinks = nav.querySelectorAll('[aria-current]');
+
+    expect(activeLinks).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Investor' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Startup' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Admin' })).not.toHaveAttribute('aria-current');
+  });
+
+  it.each([
+    ['/startup/dashboard', 'Startup'],
+    ['/investor/portfolio', 'Investor'],
+    ['/admin/alerts', 'Admin'],
+  ])('marks exactly one primary nav link as current on %s', (path, activeName) => {
+    renderAtPath(path);
+
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const activeLinks = nav.querySelectorAll('[aria-current="page"]');
+
+    expect(activeLinks).toHaveLength(1);
+    expect(screen.getByRole('link', { name: activeName })).toHaveAttribute('aria-current', 'page');
+  });
 });

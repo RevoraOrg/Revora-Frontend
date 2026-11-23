@@ -2,6 +2,8 @@ import { useState, type MouseEvent } from "react";
 import {
   createBrowserRouter,
   Link,
+  Navigate,
+  NavLink,
   Outlet,
   type RouteObject,
   RouterProvider,
@@ -109,6 +111,7 @@ export const routes: RouteObject[] = [
       { path: "/settings/2fa/backup-codes", element: <TwoFactorBackupCodesPage /> },
 
       // Startup routes
+      { path: "/startup", element: <Navigate to="/startup/dashboard" replace /> },
       { path: "/startup/dashboard", element: <StartupDashboard /> },
       { path: "/startup/report-revenue", element: <RevenueReportForm /> },
       // Issue #199 – Inline document uploader (Offering Registration wizard)
@@ -119,6 +122,7 @@ export const routes: RouteObject[] = [
       { path: "/startup/governance/vote-receipt", element: <GovernanceVoteReceiptDemo /> },
 
       // Investor routes
+      { path: "/investor", element: <Navigate to="/investor/portal" replace /> },
       { path: "/investor/portal", element: <InvestorDiscovery /> },
       { path: "/investor/portfolio", element: <InvestorPortfolioSummary /> },
       { path: "/investor/payouts", element: <PayoutSchedule /> },
@@ -126,6 +130,7 @@ export const routes: RouteObject[] = [
       { path: "/investor/ledger", element: <LedgerDemoPage /> },
 
       // Admin routes
+      { path: "/admin", element: <Navigate to="/admin/alerts" replace /> },
       { path: "/admin/alerts", element: <AdminAlertsInbox /> },
       { path: "/admin/scheduled-exports", element: <ScheduledExportsPage /> },
 
@@ -158,9 +163,9 @@ function AppLayout() {
       <header className="site-header">
         <Link to="/" className="site-header__brand">Revora</Link>
         <nav className="site-header__nav" aria-label="Primary">
-          <Link to="/startup/dashboard" className="site-link">Startup</Link>
-          <Link to="/investor/portal" className="site-link">Investor</Link>
-          <Link to="/admin/alerts" className="site-link">Admin</Link>
+          <NavLink to="/startup" className="site-link">Startup</NavLink>
+          <NavLink to="/investor" className="site-link">Investor</NavLink>
+          <NavLink to="/admin" className="site-link">Admin</NavLink>
           <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>

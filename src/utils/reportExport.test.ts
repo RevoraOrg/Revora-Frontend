@@ -363,7 +363,7 @@ describe("toPdfBytes", () => {
     ]);
     assertPdfByteAccuracy(bytes);
 
-    const text = new TextDecoder("latin1").decode(bytes);
+    const text = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("");
     expect(text).toContain("/Encoding /WinAnsiEncoding");
 
     const streamMatch = /stream\n([\s\S]*)\nendstream/.exec(text);

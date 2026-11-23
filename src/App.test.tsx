@@ -131,6 +131,8 @@ describe('App Components Accessibility', () => {
 
     expect(activeLinks).toHaveLength(1);
     expect(screen.getByRole('link', { name: activeName })).toHaveAttribute('aria-current', 'page');
+  });
+
   it('renders home section list items without literal bullet characters and preserves plain-text items', () => {
     renderAtPath('/');
 

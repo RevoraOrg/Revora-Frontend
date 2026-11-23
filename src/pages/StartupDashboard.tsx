@@ -243,7 +243,10 @@ export const StartupDashboard: React.FC = () => {
       </section>
 
       {/* ── Navigation ── */}
-      <nav aria-label="Startup navigation" className="flex gap-4 text-sm">
+      <nav aria-label="Startup navigation" className="flex flex-wrap gap-4 text-sm">
+        <Link to="/startup/kyc" className="link-styled">
+          Complete identity verification (KYC)
+        </Link>
         <Link to="/startup/report-revenue" className="link-styled">
           Submit Revenue Report
         </Link>

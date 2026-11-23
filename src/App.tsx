@@ -24,6 +24,7 @@ import { notificationsMock } from "./components/Notifications/notificationsData"
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
+import { KycWizardPage } from "./pages/KycWizardPage";
 import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 import { PayoutSchedule } from "./pages/PayoutSchedule";
@@ -113,6 +114,7 @@ export const routes: RouteObject[] = [
       // Startup routes
       { path: "/startup", element: <Navigate to="/startup/dashboard" replace /> },
       { path: "/startup/dashboard", element: <StartupDashboard /> },
+      { path: "/startup/kyc", element: <KycWizardPage /> },
       { path: "/startup/report-revenue", element: <RevenueReportForm /> },
       // Issue #199 – Inline document uploader (Offering Registration wizard)
       { path: "/startup/offering-registration", element: <OfferingRegistrationDemo /> },
@@ -205,6 +207,9 @@ function Home() {
                 <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
               </li>
               <li>Configure RevenueShare offerings</li>
+              <li>
+                <Link to="/startup/kyc" className="link-styled">Complete identity verification (KYC)</Link>
+              </li>
               <li>
                 <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
               </li>

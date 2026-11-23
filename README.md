@@ -79,6 +79,18 @@ plus accessibility, RTL and responsive guidelines).
 GitHub Actions (`.github/workflows/ci.yml`) installs dependencies and runs the production build
 on every push and pull request to `master`.
 
+## Test Coverage Policy
+
+Vitest measures coverage across all of `src/**/*.{ts,tsx}` using the V8 provider (`npm test`).
+
+- **Global floor:** Configured in `vite.config.ts` (`lines: 90`, `statements: 89`, `functions: 87`, `branches: 85`) so regressions anywhere in `src/` fail CI.
+- **Per-file thresholds:** High-criticality modules keep their stricter per-file floors in `vite.config.ts`.
+- **Documented excludes:** Only non-production or type-only files are excluded from coverage:
+  - Test files and test setup (`src/**/*.test.{ts,tsx}`, `src/**/*.spec.{ts,tsx}`, `src/test/**`, `src/setupTests.ts`)
+  - Type definitions (`src/**/*.d.ts`, `src/pages/DistributionDashboard.types.ts`)
+  - Application entry point (`src/main.tsx`)
+  - Standalone demo pages (`src/pages/*Demo*.tsx`)
+
 ## Known limitations
 
 Some tests and type checks are not enforced in CI; `src/pages/AuditTrail.tsx` and

@@ -106,4 +106,26 @@ describe('App Components Accessibility', () => {
     expect(screen.getByRole('heading', { level: 1, name: /offering registration/i })).toBeInTheDocument();
     expect(screen.getByText('Upload KYC documents')).toBeInTheDocument();
   });
+
+  it('renders home section list items without literal bullet characters and preserves plain-text items', () => {
+    renderAtPath('/');
+
+    const lists = screen.getAllByRole('list');
+    expect(lists.length).toBeGreaterThanOrEqual(3);
+
+    const items = screen.getAllByRole('listitem');
+    expect(items.length).toBeGreaterThan(0);
+
+    for (const item of items) {
+      expect(item.textContent).not.toContain('•');
+    }
+
+    const configureItem = screen.getByText('Configure RevenueShare offerings');
+    expect(configureItem.tagName.toLowerCase()).toBe('li');
+    expect(configureItem.querySelector('a')).toBeNull();
+
+    const investItem = screen.getByText('Invest using USDC on Stellar');
+    expect(investItem.tagName.toLowerCase()).toBe('li');
+    expect(investItem.querySelector('a')).toBeNull();
+  });
 });

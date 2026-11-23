@@ -197,20 +197,20 @@ function Home() {
             <h2 className="home-section-title">Startup Dashboard</h2>
             <ul className="home-list">
               <li>
-                • <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
+                <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
               </li>
-              <li>• Configure RevenueShare offerings</li>
+              <li>Configure RevenueShare offerings</li>
               <li>
-                • <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
-              </li>
-              <li>
-                • <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
+                <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
               </li>
               <li>
-                • <Link to="/startup/governance/proposals/create" className="link-styled">Create a governance proposal</Link>
+                <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
               </li>
               <li>
-                • <Link to="/startup/governance/vote-receipt" className="link-styled">Governance vote receipt</Link>
+                <Link to="/startup/governance/proposals/create" className="link-styled">Create a governance proposal</Link>
+              </li>
+              <li>
+                <Link to="/startup/governance/vote-receipt" className="link-styled">Governance vote receipt</Link>
               </li>
             </ul>
           </section>
@@ -218,21 +218,21 @@ function Home() {
           <section className="home-section glass-card">
             <h2 className="home-section-title">Investor Portal</h2>
             <ul className="home-list">
-              <li>• <Link to="/investor/portal" className="link-styled">Discover offerings</Link></li>
-              <li>• Invest using USDC on Stellar</li>
-              <li>• <Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
-              <li>• <Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
-              <li>• <Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
+              <li><Link to="/investor/portal" className="link-styled">Discover offerings</Link></li>
+              <li>Invest using USDC on Stellar</li>
+              <li><Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
+              <li><Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li><Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
             </ul>
           </section>
 
           <section className="home-section glass-card">
             <h2 className="home-section-title">Admin &amp; Account</h2>
             <ul className="home-list">
-              <li>• <Link to="/admin/alerts" className="link-styled">Alerts inbox</Link></li>
-              <li>• <Link to="/admin/scheduled-exports" className="link-styled">Scheduled exports</Link></li>
-              <li>• <Link to="/settings/2fa/backup-codes" className="link-styled">2FA backup codes</Link></li>
-              <li>• <Link to="/recover-2fa" className="link-styled">2FA recovery</Link></li>
+              <li><Link to="/admin/alerts" className="link-styled">Alerts inbox</Link></li>
+              <li><Link to="/admin/scheduled-exports" className="link-styled">Scheduled exports</Link></li>
+              <li><Link to="/settings/2fa/backup-codes" className="link-styled">2FA backup codes</Link></li>
+              <li><Link to="/recover-2fa" className="link-styled">2FA recovery</Link></li>
             </ul>
           </section>
         </div>

@@ -1168,11 +1168,16 @@ input:focus-visible,
 .home-list {
   color: var(--text-muted);
   font-size: var(--font-size-sm);
-  list-style: none;
+  list-style: disc;
+  padding-inline-start: 1.25rem;
 }
 
 .home-list li {
   margin-bottom: var(--spacing-xs);
+}
+
+.home-list li::marker {
+  color: var(--text-muted);
 }
 
 .home-list li:last-child {

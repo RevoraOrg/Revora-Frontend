@@ -123,6 +123,8 @@ describe('App Components Accessibility', () => {
     ['/startup/dashboard', 'Startup'],
     ['/investor/portfolio', 'Investor'],
     ['/admin/alerts', 'Admin'],
+    ['/settings', 'Settings'],
+    ['/settings/compliance', 'Settings'],
   ])('marks exactly one primary nav link as current on %s', (path, activeName) => {
     renderAtPath(path);
 
@@ -131,6 +133,19 @@ describe('App Components Accessibility', () => {
 
     expect(activeLinks).toHaveLength(1);
     expect(screen.getByRole('link', { name: activeName })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('renders /settings and /settings/:tab routes and redirects unknown settings tabs', () => {
+    const { unmount } = renderAtPath('/settings/compliance');
+    expect(screen.getByRole('heading', { name: /Account & Application Settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /Compliance & Regions/i })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { name: /Regional Access Controls/i })).toBeInTheDocument();
+    unmount();
+
+    renderAtPath('/settings/invalid-tab');
+    expect(screen.getByRole('tab', { name: /Localization & Formatting/i })).toHaveAttribute('aria-selected', 'true');
+  });
+
   it('renders home section list items without literal bullet characters and preserves plain-text items', () => {
     renderAtPath('/');
 

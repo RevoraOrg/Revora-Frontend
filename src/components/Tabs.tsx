@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export interface Tab {
   id: string;
@@ -11,10 +11,18 @@ interface TabsProps {
   activeTab: string;
   onTabChange: (tabId: string) => void;
   className?: string;
+  ariaLabel?: string;
 }
 
-const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '' }) => {
+const Tabs: React.FC<TabsProps> = ({
+  tabs,
+  activeTab,
+  onTabChange,
+  className = '',
+  ariaLabel = 'Activity feed filters',
+}) => {
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const activeIndex = tabs.findIndex(tab => tab.id === activeTab);
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number) => {
@@ -48,6 +56,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '
 
     onTabChange(tabs[newIndex].id);
     setFocusedIndex(newIndex);
+    tabRefs.current[newIndex]?.focus();
   };
 
   useEffect(() => {
@@ -57,7 +66,7 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '
   }, [activeIndex]);
 
   return (
-    <div className={`tabs-container ${className} overflow-x-auto`} role="tablist" aria-label="Activity feed filters">
+    <div className={`tabs-container ${className} overflow-x-auto`} role="tablist" aria-label={ariaLabel}>
       <div className="flex gap-2 min-w-max sm:flex-wrap">
         {tabs.map((tab, index) => {
           const isActive = tab.id === activeTab;
@@ -66,6 +75,10 @@ const Tabs: React.FC<TabsProps> = ({ tabs, activeTab, onTabChange, className = '
           return (
             <button
               key={tab.id}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
+              type="button"
               onClick={() => onTabChange(tab.id)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               className={`tab-btn flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none ${isActive

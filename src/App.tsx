@@ -28,6 +28,7 @@ import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePa
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 import { PayoutSchedule } from "./pages/PayoutSchedule";
 import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
+import { SettingsPage } from "./pages/SettingsPage";
 import { useContractRead } from "./hooks/useContractRead";
 import { getContractSummary } from "./lib/soroban/revoraContract";
 import {
@@ -108,6 +109,8 @@ export const routes: RouteObject[] = [
       { path: "/signup", element: <Signup /> },
       { path: "/forgot-password", element: <ForgotPassword /> },
       { path: "/recover-2fa", element: <TwoFactorRecoveryPage /> },
+      { path: "/settings", element: <SettingsPage /> },
+      { path: "/settings/:tab", element: <SettingsPage /> },
       { path: "/settings/2fa/backup-codes", element: <TwoFactorBackupCodesPage /> },
 
       // Startup routes
@@ -166,6 +169,7 @@ function AppLayout() {
           <NavLink to="/startup" className="site-link">Startup</NavLink>
           <NavLink to="/investor" className="site-link">Investor</NavLink>
           <NavLink to="/admin" className="site-link">Admin</NavLink>
+          <NavLink to="/settings" className="site-link">Settings</NavLink>
           <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
       </header>

@@ -124,6 +124,13 @@ export const COMMAND_GROUPS: CommandGroup[] = [
         description: '/settings/sessions',
         icon: 'Monitor',
       },
+      {
+        id: 'nav:settings',
+        group: 'navigate',
+        label: 'Go to Settings',
+        description: '/settings',
+        icon: 'Settings',
+      },
     ],
   },
   {

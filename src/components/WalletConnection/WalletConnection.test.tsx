@@ -19,8 +19,12 @@ import {
 import {
   WalletConnectionProvider,
   TESTNET_PASSPHRASE,
+  useWalletConnection,
 } from "./WalletConnectionContext";
 import { ConnectWalletButton } from "./ConnectWalletButton";
+import { NetworkSwitcherProvider } from "../NetworkSwitcher/NetworkSwitcherContext";
+import { ChainMismatchModal } from "../NetworkSwitcher/ChainMismatchModal";
+import { DEFAULT_STELLAR_APP_CHAIN_ID } from "../../constants/chains";
 import { Login } from "../../pages/Login";
 import { Signup } from "../../pages/Signup";
 
@@ -172,9 +176,7 @@ describe("Stellar wallet connection", () => {
     expect(
       screen.getByRole("button", { name: "GNEWAC…3456" }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      "Switch Freighter to TESTNET",
-    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     vi.mocked(getNetworkDetails).mockResolvedValue(details);
     await act(async () => vi.advanceTimersByTimeAsync(3000));
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -183,6 +185,78 @@ describe("Stellar wallet connection", () => {
     expect(
       screen.getByRole("button", { name: "Connect Stellar Wallet" }),
     ).toBeInTheDocument();
+  });
+  it("opens ChainMismatchModal once on non-testnet wallet network and resolves when fixed", async () => {
+    vi.useFakeTimers();
+
+    function WalletNetworkBridge({ children }: { children: React.ReactNode }) {
+      const wallet = useWalletConnection();
+      return (
+        <NetworkSwitcherProvider
+          connectedChainId={wallet.chainId ?? undefined}
+          appChainId={DEFAULT_STELLAR_APP_CHAIN_ID}
+          isWalletConnected={wallet.status === "connected"}
+          walletName="Freighter"
+        >
+          {children}
+          <ChainMismatchModal />
+        </NetworkSwitcherProvider>
+      );
+    }
+
+    render(
+      <WalletConnectionProvider>
+        <WalletNetworkBridge>
+          <ConnectWalletButton />
+        </WalletNetworkBridge>
+      </WalletConnectionProvider>,
+    );
+
+    await act(async () => {});
+    fireEvent.click(
+      screen.getByRole("button", { name: "Connect Stellar Wallet" }),
+    );
+    await act(async () =>
+      fireEvent.click(screen.getByRole("button", { name: "Connect" })),
+    );
+
+    expect(screen.queryByTestId("chain-mismatch-modal")).not.toBeInTheDocument();
+
+    // Freighter switches to Public network -> modal opens
+    vi.mocked(getNetworkDetails).mockResolvedValue({
+      ...details,
+      network: "PUBLIC",
+      networkPassphrase: "Public Global Stellar Network ; September 2015",
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+
+    expect(screen.getByTestId("chain-mismatch-modal")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+
+    // Dismissing keeps the modal closed across subsequent polls on the same network
+    fireEvent.click(screen.getByRole("button", { name: /Dismiss dialog/i }));
+    expect(screen.queryByTestId("chain-mismatch-modal")).not.toBeInTheDocument();
+
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(screen.queryByTestId("chain-mismatch-modal")).not.toBeInTheDocument();
+
+    // Switching back to Testnet resolves the mismatch; another mismatch later re-opens
+    vi.mocked(getNetworkDetails).mockResolvedValue(details);
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(screen.queryByTestId("chain-mismatch-modal")).not.toBeInTheDocument();
+
+    vi.mocked(getNetworkDetails).mockResolvedValue({
+      ...details,
+      network: "PUBLIC",
+      networkPassphrase: "Public Global Stellar Network ; September 2015",
+    });
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(screen.getByTestId("chain-mismatch-modal")).toBeInTheDocument();
+
+    // Fixing the network back to Testnet closes the open modal automatically
+    vi.mocked(getNetworkDetails).mockResolvedValue(details);
+    await act(async () => vi.advanceTimersByTimeAsync(3000));
+    expect(screen.queryByTestId("chain-mismatch-modal")).not.toBeInTheDocument();
   });
   it("times out an unanswered wallet prompt and supports retry", async () => {
     vi.useFakeTimers();

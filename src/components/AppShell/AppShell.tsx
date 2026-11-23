@@ -16,6 +16,8 @@ import {
 import { ErrorRecoveryPanel } from '../ErrorRecoveryPanel';
 import { useErrorSnapshots } from '../../hooks/useErrorSnapshots';
 import { RedemptionBanner, type RedemptionStatus } from '../RedemptionBanner/index';
+import { useOptionalWalletConnection } from '../WalletConnection/WalletConnectionContext';
+import { DEFAULT_STELLAR_APP_CHAIN_ID } from '../../constants/chains';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -265,9 +267,25 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
   );
 };
 
+/**
+ * Connects WalletConnectionContext state (derived chainId from networkPassphrase)
+ * into NetworkSwitcherProvider so ChainMismatchModal opens once on mismatch and
+ * resolves automatically when the wallet switches back to the required network.
+ */
 export const AppShell: React.FC<AppShellProps> = (props) => {
+  const wallet = useOptionalWalletConnection();
+  const isWalletConnected = wallet ? wallet.status === 'connected' : undefined;
+  const connectedChainId = wallet?.chainId ?? undefined;
+  const appChainId = wallet ? DEFAULT_STELLAR_APP_CHAIN_ID : undefined;
+  const walletName = wallet?.status === 'connected' ? 'Freighter' : undefined;
+
   return (
-    <NetworkSwitcherProvider>
+    <NetworkSwitcherProvider
+      connectedChainId={connectedChainId}
+      appChainId={appChainId}
+      isWalletConnected={isWalletConnected}
+      walletName={walletName}
+    >
       <AppShellContent {...props} />
     </NetworkSwitcherProvider>
   );

@@ -1,20 +1,50 @@
 import { ConnectWalletButton } from '../components/WalletConnection/ConnectWalletButton';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import {
+  type AuthRole,
+  AUTH_ROLES,
+  inferRoleFromIdentifier,
+  inferRoleFromTargetPath,
+  sanitizeNextPath,
+  useOptionalAuth,
+  writeStoredAuthSession,
+} from '../components/AuthProvider';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { FormError } from '../components/FormError';
 
+const ROLE_LABELS: Record<AuthRole, string> = {
+  startup: 'Startup',
+  investor: 'Investor',
+  admin: 'Admin',
+};
+
 export const Login: React.FC = () => {
+  const auth = useOptionalAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get('next');
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState<AuthRole>(() => inferRoleFromTargetPath(nextParam) ?? 'startup');
+  const [roleExplicitlySelected, setRoleExplicitlySelected] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [show2FASetup, setShow2FASetup] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,16 +55,31 @@ export const Login: React.FC = () => {
       return;
     }
 
+    const targetRole = inferRoleFromTargetPath(nextParam);
+    const effectiveRole: AuthRole = roleExplicitlySelected
+      ? role
+      : targetRole ?? inferRoleFromIdentifier(email);
+
     setIsSubmitting(true);
 
     await new Promise(resolve => setTimeout(resolve, 1000));
+    if (!isMountedRef.current) return;
+
+    const userId = email.trim().toLowerCase();
+    if (auth) {
+      auth.signIn({ id: userId, role: effectiveRole });
+    } else {
+      writeStoredAuthSession({ id: userId, role: effectiveRole });
+    }
 
     setIsSubmitting(false);
     setIsSuccess(true);
 
     await new Promise(resolve => setTimeout(resolve, 800));
+    if (!isMountedRef.current) return;
 
     setIsSuccess(false);
+    navigate(sanitizeNextPath(nextParam, effectiveRole), { replace: true });
   };
 
   if (show2FASetup) {
@@ -137,6 +182,29 @@ export const Login: React.FC = () => {
           </div>
         </div>
 
+        <div className="input-group">
+          <label className="input-label" htmlFor="role">
+            Account Role
+          </label>
+          <select
+            id="role"
+            aria-label="Account Role"
+            className="input-field"
+            value={role}
+            onChange={(e) => {
+              setRole(e.target.value as AuthRole);
+              setRoleExplicitlySelected(true);
+            }}
+            disabled={isSubmitting}
+          >
+            {AUTH_ROLES.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABELS[r]}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <Button type="submit" loading={isSubmitting} success={isSuccess} variant="secondary" className="mt-2 w-full">
           {isSuccess ? 'Signed In!' : 'Sign In'}
         </Button>
@@ -153,7 +221,7 @@ export const Login: React.FC = () => {
 
         <p className="mt-8 text-center text-sm text-muted">
           Don't have an account?{" "}
-          <Link to="/signup" className="link-styled">
+          <Link to={nextParam ? `/signup?next=${encodeURIComponent(nextParam)}` : "/signup"} className="link-styled">
             Create an account
           </Link>
         </p>

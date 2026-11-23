@@ -1,16 +1,27 @@
 import { ConnectWalletButton } from '../components/WalletConnection/ConnectWalletButton';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import {
+  type AuthRole,
+  sanitizeNextPath,
+  useOptionalAuth,
+  writeStoredAuthSession,
+} from '../components/AuthProvider';
 import { PasswordStrength } from '../components/PasswordStrength';
 import { evaluatePasswordStrength } from '../utils/passwordStrength';
 import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Button } from '../components/Button';
 
 type Step = 'persona' | 'form' | 'success';
 
 export const Signup: React.FC = () => {
+  const auth = useOptionalAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get('next');
+
   const [step, setStep] = useState<Step>('persona');
   const [persona, setPersona] = useState<'startup' | 'investor' | null>(null);
   const [email, setEmail] = useState('');
@@ -20,6 +31,14 @@ export const Signup: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
@@ -41,17 +60,30 @@ export const Signup: React.FC = () => {
       return;
     }
 
+    const assignedRole: AuthRole = persona ?? 'startup';
+
     setIsSubmitting(true);
 
     await new Promise(resolve => setTimeout(resolve, 800));
+    if (!isMountedRef.current) return;
+
+    const userId = email.trim().toLowerCase();
+    if (auth) {
+      auth.signIn({ id: userId, role: assignedRole });
+    } else {
+      writeStoredAuthSession({ id: userId, role: assignedRole });
+    }
 
     setIsSubmitting(false);
     setIsSuccess(true);
 
     await new Promise(resolve => setTimeout(resolve, 600));
+    if (!isMountedRef.current) return;
 
     setStep('success');
   };
+
+  const targetDestination = sanitizeNextPath(nextParam, persona ?? 'startup');
 
   if (step === 'success') {
     return (
@@ -66,9 +98,9 @@ export const Signup: React.FC = () => {
             return new Promise<void>((res) => setTimeout(res, 600));
           }}
           onChangeEmail={() => setStep('form')}
-          primaryLabel="Back to persona selection"
-          onPrimary={() => setStep('persona')}
-          primaryTo={undefined}
+          primaryLabel="Continue to workspace"
+          onPrimary={() => navigate(targetDestination, { replace: true })}
+          primaryTo={targetDestination}
         />
       </AuthLayout>
     );
@@ -111,7 +143,7 @@ export const Signup: React.FC = () => {
           </button>
 
           <p className="mt-6 text-center text-sm text-muted">
-            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
+            Already have an account? <Link to={nextParam ? `/login?next=${encodeURIComponent(nextParam)}` : "/login"} className="link-styled">Sign in</Link>
           </p>
         </div>
       ) : (
@@ -219,7 +251,7 @@ export const Signup: React.FC = () => {
           </button>
 
           <p className="text-center text-sm text-muted">
-            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
+            Already have an account? <Link to={nextParam ? `/login?next=${encodeURIComponent(nextParam)}` : "/login"} className="link-styled">Sign in</Link>
           </p>
         </form>
       )}

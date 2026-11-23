@@ -7,7 +7,14 @@ import {
   Outlet,
   type RouteObject,
   RouterProvider,
+  useNavigate,
 } from "react-router-dom";
+import {
+  RequireRole,
+  readStoredAuthSession,
+  useOptionalAuth,
+  writeStoredAuthSession,
+} from "./components/AuthProvider";
 import { Login } from "./pages/Login";
 import { Signup } from "./pages/Signup";
 import { ForgotPassword } from "./pages/ForgotPassword";
@@ -111,28 +118,46 @@ export const routes: RouteObject[] = [
       { path: "/settings/2fa/backup-codes", element: <TwoFactorBackupCodesPage /> },
 
       // Startup routes
-      { path: "/startup", element: <Navigate to="/startup/dashboard" replace /> },
-      { path: "/startup/dashboard", element: <StartupDashboard /> },
-      { path: "/startup/report-revenue", element: <RevenueReportForm /> },
-      // Issue #199 – Inline document uploader (Offering Registration wizard)
-      { path: "/startup/offering-registration", element: <OfferingRegistrationDemo /> },
-      // Issue #247 – Governance proposal creation multi-step form
-      { path: "/startup/governance/proposals/create", element: <GovernanceProposalCreatePage /> },
-      // Issue #472 – Governance vote receipt with on-chain link
-      { path: "/startup/governance/vote-receipt", element: <GovernanceVoteReceiptDemo /> },
+      {
+        path: "/startup",
+        element: <RequireRole role="startup" />,
+        children: [
+          { index: true, element: <Navigate to="/startup/dashboard" replace /> },
+          { path: "dashboard", element: <StartupDashboard /> },
+          { path: "report-revenue", element: <RevenueReportForm /> },
+          // Issue #199 – Inline document uploader (Offering Registration wizard)
+          { path: "offering-registration", element: <OfferingRegistrationDemo /> },
+          // Issue #247 – Governance proposal creation multi-step form
+          { path: "governance/proposals/create", element: <GovernanceProposalCreatePage /> },
+          // Issue #472 – Governance vote receipt with on-chain link
+          { path: "governance/vote-receipt", element: <GovernanceVoteReceiptDemo /> },
+        ],
+      },
 
       // Investor routes
-      { path: "/investor", element: <Navigate to="/investor/portal" replace /> },
-      { path: "/investor/portal", element: <InvestorDiscovery /> },
-      { path: "/investor/portfolio", element: <InvestorPortfolioSummary /> },
-      { path: "/investor/payouts", element: <PayoutSchedule /> },
-      // Issue #139 – Virtualized Ledger Table
-      { path: "/investor/ledger", element: <LedgerDemoPage /> },
+      {
+        path: "/investor",
+        element: <RequireRole role="investor" />,
+        children: [
+          { index: true, element: <Navigate to="/investor/portal" replace /> },
+          { path: "portal", element: <InvestorDiscovery /> },
+          { path: "portfolio", element: <InvestorPortfolioSummary /> },
+          { path: "payouts", element: <PayoutSchedule /> },
+          // Issue #139 – Virtualized Ledger Table
+          { path: "ledger", element: <LedgerDemoPage /> },
+        ],
+      },
 
       // Admin routes
-      { path: "/admin", element: <Navigate to="/admin/alerts" replace /> },
-      { path: "/admin/alerts", element: <AdminAlertsInbox /> },
-      { path: "/admin/scheduled-exports", element: <ScheduledExportsPage /> },
+      {
+        path: "/admin",
+        element: <RequireRole role="admin" />,
+        children: [
+          { index: true, element: <Navigate to="/admin/alerts" replace /> },
+          { path: "alerts", element: <AdminAlertsInbox /> },
+          { path: "scheduled-exports", element: <ScheduledExportsPage /> },
+        ],
+      },
 
       { path: "*", element: <Placeholder title="Page not found" /> },
     ],
@@ -146,6 +171,20 @@ export function App() {
 }
 
 function AppLayout() {
+  const auth = useOptionalAuth();
+  const navigate = useNavigate();
+  const currentUser = auth ? auth.user : readStoredAuthSession();
+  const currentRole = currentUser?.role ?? null;
+
+  const handleSignOut = () => {
+    if (auth) {
+      auth.signOut();
+    } else {
+      writeStoredAuthSession(null);
+    }
+    navigate("/login", { replace: true });
+  };
+
   const handleSkipToContent = (event: MouseEvent<HTMLAnchorElement>) => {
     const main = document.getElementById("main-content");
     if (!main) return;
@@ -163,10 +202,28 @@ function AppLayout() {
       <header className="site-header">
         <Link to="/" className="site-header__brand">Revora</Link>
         <nav className="site-header__nav" aria-label="Primary">
-          <NavLink to="/startup" className="site-link">Startup</NavLink>
-          <NavLink to="/investor" className="site-link">Investor</NavLink>
-          <NavLink to="/admin" className="site-link">Admin</NavLink>
+          {(!currentRole || currentRole === "startup") && (
+            <NavLink to="/startup" className="site-link">Startup</NavLink>
+          )}
+          {(!currentRole || currentRole === "investor") && (
+            <NavLink to="/investor" className="site-link">Investor</NavLink>
+          )}
+          {(!currentRole || currentRole === "admin") && (
+            <NavLink to="/admin" className="site-link">Admin</NavLink>
+          )}
           <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
+          {currentUser ? (
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="site-link"
+              style={{ background: "none", border: "none", cursor: "pointer", font: "inherit" }}
+            >
+              Sign out
+            </button>
+          ) : (
+            <NavLink to="/login" className="site-link">Sign in</NavLink>
+          )}
         </nav>
       </header>
       <main id="main-content" tabIndex={-1}>

@@ -16,6 +16,7 @@ import {
 import { ErrorRecoveryPanel } from '../ErrorRecoveryPanel';
 import { useErrorSnapshots } from '../../hooks/useErrorSnapshots';
 import { RedemptionBanner, type RedemptionStatus } from '../RedemptionBanner/index';
+import { useOptionalAuth } from '../AuthProvider';
 import { useOptionalWalletConnection } from '../WalletConnection/WalletConnectionContext';
 import { DEFAULT_STELLAR_APP_CHAIN_ID } from '../../constants/chains';
 
@@ -35,6 +36,7 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
     close: closeShortcuts,
   } = useKeyboardShortcuts();
 
+  const auth = useOptionalAuth();
   const {
     isOpen: paletteOpen,
     isMac: paletteMac,
@@ -42,7 +44,7 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
     recentCommands,
     addRecent,
     clearRecent,
-  } = useCommandPalette();
+  } = useCommandPalette({ userId: auth?.userId ?? undefined });
 
   const handleCommandExecute = (item: CommandItem) => {
     addRecent(item);

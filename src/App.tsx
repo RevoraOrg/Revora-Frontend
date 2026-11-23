@@ -42,7 +42,7 @@ const STELLAR_EXPERT_URL = buildContractExplorerUrl();
 function SiteFooter() {
   const { data: contractSummary, isLoading, isError, error, retry } = useContractRead(
     getContractSummary,
-    { retryCount: 2, retryDelay: 1000 },
+    { key: 'contract-summary', retryCount: 2, retryDelay: 1000 },
   );
 
   return (

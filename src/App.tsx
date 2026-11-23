@@ -36,6 +36,7 @@ import {
   buildContractExplorerUrl,
   buildStellarLabUrl,
 } from "./constants/stellar";
+import { ThemeToggle } from "./components/ThemeToggle";
 
 const LIVE_URL = "https://revora-frontend-omega.vercel.app";
 const REPO_URL = "https://github.com/RevoraOrg/Revora-Frontend";
@@ -170,6 +171,7 @@ function AppLayout() {
           <NavLink to="/admin" className="site-link">Admin</NavLink>
           <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
         </nav>
+        <ThemeToggle compact />
       </header>
       <main id="main-content" tabIndex={-1}>
         <Outlet />

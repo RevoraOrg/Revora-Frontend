@@ -2,9 +2,14 @@ import type { ReactElement } from "react";
 import { render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { WalletConnectionProvider } from "./components/WalletConnection/WalletConnectionContext";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 function withProviders(ui: ReactElement) {
-  return <WalletConnectionProvider>{ui}</WalletConnectionProvider>;
+  return (
+    <ThemeProvider>
+      <WalletConnectionProvider>{ui}</WalletConnectionProvider>
+    </ThemeProvider>
+  );
 }
 
 function renderAtPath(path: string) {

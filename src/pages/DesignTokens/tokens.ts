@@ -12,26 +12,33 @@ export interface TokenGroup {
   tokens: Token[];
 }
 
+/**
+ * Chart categorical color palettes and WCAG 2.1 contrast thresholds:
+ * - Graphical objects & UI components (SC 1.4.11 Non-text Contrast) and large text
+ *   require at least a 3:1 contrast ratio ("WCAG AA graphical/large-text").
+ * - Normal body text (SC 1.4.3 Contrast Minimum) requires at least 4.5:1 ("WCAG AA").
+ * - Enhanced text contrast (SC 1.4.6) requires at least 7:1 ("WCAG AAA").
+ */
 export const DARK_CHART_TOKENS: Token[] = [
-  { name: "Chart Dark 1 (Blue)", variable: "--chart-cat-1-dark", value: "#60a5fa", description: "Blue 400 - 8.5:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 2 (Emerald)", variable: "--chart-cat-2-dark", value: "#34d399", description: "Emerald 400 - 10.2:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 3 (Amber)", variable: "--chart-cat-3-dark", value: "#fbbf24", description: "Amber 400 - 11.8:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 4 (Violet)", variable: "--chart-cat-4-dark", value: "#a78bfa", description: "Violet 400 - 7.4:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 5 (Rose)", variable: "--chart-cat-5-dark", value: "#f87171", description: "Rose 400 - 6.8:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 6 (Cyan)", variable: "--chart-cat-6-dark", value: "#22d3ee", description: "Cyan 400 - 11.0:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 7 (Orange)", variable: "--chart-cat-7-dark", value: "#fb923c", description: "Orange 400 - 8.9:1 WCAG AA contrast on #020617 surface" },
-  { name: "Chart Dark 8 (Pink)", variable: "--chart-cat-8-dark", value: "#f472b6", description: "Pink 400 - 7.7:1 WCAG AA contrast on #020617 surface" },
+  { name: "Chart Dark 1 (Blue)", variable: "--chart-cat-1-dark", value: "#60a5fa", description: "Blue 400 - 7.9:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 2 (Emerald)", variable: "--chart-cat-2-dark", value: "#34d399", description: "Emerald 400 - 10.5:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 3 (Amber)", variable: "--chart-cat-3-dark", value: "#fbbf24", description: "Amber 400 - 12.1:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 4 (Violet)", variable: "--chart-cat-4-dark", value: "#a78bfa", description: "Violet 400 - 7.4:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 5 (Rose)", variable: "--chart-cat-5-dark", value: "#f87171", description: "Rose 400 - 7.3:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 6 (Cyan)", variable: "--chart-cat-6-dark", value: "#22d3ee", description: "Cyan 400 - 11.2:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 7 (Orange)", variable: "--chart-cat-7-dark", value: "#fb923c", description: "Orange 400 - 8.9:1 WCAG AAA contrast on #020617 surface" },
+  { name: "Chart Dark 8 (Pink)", variable: "--chart-cat-8-dark", value: "#f472b6", description: "Pink 400 - 7.6:1 WCAG AAA contrast on #020617 surface" },
 ];
 
 export const LIGHT_CHART_TOKENS: Token[] = [
-  { name: "Chart Light 1 (Blue)", variable: "--chart-cat-1-light", value: "#2563eb", description: "Blue 600 - 4.6:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 2 (Emerald)", variable: "--chart-cat-2-light", value: "#059669", description: "Emerald 600 - 4.5:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 3 (Amber)", variable: "--chart-cat-3-light", value: "#d97706", description: "Amber 600 - 3.1:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 4 (Violet)", variable: "--chart-cat-4-light", value: "#7c3aed", description: "Violet 600 - 5.8:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 5 (Red)", variable: "--chart-cat-5-light", value: "#dc2626", description: "Red 600 - 4.5:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 6 (Cyan)", variable: "--chart-cat-6-light", value: "#0891b2", description: "Cyan 600 - 3.4:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 7 (Orange)", variable: "--chart-cat-7-light", value: "#ea580c", description: "Orange 600 - 4.8:1 WCAG AA contrast on #ffffff surface" },
-  { name: "Chart Light 8 (Pink)", variable: "--chart-cat-8-light", value: "#be185d", description: "Pink 600 - 5.5:1 WCAG AA contrast on #ffffff surface" },
+  { name: "Chart Light 1 (Blue)", variable: "--chart-cat-1-light", value: "#2563eb", description: "Blue 600 - 5.2:1 WCAG AA contrast on #ffffff surface" },
+  { name: "Chart Light 2 (Emerald)", variable: "--chart-cat-2-light", value: "#059669", description: "Emerald 600 - 3.8:1 WCAG AA graphical/large-text (≥3:1) contrast on #ffffff surface" },
+  { name: "Chart Light 3 (Amber)", variable: "--chart-cat-3-light", value: "#d97706", description: "Amber 600 - 3.2:1 WCAG AA graphical/large-text (≥3:1) contrast on #ffffff surface" },
+  { name: "Chart Light 4 (Violet)", variable: "--chart-cat-4-light", value: "#7c3aed", description: "Violet 600 - 5.7:1 WCAG AA contrast on #ffffff surface" },
+  { name: "Chart Light 5 (Red)", variable: "--chart-cat-5-light", value: "#dc2626", description: "Red 600 - 4.8:1 WCAG AA contrast on #ffffff surface" },
+  { name: "Chart Light 6 (Cyan)", variable: "--chart-cat-6-light", value: "#0891b2", description: "Cyan 600 - 3.7:1 WCAG AA graphical/large-text (≥3:1) contrast on #ffffff surface" },
+  { name: "Chart Light 7 (Orange)", variable: "--chart-cat-7-light", value: "#ea580c", description: "Orange 600 - 3.6:1 WCAG AA graphical/large-text (≥3:1) contrast on #ffffff surface" },
+  { name: "Chart Light 8 (Pink)", variable: "--chart-cat-8-light", value: "#be185d", description: "Pink 600 - 6.0:1 WCAG AA contrast on #ffffff surface" },
 ];
 
 export const TOKEN_GROUPS: TokenGroup[] = [

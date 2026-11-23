@@ -100,4 +100,29 @@ describe('RevenueCalendarCsvImport', () => {
     await userEvent.click(await screen.findByRole('button', { name: /Confirm Import/i }));
     expect(await screen.findByText(/Imported \d+ rows/i)).toBeTruthy();
   });
+
+  it('preserves quoted commas, quoted newlines, CRLF, and BOM', async () => {
+    const onImport = vi.fn();
+    render(<RevenueCalendarCsvImport onImport={onImport} />);
+
+    const quotedCsv =
+      '\uFEFFdate,revenue,notes\r\n' +
+      '2024-01-01,"1,250.50","Q1 payout,\r\nadjusted"\r\n' +
+      '2024-01-02,"2,500.00","Final ""audited"" figure"\r\n';
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = new File([quotedCsv], 'revenue-quoted.csv', { type: 'text/csv' });
+    await userEvent.upload(input, file);
+
+    await userEvent.click(await screen.findByRole('button', { name: /continue|next|preview/i }));
+    expect(await screen.findByText(/2 rows loaded/i)).toBeInTheDocument();
+
+    await userEvent.click(await screen.findByRole('button', { name: /^Import$/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /Confirm Import/i }));
+
+    expect(onImport).toHaveBeenCalledTimes(1);
+    expect(onImport).toHaveBeenCalledWith([
+      expect.objectContaining({ date: '2024-01-01', revenue: '1,250.50', rowNumber: 2 }),
+      expect.objectContaining({ date: '2024-01-02', revenue: '2,500.00', rowNumber: 4 }),
+    ]);
+  });
 });

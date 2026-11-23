@@ -98,6 +98,7 @@
 .upload-queue__summary-stat--success { color: var(--success); }
 .upload-queue__summary-stat--error   { color: var(--error); }
 .upload-queue__summary-stat--uploading { color: var(--primary); }
+.upload-queue__summary-stat--retrying  { color: var(--warning, #f59e0b); }
 
 .upload-queue__summary-label {
   font-size: var(--font-size-sm);
@@ -160,8 +161,9 @@
 }
 
 .upload-queue__row:hover { border-color: var(--glass-border-bright); }
-.upload-queue__row--success { border-color: rgba(16, 185, 129, 0.25); }
-.upload-queue__row--error   { border-color: rgba(239, 68, 68, 0.25); }
+.upload-queue__row--success  { border-color: rgba(16, 185, 129, 0.25); }
+.upload-queue__row--error    { border-color: rgba(239, 68, 68, 0.25); }
+.upload-queue__row--retrying { border-color: rgba(245, 158, 11, 0.25); }
 
 /* ── Progress Ring ─────────────────────────────────────────────────────── */
 .upload-queue__ring {
@@ -187,6 +189,7 @@
 .upload-queue__ring-icon--success  { color: var(--success); }
 .upload-queue__ring-icon--error    { color: var(--error); }
 .upload-queue__ring-icon--uploading { color: var(--primary); }
+.upload-queue__ring-icon--retrying  { color: var(--warning, #f59e0b); }
 
 /* ── Row Metadata ──────────────────────────────────────────────────────── */
 .upload-queue__meta {
@@ -218,6 +221,7 @@
 .upload-queue__status-text--success  { color: var(--success); font-size: var(--font-size-xs); }
 .upload-queue__status-text--error    { color: var(--error);   font-size: var(--font-size-xs); }
 .upload-queue__status-text--uploading { color: var(--primary); font-size: var(--font-size-xs); }
+.upload-queue__status-text--retrying  { color: var(--warning, #f59e0b); font-size: var(--font-size-xs); }
 .upload-queue__status-text--pending  { color: var(--text-muted); font-size: var(--font-size-xs); }
 
 .upload-queue__error-msg {

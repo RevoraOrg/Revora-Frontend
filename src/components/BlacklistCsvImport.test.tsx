@@ -307,6 +307,33 @@ describe('BlacklistCsvImport', () => {
 
       expect(screen.getByLabelText(/address column/i)).toBeInTheDocument();
     });
+
+    it('preserves quoted commas, escaped quotes, and quoted newlines', async () => {
+      const user = userEvent.setup();
+      const onImport = vi.fn();
+      render(<BlacklistCsvImport onImport={onImport} />);
+
+      const csvContent =
+        'address,checksum,notes\r\n' +
+        '0xABC,hash1,"Flagged, reviewed\r\nsecond line ""confirmed"""\r\n' +
+        '0xDEF,hash2,"Single, note"\r\n';
+      const file = createCsvFile(csvContent);
+      const input = screen.getByLabelText(/select csv file/i);
+      await user.upload(input, file);
+
+      await user.click(screen.getByRole('button', { name: /preview/i }));
+
+      expect(screen.getByText(/2 rows loaded/i)).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: /import/i }));
+      await user.click(screen.getByRole('button', { name: /confirm import/i }));
+
+      expect(onImport).toHaveBeenCalledTimes(1);
+      expect(onImport).toHaveBeenCalledWith([
+        expect.objectContaining({ address: '0xABC', checksum: 'hash1', rowNumber: 2 }),
+        expect.objectContaining({ address: '0xDEF', checksum: 'hash2', rowNumber: 4 }),
+      ]);
+    });
   });
 
   describe('Accessibility', () => {

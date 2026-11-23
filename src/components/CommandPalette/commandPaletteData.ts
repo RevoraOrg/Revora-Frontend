@@ -96,6 +96,13 @@ export const COMMAND_GROUPS: CommandGroup[] = [
         shortcutKeys: ['mod', 'shift', 'i'],
       },
       {
+        id: 'nav:compare-issuers',
+        group: 'navigate',
+        label: 'Compare Issuers',
+        description: '/investor/compare',
+        icon: 'BarChart2',
+      },
+      {
         id: 'nav:revenue',
         group: 'navigate',
         label: 'Report Revenue',

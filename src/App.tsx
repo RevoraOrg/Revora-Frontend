@@ -28,6 +28,7 @@ import { KycWizardPage } from "./pages/KycWizardPage";
 import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 import { PayoutSchedule } from "./pages/PayoutSchedule";
+import { MultiIssuerComparisonView } from "./pages/MultiIssuerComparisonView";
 import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
 import { useContractRead } from "./hooks/useContractRead";
 import { getContractSummary } from "./lib/soroban/revoraContract";
@@ -36,9 +37,8 @@ import {
   buildContractExplorerUrl,
   buildStellarLabUrl,
 } from "./constants/stellar";
+import { LIVE_URL, REPO_URL } from "./constants/links";
 
-const LIVE_URL = "https://revora-frontend-omega.vercel.app";
-const REPO_URL = "https://github.com/RevoraOrg/Revora-Frontend";
 const STELLAR_LAB_URL = buildStellarLabUrl();
 const STELLAR_EXPERT_URL = buildContractExplorerUrl();
 
@@ -128,6 +128,7 @@ export const routes: RouteObject[] = [
       { path: "/investor/portal", element: <InvestorDiscovery /> },
       { path: "/investor/portfolio", element: <InvestorPortfolioSummary /> },
       { path: "/investor/payouts", element: <PayoutSchedule /> },
+      { path: "/investor/compare", element: <MultiIssuerComparisonView /> },
       // Issue #139 – Virtualized Ledger Table
       { path: "/investor/ledger", element: <LedgerDemoPage /> },
 
@@ -231,6 +232,7 @@ function Home() {
               <li><Link to="/investor/portal" className="link-styled">Discover offerings</Link></li>
               <li>Invest using USDC on Stellar</li>
               <li><Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
+              <li><Link to="/investor/compare" className="link-styled">Compare issuers</Link></li>
               <li><Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
               <li><Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
             </ul>

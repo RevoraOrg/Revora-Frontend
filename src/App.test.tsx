@@ -41,6 +41,7 @@ describe('App Components Accessibility', () => {
     ["/forgot-password", "Forgot Password?"],
     ["/startup/dashboard", "Acme Corp Dashboard"],
     ["/investor/portal", "Discover Offerings"],
+    ["/investor/compare", "Multi-Issuer Comparison"],
   ])("renders the existing route %s", (path, heading) => {
     renderAtPath(path);
     expect(

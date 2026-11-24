@@ -4,18 +4,30 @@ import { LoadingSpinner } from './LoadingSpinner';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'danger';
-  /** Accepted for API compatibility with callers; sizing is driven by className. */
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   success?: boolean;
 }
 
+const VARIANT_CLASSES: Record<NonNullable<ButtonProps['variant']>, string> = {
+  primary: 'btn-primary',
+  secondary: 'btn-secondary',
+  danger: 'btn-danger',
+};
+
+const SIZE_CLASSES: Record<NonNullable<ButtonProps['size']>, string> = {
+  sm: 'btn--sm',
+  md: 'btn--md',
+  lg: 'btn--lg',
+};
+
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ variant = 'primary', size: _size, loading, success, disabled, children, className = '', ...props }, ref) => {
+  ({ variant = 'primary', size, loading, success, disabled, children, className = '', ...props }, ref) => {
     const isDisabled = disabled || loading || success;
 
     const classNames = [
-      variant === 'primary' ? 'btn-primary' : 'btn-secondary',
+      VARIANT_CLASSES[variant],
+      size ? SIZE_CLASSES[size] : '',
       loading ? 'btn-loading' : '',
       success ? 'btn-success' : '',
       isDisabled ? 'btn-disabled' : '',

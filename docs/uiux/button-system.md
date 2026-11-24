@@ -3,14 +3,14 @@
 This document defines the reusable button component patterns for Revora Frontend.
 
 ## Tokens
-- `--primary`, `--primary-hover`, `--error` etc. are defined in `src/index.css`.
+- `--primary`, `--primary-hover`, `--error`, `--danger-bg`, `--danger-hover` etc. are defined in `src/index.css`.
 
 ## Class API
 - Base: `btn` — use on all buttons.
 - Variants: `btn--primary`, `btn--secondary`, `btn--destructive`, `btn--icon`.
 - Width helpers: `btn--block` (full width), `btn--auto` (auto width).
 - Sizes: `btn--sm`, `btn--md`, `btn--lg`.
-- Backwards compatibility: legacy classes `btn-primary` and `btn-secondary` remain as full-width aliases.
+- Backwards compatibility & `<Button>` classes: `btn-primary`, `btn-secondary`, and `btn-danger` remain as full-width variant classes. `<Button>` maps `variant="primary" | "secondary" | "danger"` to `btn-primary`, `btn-secondary`, and `btn-danger` (using `--danger-bg` `#dc2626` with `#ffffff` text for WCAG AA 4.83:1 contrast), and `size="sm" | "md" | "lg"` to `btn--sm`, `btn--md`, and `btn--lg`.
 - Screen-reader helper: `sr-only` to visually hide content but keep it available to assistive tech.
 
 ## States

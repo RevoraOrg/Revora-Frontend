@@ -1,13 +1,17 @@
 import { WalletConnectionProvider } from '../components/WalletConnection/WalletConnectionContext';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { AuthProvider, readStoredAuthSession } from '../components/AuthProvider';
 import { Signup } from './Signup';
+import { I18nProvider } from '../i18n/I18nProvider';
 
 const renderSignup = () => {
   return render(
     <MemoryRouter>
-      <WalletConnectionProvider><Signup /></WalletConnectionProvider>
+      <I18nProvider>
+        <WalletConnectionProvider><Signup /></WalletConnectionProvider>
+      </I18nProvider>
     </MemoryRouter>
   );
 };
@@ -186,5 +190,104 @@ describe('Signup', () => {
     expect(screen.getByLabelText('Full Name')).toBeDisabled();
     expect(screen.getByLabelText('Email Address')).toBeDisabled();
     expect(screen.getByLabelText('Password')).toBeDisabled();
+  });
+});
+
+
+function Landing() {
+  const loc = useLocation();
+  return <div data-testid="landing">{`${loc.pathname}${loc.search}`}</div>;
+}
+
+const renderSignupFlow = (entry = '/signup', withProvider = true) => {
+  const tree = (
+    <MemoryRouter initialEntries={[entry]}>
+      <WalletConnectionProvider>
+        <Routes>
+          <Route path="/signup" element={<Signup />} />
+          <Route path="*" element={<Landing />} />
+        </Routes>
+      </WalletConnectionProvider>
+    </MemoryRouter>
+  );
+  return render(withProvider ? <AuthProvider>{tree}</AuthProvider> : tree);
+};
+
+async function completeSignup(persona: 'Startup Founder' | 'Investor') {
+  const user = userEvent.setup();
+  await user.click(screen.getByText(persona));
+  await user.type(screen.getByLabelText('Full Name'), 'Test User');
+  await user.type(screen.getByLabelText('Email Address'), 'New.User@Revora.test');
+  await user.type(screen.getByLabelText('Password'), 'Abcdef1!@#$%');
+  await user.click(screen.getByText('Create Account'));
+}
+
+describe('Signup auth wiring', () => {
+  beforeEach(() => {
+    sessionStorage.clear();
+  });
+
+  it.each([
+    ['Startup Founder', 'startup', '/startup/dashboard'],
+    ['Investor', 'investor', '/investor/portal'],
+  ] as const)('signing up as %s sets the %s role and lands on %s', async (persona, role, landing) => {
+    const user = userEvent.setup();
+    renderSignupFlow();
+    await completeSignup(persona);
+
+    const continueLink = await screen.findByRole('link', { name: 'Continue to workspace' }, { timeout: 4000 });
+    expect(readStoredAuthSession()).toEqual({ id: 'new.user@revora.test', role });
+    await user.click(continueLink);
+    expect(await screen.findByTestId('landing')).toHaveTextContent(landing);
+  });
+
+  it('does not create a session when validation fails', async () => {
+    const user = userEvent.setup();
+    renderSignupFlow();
+    await user.click(screen.getByText('Startup Founder'));
+    await user.click(screen.getByText('Create Account'));
+
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(readStoredAuthSession()).toBeNull();
+  });
+
+  it('honors a same-role next param', async () => {
+    const user = userEvent.setup();
+    renderSignupFlow(`/signup?next=${encodeURIComponent('/investor/portfolio')}`);
+    await completeSignup('Investor');
+
+    const continueLink = await screen.findByRole('link', { name: 'Continue to workspace' }, { timeout: 4000 });
+    await user.click(continueLink);
+    expect(await screen.findByTestId('landing')).toHaveTextContent('/investor/portfolio');
+  });
+
+  it('drops a next param that targets another role area', async () => {
+    const user = userEvent.setup();
+    renderSignupFlow(`/signup?next=${encodeURIComponent('/admin/alerts')}`);
+    await completeSignup('Startup Founder');
+
+    const continueLink = await screen.findByRole('link', { name: 'Continue to workspace' }, { timeout: 4000 });
+    expect(readStoredAuthSession()?.role).toBe('startup');
+    await user.click(continueLink);
+    expect(await screen.findByTestId('landing')).toHaveTextContent('/startup/dashboard');
+  });
+
+  it('persists the session when rendered without an AuthProvider', async () => {
+    renderSignupFlow('/signup', false);
+    await completeSignup('Investor');
+
+    await waitFor(() =>
+      expect(readStoredAuthSession()).toEqual({ id: 'new.user@revora.test', role: 'investor' }),
+    );
+  });
+
+  it('carries next over to the sign-in links', async () => {
+    const next = encodeURIComponent('/admin/alerts');
+    const user = userEvent.setup();
+    renderSignupFlow(`/signup?next=${next}`);
+
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', `/login?next=${next}`);
+    await user.click(screen.getByText('Startup Founder'));
+    expect(screen.getByRole('link', { name: 'Sign in' })).toHaveAttribute('href', `/login?next=${next}`);
   });
 });

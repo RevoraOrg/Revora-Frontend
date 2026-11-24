@@ -4,8 +4,10 @@
 The **Offering Detail** (Prospectus) page is the primary interface for investors to review comprehensive information about a specific revenue-share offering before making an investment decision. The page presents offering overview, key financial metrics, funding progress, and investment actions in a clear, accessible layout.
 
 **Entry Point:** "View Prospectus" button on Investor Discovery cards  
-**Route:** `/offering/:id`  
-**Component:** `src/components/OfferingDetail.tsx`
+**Route:** `/offerings/:id`
+**Component:** `src/pages/OfferingProspectusPage.tsx`
+
+The investor prospectus reads shared sample data from `src/data/offerings.ts`. The existing `OfferingDetail` component contains issuer settings and remains separate from this investor route. Search and filter parameters are retained in prospectus links, breadcrumbs, and Back to results. Unknown offering IDs show a not-found state.
 
 ---
 

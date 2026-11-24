@@ -1,0 +1,4 @@
+const first = "Dividend";
+/* ignored dividends
+   revenue sharing */ const second = "DIVIDENDS";
+const third = "revenue-share and revenue sharing";

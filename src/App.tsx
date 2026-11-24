@@ -154,7 +154,6 @@ function AppLayout() {
     event.preventDefault();
     main.focus();
     main.scrollIntoView?.({ block: "start" });
-    window.location.hash = "main-content";
   };
 
   return (

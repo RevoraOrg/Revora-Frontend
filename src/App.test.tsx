@@ -48,7 +48,12 @@ describe('App Components Accessibility', () => {
     ).toBeInTheDocument();
   });
 
-  it('provides a skip-to-content link that moves focus to main', async () => {
+  it('provides a skip-to-content link that moves focus to main without mutating location or history', async () => {
+    window.history.replaceState({}, '', '/');
+    const initialHistoryLength = window.history.length;
+    const initialHref = window.location.href;
+    const initialHash = window.location.hash;
+
     render(withProviders(<App />));
     const user = userEvent.setup();
 
@@ -60,6 +65,9 @@ describe('App Components Accessibility', () => {
 
     await user.keyboard('{Enter}');
     expect(main).toHaveFocus();
+    expect(window.history.length).toBe(initialHistoryLength);
+    expect(window.location.hash).toBe(initialHash);
+    expect(window.location.href).toBe(initialHref);
   });
 
   it('uses a single main landmark on each route', () => {

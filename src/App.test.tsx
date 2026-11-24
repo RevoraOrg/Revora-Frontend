@@ -154,4 +154,18 @@ describe('App Components Accessibility', () => {
     expect(investItem.tagName.toLowerCase()).toBe('li');
     expect(investItem.querySelector('a')).toBeNull();
   });
+
+  it('renders 404 page for an unknown route with consistent secondary button classes', () => {
+    renderAtPath('/nope');
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Page not found' }),
+    ).toBeInTheDocument();
+
+    const homeLink = screen.getByRole('link', { name: 'Back to Home' });
+    expect(homeLink).toBeInTheDocument();
+    expect(homeLink).toHaveAttribute('href', '/');
+    expect(homeLink).toHaveClass('btn', 'btn-secondary');
+    expect(homeLink).not.toHaveClass('btn--secondary', 'btn--md');
+  });
 });

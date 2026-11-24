@@ -285,7 +285,7 @@ function Placeholder({ title }: { title: string }) {
         <p className="placeholder-text">
           We could not find that page.
         </p>
-        <Link to="/" className="btn btn--secondary btn--md">
+        <Link to="/" className="btn btn-secondary">
           Back to Home
         </Link>
       </div>

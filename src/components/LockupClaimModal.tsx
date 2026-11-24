@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { AlertTriangle, ChevronRight, ExternalLink, Info, Sparkles, X } from 'lucide-react';
 import { Button } from './Button';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 export interface LockupClaimResult {
   hash?: string;
@@ -16,8 +17,7 @@ export interface LockupClaimModalProps {
   explorerBaseUrl?: string;
 }
 
-const FOCUSABLE_SELECTOR =
-  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 
 export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
   isOpen,
@@ -29,7 +29,6 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
   explorerBaseUrl = 'https://stellar.expert/explorer/public/tx/',
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
-  const openerRef = useRef<HTMLElement | null>(null);
   const inFlightRef = useRef(false);
   const titleId = useId();
   const descriptionId = useId();
@@ -42,17 +41,9 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
   const [highGasConfirmed, setHighGasConfirmed] = useState(false);
   const [showAutoClaimInfo, setShowAutoClaimInfo] = useState(false);
 
-  const restoreFocus = useCallback(() => {
-    const opener = openerRef.current;
-    if (opener && typeof opener.focus === 'function' && document.contains(opener)) {
-      opener.focus();
-    }
-  }, []);
-
   const handleClose = useCallback(() => {
     onClose();
-    restoreFocus();
-  }, [onClose, restoreFocus]);
+  }, [onClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -62,59 +53,21 @@ export const LockupClaimModal: React.FC<LockupClaimModalProps> = ({
       setTxHash(null);
       setHighGasConfirmed(false);
       inFlightRef.current = false;
-      return;
     }
+  }, [isOpen, initialAutoClaim]);
 
-    const activeElement = document.activeElement;
-    openerRef.current = activeElement instanceof HTMLElement ? activeElement : null;
+  // useFocusTrap handles initial focus, Tab trapping, and return-focus.
+  useFocusTrap(dialogRef, isOpen);
 
-    if (dialogRef.current) {
-      dialogRef.current.focus();
-    }
-
-    return () => {
-      restoreFocus();
-    };
-  }, [isOpen, initialAutoClaim, restoreFocus]);
-
+  // Escape key handling (useFocusTrap only traps Tab)
   useEffect(() => {
     if (!isOpen) return;
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         event.preventDefault();
         handleClose();
-        return;
-      }
-
-      if (event.key === 'Tab' && dialogRef.current) {
-        const focusable = Array.from(
-          dialogRef.current.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-        ).filter(
-          (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-disabled') !== 'true',
-        );
-
-        if (focusable.length === 0) {
-          event.preventDefault();
-          dialogRef.current.focus();
-          return;
-        }
-
-        const active = document.activeElement as HTMLElement | null;
-        const currentIndex = active ? focusable.indexOf(active) : -1;
-
-        if (event.shiftKey) {
-          if (currentIndex <= 0) {
-            event.preventDefault();
-            focusable[focusable.length - 1].focus();
-          }
-        } else if (currentIndex === -1 || currentIndex === focusable.length - 1) {
-          event.preventDefault();
-          focusable[0].focus();
-        }
       }
     };
-
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, handleClose]);

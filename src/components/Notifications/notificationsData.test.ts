@@ -14,7 +14,13 @@
  *   never mutated by consumers.
  */
 import { describe, it, expect } from 'vitest';
-import { notificationsMock, type Notification } from './notificationsData';
+import {
+  createMockNotifications,
+  getNotificationCategory,
+  notificationsMock,
+  type Notification,
+} from './notificationsData';
+import { createDefaultNotificationPreferences } from './notificationPreferences';
 
 const REQUIRED_FIELDS: ReadonlyArray<keyof Notification> = ['id', 'title', 'time', 'read'];
 
@@ -128,5 +134,32 @@ describe('notificationsData / read state transitions', () => {
     const twice = markAsRead(once, '3');
 
     expect(twice).toEqual(once);
+  });
+});
+
+describe('notificationsData / categories and generation', () => {
+  it('infers categories for legacy fixtures without a category field', () => {
+    expect(getNotificationCategory(notificationsMock[0])).toBe('distribution');
+    expect(getNotificationCategory(notificationsMock[1])).toBe('report');
+    expect(getNotificationCategory(notificationsMock[2])).toBe('compliance');
+    expect(getNotificationCategory({ id: 'x', title: 'Something else', time: 'now', read: false }))
+      .toBe('governance');
+    expect(getNotificationCategory({
+      id: 'y', title: 'Anything', time: 'now', read: false, category: 'governance',
+    })).toBe('governance');
+  });
+
+  it('generates the default feed when all channels are enabled in-app', () => {
+    const generated = createMockNotifications(createDefaultNotificationPreferences('UTC'));
+    expect(generated.map((n) => n.id)).toEqual(['1', '2', '3', '4', '5']);
+    expect(generated.every((n) => n.category !== undefined)).toBe(true);
+  });
+
+  it('omits categories whose in-app channel is turned off', () => {
+    const preferences = createDefaultNotificationPreferences('UTC');
+    preferences.matrix.report.inApp = false;
+    preferences.matrix.governance.inApp = false;
+
+    expect(createMockNotifications(preferences).map((n) => n.id)).toEqual(['1', '3']);
   });
 });

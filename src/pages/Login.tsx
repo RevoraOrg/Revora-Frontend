@@ -2,12 +2,14 @@ import { ConnectWalletButton } from '../components/WalletConnection/ConnectWalle
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
 import { TwoFactorSetup } from '../components/TwoFactorSetup';
-import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { FormError } from '../components/FormError';
+import { useI18n } from '../i18n/I18nProvider';
 
 export const Login: React.FC = () => {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -21,7 +23,7 @@ export const Login: React.FC = () => {
     setError(null);
 
     if (!email.includes('@')) {
-      setError('Please enter a valid email address.');
+      setError(t('auth.login.email-invalid'));
       return;
     }
 
@@ -39,7 +41,7 @@ export const Login: React.FC = () => {
 
   if (show2FASetup) {
     return (
-      <AuthLayout title="Two-Factor Authentication" subtitle="Secure your account with an extra layer of protection.">
+      <AuthLayout title={t('auth.login.two-factor-title')} subtitle={t('auth.login.two-factor-subtitle')}>
         <TwoFactorSetup
           onComplete={() => setShow2FASetup(false)}
           onCancel={() => setShow2FASetup(false)}
@@ -50,8 +52,8 @@ export const Login: React.FC = () => {
 
   return (
     <AuthLayout
-      title="Welcome to Revora"
-      subtitle="Sign in to manage your RevenueShare offerings or track your portfolio."
+      title={t('auth.login.title')}
+      subtitle={t('auth.login.subtitle')}
     >
       <form
         onSubmit={handleSubmit}
@@ -63,7 +65,7 @@ export const Login: React.FC = () => {
         <div className="relative my-6 py-2 flex items-center">
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
           <span className="flex-shrink mx-4 text-muted text-xs uppercase tracking-wider font-medium">
-            Or continue with email
+            {t('auth.login.or-email')}
           </span>
           <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
         </div>
@@ -72,7 +74,7 @@ export const Login: React.FC = () => {
 
         <div className="input-group">
           <label className="input-label" htmlFor="email">
-            Email Address
+            {t('auth.login.email-label')}
           </label>
           <div className="relative">
             <Mail className="absolute left-3 top-3 text-muted" size={18} />
@@ -80,12 +82,12 @@ export const Login: React.FC = () => {
               id="email"
               type="email"
               className={`input-field pl-10 ${error ? "input-error" : ""}`}
-              placeholder="name@company.com"
+              placeholder={t('auth.login.email-placeholder')}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               aria-required="true"
-              aria-label="Email Address"
+              aria-label={t('auth.login.email-label')}
               disabled={isSubmitting}
             />
           </div>
@@ -93,21 +95,21 @@ export const Login: React.FC = () => {
 
         <div className="input-group">
           <div className="flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-2 mb-2">
-            <label className="input-label" style={{ marginBottom: 0 }} htmlFor="password">Password</label>
+            <label className="input-label" style={{ marginBottom: 0 }} htmlFor="password">{t('auth.login.password-label')}</label>
             <div className="flex gap-3">
               <Link
                 to="/forgot-password"
-                aria-label="Forgot your password? Go to account recovery"
+                aria-label={t('auth.login.forgot-password-aria')}
                 className="link-styled text-sm py-1 px-1"
               >
-                Forgot password?
+                {t('auth.login.forgot-password')}
               </Link>
               <Link
                 to="/recover-2fa"
-                aria-label="Lost your two-factor authentication device? Recover your account"
+                aria-label={t('auth.login.lost-device-aria')}
                 className="link-styled text-sm py-1 px-1"
               >
-                Lost your device?
+                {t('auth.login.lost-device')}
               </Link>
             </div>
           </div>
@@ -122,14 +124,14 @@ export const Login: React.FC = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
               aria-required="true"
-              aria-label="Password"
+              aria-label={t('auth.login.password-label')}
               disabled={isSubmitting}
             />
             <button
               type="button"
               className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
               onClick={() => setShowPassword(!showPassword)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              aria-label={showPassword ? t('auth.login.hide-password') : t('auth.login.show-password')}
               disabled={isSubmitting}
             >
               {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -138,7 +140,7 @@ export const Login: React.FC = () => {
         </div>
 
         <Button type="submit" loading={isSubmitting} success={isSuccess} variant="secondary" className="mt-2 w-full">
-          {isSuccess ? 'Signed In!' : 'Sign In'}
+          {isSuccess ? t('auth.login.signed-in') : t('auth.login.sign-in')}
         </Button>
 
         <p className="text-center text-xs text-muted mt-1">
@@ -147,14 +149,14 @@ export const Login: React.FC = () => {
             className="link-styled text-xs"
             onClick={() => setShow2FASetup(true)}
           >
-            Set up two-factor authentication
+            {t('auth.login.setup-two-factor')}
           </button>
         </p>
 
         <p className="mt-8 text-center text-sm text-muted">
-          Don't have an account?{" "}
+          {t('auth.login.no-account')}{" "}
           <Link to="/signup" className="link-styled">
-            Create an account
+            {t('auth.login.create-account')}
           </Link>
         </p>
       </form>

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import './FormError.css';
 import { useReducedMotion } from '../hooks/useReducedMotion';
+import type { ApiError } from '../lib/api/errors';
 
 export type ErrorScope = 'inline' | 'modal' | 'page';
 export type ErrorCategory = 'network' | 'rpc' | 'wallet' | 'server' | 'validation' | 'generic' | 'custom';
@@ -23,6 +24,8 @@ export type ErrorCategory = 'network' | 'rpc' | 'wallet' | 'server' | 'validatio
 export interface FormErrorProps {
   /** The primary error message text */
   message?: string | null;
+  /** Normalized API error to surface message, code, category, retryability, and field errors */
+  apiError?: ApiError | null;
   /** Optional title heading for the error */
   title?: string;
   /** Optional extended description or recovery advice */
@@ -125,6 +128,22 @@ function getErrorDefaults(category?: ErrorCategory) {
   }
 }
 
+function mapApiErrorToCategory(apiError: ApiError): ErrorCategory {
+  switch (apiError.code) {
+    case 'NETWORK_ERROR':
+    case 'TIMEOUT':
+    case 'ABORTED':
+      return 'network';
+    case 'SERVER_ERROR':
+      return 'server';
+    case 'VALIDATION_ERROR':
+    case 'BAD_REQUEST':
+      return 'validation';
+    default:
+      return 'generic';
+  }
+}
+
 /**
  * FormError component for displaying accessible, unified error-recovery patterns across
  * inline forms, modal dialogs, and full-page error states.
@@ -134,12 +153,13 @@ function getErrorDefaults(category?: ErrorCategory) {
  */
 export const FormError: React.FC<FormErrorProps> = ({
   message,
+  apiError,
   title,
   description,
   id = 'form-error',
   className = '',
   scope = 'inline',
-  errorType = 'generic',
+  errorType,
   errorCode,
   txHash,
   timestamp,
@@ -219,12 +239,31 @@ export const FormError: React.FC<FormErrorProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [scope, handleDismiss]);
 
-  // If no message, title, details, or children, return null (preserves original behavior)
-  if (!message && !title && !details && !children) {
+  const resolvedMessage = message ?? apiError?.message ?? null;
+  const resolvedErrorType: ErrorCategory =
+    errorType ?? (apiError ? mapApiErrorToCategory(apiError) : 'generic');
+  const resolvedErrorCode = errorCode ?? apiError?.code;
+  const resolvedDetails =
+    details ??
+    (apiError && (apiError.status !== null || apiError.details !== undefined)
+      ? {
+          ...(apiError.status !== null ? { status: apiError.status } : {}),
+          retryable: apiError.retryable,
+          ...(apiError.details !== undefined ? { details: apiError.details } : {}),
+        }
+      : null);
+  const fieldErrorEntries = apiError?.fieldErrors
+    ? Object.entries(apiError.fieldErrors)
+    : [];
+  const effectiveOnRetry =
+    apiError && !apiError.retryable ? undefined : onRetry;
+
+  // If no message, title, details, fieldErrors, or children, return null (preserves original behavior)
+  if (!resolvedMessage && !title && !resolvedDetails && !children && fieldErrorEntries.length === 0) {
     return null;
   }
 
-  const { Icon, defaultTitle, defaultDescription } = getErrorDefaults(errorType);
+  const { Icon, defaultTitle, defaultDescription } = getErrorDefaults(resolvedErrorType);
   const displayTitle = title || (scope !== 'inline' ? defaultTitle : undefined);
   const displayDescription = description !== undefined ? description : (scope !== 'inline' ? defaultDescription : null);
 
@@ -234,22 +273,22 @@ export const FormError: React.FC<FormErrorProps> = ({
       : String(timestamp)
     : undefined;
 
-  const hasDiagnostics = Boolean(errorCode || txHash || formattedTimestamp || details);
+  const hasDiagnostics = Boolean(resolvedErrorCode || txHash || formattedTimestamp || resolvedDetails);
 
   // Format details payload for copying
   const getDiagnosticPayload = (): string => {
     const lines: string[] = [];
     if (displayTitle) lines.push(`Title: ${displayTitle}`);
-    if (message) lines.push(`Message: ${message}`);
-    if (errorCode) lines.push(`Error Code: ${errorCode}`);
+    if (resolvedMessage) lines.push(`Message: ${resolvedMessage}`);
+    if (resolvedErrorCode) lines.push(`Error Code: ${resolvedErrorCode}`);
     if (txHash) lines.push(`Transaction Hash: ${txHash}`);
     if (formattedTimestamp) lines.push(`Timestamp: ${formattedTimestamp}`);
-    if (details) {
+    if (resolvedDetails) {
       lines.push(
         `Details: ${
-          typeof details === 'object'
-            ? JSON.stringify(details, null, 2)
-            : String(details)
+          typeof resolvedDetails === 'object'
+            ? JSON.stringify(resolvedDetails, null, 2)
+            : String(resolvedDetails)
         }`
       );
     }
@@ -309,7 +348,7 @@ export const FormError: React.FC<FormErrorProps> = ({
     }
 
     if (supportEmail) {
-      const mailtoSubject = encodeURIComponent(`Error Report: ${errorCode || message || 'Issue'}`);
+      const mailtoSubject = encodeURIComponent(`Error Report: ${resolvedErrorCode || resolvedMessage || 'Issue'}`);
       const mailtoBody = encodeURIComponent(`Diagnostic Details:\n\n${getDiagnosticPayload()}`);
       return (
         <a
@@ -338,17 +377,31 @@ export const FormError: React.FC<FormErrorProps> = ({
     return null;
   };
 
+  const renderFieldErrors = () => {
+    if (fieldErrorEntries.length === 0) return null;
+
+    return (
+      <ul className="form-error__field-errors mt-2 list-disc pl-5 text-xs space-y-1">
+        {fieldErrorEntries.map(([field, fieldMsg]) => (
+          <li key={field}>
+            <span className="font-medium">{field}:</span> {fieldMsg}
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   // Actions Container
   const renderActions = () => {
-    const hasActions = Boolean(onRetry || handleDismiss || shouldShowSupport);
+    const hasActions = Boolean(effectiveOnRetry || handleDismiss || shouldShowSupport);
     if (!hasActions) return null;
 
     return (
       <div className="form-error__actions" role="group" aria-label="Error recovery actions">
-        {onRetry && (
+        {effectiveOnRetry && (
           <button
             type="button"
-            onClick={onRetry}
+            onClick={effectiveOnRetry}
             disabled={isRetryDisabled}
             className="form-error__btn form-error__btn--retry"
             aria-busy={isRetrying}
@@ -397,10 +450,10 @@ export const FormError: React.FC<FormErrorProps> = ({
         {showDetails && (
           <div id={detailsId} className="form-error__details-content" role="region" aria-label="Error diagnostics">
             <div className="form-error__meta-grid">
-              {errorCode && (
+              {resolvedErrorCode && (
                 <>
                   <span className="form-error__meta-label">Code:</span>
-                  <span className="form-error__meta-value">{errorCode}</span>
+                  <span className="form-error__meta-value">{resolvedErrorCode}</span>
                 </>
               )}
               {txHash && (
@@ -417,9 +470,9 @@ export const FormError: React.FC<FormErrorProps> = ({
               )}
             </div>
 
-            {details && (
+            {resolvedDetails && (
               <div className="form-error__trace-box" tabIndex={0} role="region" aria-label="Error stack trace">
-                {typeof details === 'object' ? JSON.stringify(details, null, 2) : String(details)}
+                {typeof resolvedDetails === 'object' ? JSON.stringify(resolvedDetails, null, 2) : String(resolvedDetails)}
               </div>
             )}
 
@@ -451,7 +504,7 @@ export const FormError: React.FC<FormErrorProps> = ({
           aria-modal="true"
           id={id}
           aria-labelledby={displayTitle ? titleId : undefined}
-          aria-describedby={message ? descId : undefined}
+          aria-describedby={resolvedMessage ? descId : undefined}
           onClick={(e) => e.stopPropagation()}
         >
           <div className="form-error__modal-header">
@@ -465,14 +518,15 @@ export const FormError: React.FC<FormErrorProps> = ({
                   {displayTitle}
                 </h3>
               )}
-              {message && (
+              {resolvedMessage && (
                 <p id={descId} className="form-error__message">
-                  {message}
+                  {resolvedMessage}
                 </p>
               )}
               {displayDescription && (
                 <p className="form-error__description">{displayDescription}</p>
               )}
+              {renderFieldErrors()}
             </div>
 
             {isDismissable && handleDismiss && (
@@ -512,8 +566,9 @@ export const FormError: React.FC<FormErrorProps> = ({
         </div>
 
         {displayTitle && <h2 id={titleId} className="form-error__title">{displayTitle}</h2>}
-        {message && <p id={descId} className="form-error__message">{message}</p>}
+        {resolvedMessage && <p id={descId} className="form-error__message">{resolvedMessage}</p>}
         {displayDescription && <p className="form-error__description">{displayDescription}</p>}
+        {renderFieldErrors()}
 
         {children}
         {renderDiagnostics()}
@@ -554,8 +609,9 @@ export const FormError: React.FC<FormErrorProps> = ({
           </div>
         )}
 
-        {message && <p className="form-error__message">{message}</p>}
+        {resolvedMessage && <p className="form-error__message">{resolvedMessage}</p>}
         {displayDescription && <p className="form-error__description">{displayDescription}</p>}
+        {renderFieldErrors()}
 
         {children}
         {renderDiagnostics()}

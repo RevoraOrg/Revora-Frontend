@@ -58,6 +58,11 @@ describe('commandPaletteData', () => {
         expect.objectContaining({ id: 'nav:dashboard' }),
       ]),
     );
+    expect(searchCommands('/settings')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: 'nav:settings', group: 'navigate' }),
+      ]),
+    );
     expect(searchCommands('   ')).toEqual([]);
 
     const results = groupSearchResults(searchCommands('e'));

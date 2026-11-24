@@ -5,12 +5,27 @@ import { EmptyState } from '../designSystem/EmptyState';
 interface NotificationPanelProps {
   notifications: Notification[];
   onClose: () => void;
+  onMarkAllRead?: () => void;
+  onMarkRead?: (id: string) => void;
+  onDismiss?: (id: string) => void;
+  onGenerate?: () => void;
 }
 
-const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, onClose }) => {
+const NotificationPanel: React.FC<NotificationPanelProps> = ({
+  notifications,
+  onClose,
+  onMarkAllRead,
+  onMarkRead,
+  onDismiss,
+  onGenerate,
+}) => {
   const headingId = useId();
   const handleMarkAllRead = () => {
-    // In a real app, this would update state/store; here we just log.
+    if (onMarkAllRead) {
+      onMarkAllRead();
+      return;
+    }
+    // Standalone usage (without a provider) keeps the legacy observable action.
     console.log('Mark all as read');
   };
 
@@ -24,6 +39,7 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
       <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
         <h3 id={headingId} className="text-lg font-medium text-gray-900 dark:text-gray-100">Notifications</h3>
         <button
+          type="button"
           className="text-sm text-primary hover:underline focus-visible:outline-none"
           onClick={handleMarkAllRead}
         >
@@ -57,13 +73,43 @@ const NotificationPanel: React.FC<NotificationPanelProps> = ({ notifications, on
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{n.title}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{n.time}</p>
+                {!n.read && onMarkRead && (
+                  <button
+                    type="button"
+                    className="text-xs text-primary hover:underline focus-visible:outline-none mt-1"
+                    onClick={() => onMarkRead(n.id)}
+                    aria-label={`Mark ${n.title} as read`}
+                  >
+                    Mark as read
+                  </button>
+                )}
+                {onDismiss && (
+                  <button
+                    type="button"
+                    className="text-xs text-muted hover:underline focus-visible:outline-none ml-3 mt-1"
+                    onClick={() => onDismiss(n.id)}
+                    aria-label={`Dismiss ${n.title}`}
+                  >
+                    Dismiss
+                  </button>
+                )}
               </div>
             </li>
           ))}
         </ul>
       )}
-      <div className="p-2 border-t border-gray-200 dark:border-gray-700 flex justify-end">
+      <div className="p-2 border-t border-gray-200 dark:border-gray-700 flex justify-between">
+        {onGenerate && (
+          <button
+            type="button"
+            className="text-sm text-primary hover:underline focus-visible:outline-none"
+            onClick={onGenerate}
+          >
+            Generate sample
+          </button>
+        )}
         <button
+          type="button"
           className="text-sm text-primary hover:underline focus-visible:outline-none"
           onClick={onClose}
         >

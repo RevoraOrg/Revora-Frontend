@@ -4,11 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, readStoredAuthSession } from '../components/AuthProvider';
 import { Login } from './Login';
+import { I18nProvider } from '../i18n/I18nProvider';
 
 const renderLogin = () => {
   return render(
     <MemoryRouter>
-      <WalletConnectionProvider><Login /></WalletConnectionProvider>
+      <I18nProvider>
+        <WalletConnectionProvider><Login /></WalletConnectionProvider>
+      </I18nProvider>
     </MemoryRouter>
   );
 };

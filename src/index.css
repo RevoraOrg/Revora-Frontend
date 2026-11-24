@@ -1302,3 +1302,12 @@ html, body { overflow-x: clip; }
   align-items: center;
   gap: 0.5rem;
 }
+.site-footer__status-error { color: var(--error); }
+.site-footer__retry {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-inline-start: var(--spacing-xs);
+  font: inherit;
+  cursor: pointer;
+}

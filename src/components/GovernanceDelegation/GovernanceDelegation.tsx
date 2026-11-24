@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DelegateSearch } from './DelegateSearch';
 import { DelegateProfileCard, DelegateData } from './DelegateProfileCard';
 import { DelegationConfirmDialog, RevokeConfirmDialog } from './DelegationDialogs';
+import { useOptionalGovernanceProposals } from '../../context/GovernanceProposalsContext';
 import './GovernanceDelegation.css';
 
 const MOCK_DELEGATES: Record<string, DelegateData> = {
@@ -11,20 +12,30 @@ const MOCK_DELEGATES: Record<string, DelegateData> = {
 };
 
 export const GovernanceDelegation: React.FC = () => {
+  const store = useOptionalGovernanceProposals();
   const [selectedDelegateId, setSelectedDelegateId] = useState<string | null>(null);
-  const [currentDelegatedId, setCurrentDelegatedId] = useState<string | null>(null);
+  const [localDelegatedId, setLocalDelegatedId] = useState<string | null>(null);
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isRevokeOpen, setIsRevokeOpen] = useState(false);
 
+  const currentDelegatedId = store ? store.delegatedTo : localDelegatedId;
   const selectedDelegate = selectedDelegateId ? MOCK_DELEGATES[selectedDelegateId] : null;
 
   const handleDelegateConfirm = () => {
-    setCurrentDelegatedId(selectedDelegateId);
+    if (store) {
+      store.delegate(selectedDelegateId);
+    } else {
+      setLocalDelegatedId(selectedDelegateId);
+    }
     setIsConfirmOpen(false);
   };
 
   const handleRevokeConfirm = () => {
-    setCurrentDelegatedId(null);
+    if (store) {
+      store.delegate(null);
+    } else {
+      setLocalDelegatedId(null);
+    }
     setSelectedDelegateId(null);
     setIsRevokeOpen(false);
   };

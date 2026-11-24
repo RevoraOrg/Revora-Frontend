@@ -19,15 +19,15 @@ export const OFFERING_HELP_CONTENT: Record<OfferingStep, HelpDrawerContent> = {
     stepLabel: 'Step 1 of 5',
     overview:
       'The Application step collects the core details about your offering — ' +
-      'company name, offering type, total raise amount, and revenue-share terms. ' +
+      'company name, offering type, total raise amount, and RevenueShare terms. ' +
       'This information is used to generate your offering memorandum and displayed ' +
       'to prospective investors on the discovery portal.',
     definitions: [
       {
         term: 'Offering Type',
         description:
-          'Whether you are raising via equity, revenue-share, or a hybrid instrument. ' +
-          'Revenue-share offerings entitle investors to a percentage of future gross revenue ' +
+          'Whether you are raising via equity, RevenueShare, or a hybrid instrument. ' +
+          'RevenueShare offerings entitle investors to a percentage of future gross revenue ' +
           'rather than equity ownership.',
       },
       {
@@ -40,7 +40,7 @@ export const OFFERING_HELP_CONTENT: Record<OfferingStep, HelpDrawerContent> = {
         term: 'Cap Table',
         description:
           'A capitalisation table listing all shareholders, their ownership percentages, ' +
-          'and the value of their equity. For revenue-share offerings this is replaced by ' +
+          'and the value of their equity. For RevenueShare offerings this is replaced by ' +
           'a payout-allocation schedule.',
       },
       {
@@ -51,12 +51,12 @@ export const OFFERING_HELP_CONTENT: Record<OfferingStep, HelpDrawerContent> = {
       },
     ],
     example:
-      '"Acme Corp is raising $500,000 via a 4 % revenue-share offering. ' +
+      '"Acme Corp is raising $500,000 via a 4 % RevenueShare offering. ' +
       'Investors receive quarterly payouts proportional to their investment ' +
       'until a 1.5× return cap is reached."',
     links: [
       {
-        label: 'Revenue-share instruments explained',
+        label: 'RevenueShare instruments explained',
         href: 'https://docs.revora.io/offerings/revenue-share',
       },
       {
@@ -210,7 +210,7 @@ export const OFFERING_HELP_CONTENT: Record<OfferingStep, HelpDrawerContent> = {
     overview:
       'Capital commitments are being processed. Once the funding window closes ' +
       '(or the raise target is met), funds are transferred to your designated ' +
-      'bank account minus Revora platform fees. Revenue-share distributions ' +
+      'bank account minus Revora platform fees. RevenueShare distributions ' +
       'begin on the first scheduled payout date.',
     definitions: [
       {
@@ -223,7 +223,7 @@ export const OFFERING_HELP_CONTENT: Record<OfferingStep, HelpDrawerContent> = {
         term: 'Payout Schedule',
         description:
           'The agreed frequency (monthly, quarterly) at which you distribute ' +
-          'the revenue-share percentage to investors.',
+          'the RevenueShare percentage to investors.',
       },
       {
         term: 'Escrow',
@@ -234,7 +234,7 @@ export const OFFERING_HELP_CONTENT: Record<OfferingStep, HelpDrawerContent> = {
     ],
     example:
       '"Your raise closes on 31 Aug. Funds clear escrow by 7 Sep. ' +
-      'First quarterly revenue-share payout is due 31 Oct based on ' +
+      'First quarterly RevenueShare payout is due 31 Oct based on ' +
       'Q3 gross revenue submitted via the Revenue Reporting Calendar."',
     links: [
       {

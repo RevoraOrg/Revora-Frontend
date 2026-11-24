@@ -83,7 +83,7 @@ export const COMMAND_GROUPS: CommandGroup[] = [
         id: 'nav:dashboard',
         group: 'navigate',
         label: 'Go to Dashboard',
-        description: '/dashboard',
+        description: '/startup/dashboard',
         icon: 'LayoutDashboard',
         shortcutKeys: ['mod', 'shift', 'd'],
       },
@@ -91,15 +91,22 @@ export const COMMAND_GROUPS: CommandGroup[] = [
         id: 'nav:discovery',
         group: 'navigate',
         label: 'Investor Discovery',
-        description: '/discovery',
+        description: '/investor/portal',
         icon: 'Search',
         shortcutKeys: ['mod', 'shift', 'i'],
+      },
+      {
+        id: 'nav:compare-issuers',
+        group: 'navigate',
+        label: 'Compare Issuers',
+        description: '/investor/compare',
+        icon: 'BarChart2',
       },
       {
         id: 'nav:revenue',
         group: 'navigate',
         label: 'Report Revenue',
-        description: '/management/revenue',
+        description: '/startup/report-revenue',
         icon: 'BarChart2',
         shortcutKeys: ['mod', 'shift', 'r'],
       },
@@ -107,22 +114,36 @@ export const COMMAND_GROUPS: CommandGroup[] = [
         id: 'nav:payout-schedule',
         group: 'navigate',
         label: 'Payout Schedule',
-        description: '/management/payouts',
+        description: '/investor/payouts',
         icon: 'Calendar',
       },
       {
-        id: 'nav:audit-trail',
+        id: 'nav:ledger',
         group: 'navigate',
-        label: 'Audit Trail',
-        description: '/management/audit',
+        label: 'Investor Ledger',
+        description: '/investor/ledger',
         icon: 'ClipboardList',
       },
       {
-        id: 'nav:sessions',
+        id: 'nav:admin-alerts',
         group: 'navigate',
-        label: 'Session Management',
-        description: '/settings/sessions',
+        label: 'Admin Alerts Inbox',
+        description: '/admin/alerts',
+        icon: 'ClipboardList',
+      },
+      {
+        id: 'nav:backup-codes',
+        group: 'navigate',
+        label: '2FA Backup Codes',
+        description: '/settings/2fa/backup-codes',
         icon: 'Monitor',
+      },
+      {
+        id: 'nav:settings',
+        group: 'navigate',
+        label: 'Go to Settings',
+        description: '/settings',
+        icon: 'Settings',
       },
     ],
   },
@@ -246,31 +267,95 @@ export const COMMAND_BY_ID: Map<string, CommandItem> = new Map(
   ALL_COMMANDS.map((item) => [item.id, item]),
 );
 
-/** Filter and score items against a lowercase query string. */
-export function searchCommands(query: string): CommandItem[] {
+/** Half-open UTF-16 offsets into the original display text. */
+export type MatchRange = { start: number; end: number };
+
+export interface CommandSearchResult extends CommandItem {
+  score: number;
+  matches: { label: MatchRange[]; description: MatchRange[] };
+}
+
+/** Prefix > word-start > substring > subsequence; compact matches win ties. */
+function scoreText(text: string, query: string) {
+  // Keep offsets in the original string even when lowercasing expands a character.
+  let normalized = '';
+  const offsets: MatchRange[] = [];
+  let offset = 0;
+  for (const character of text) {
+    const lower = character.toLowerCase();
+    normalized += lower;
+    for (let i = 0; i < lower.length; i++) {
+      offsets.push({ start: offset, end: offset + character.length });
+    }
+    offset += character.length;
+  }
+
+  const contiguous = normalized.indexOf(query);
+  const positions: number[] = [];
+  let tier: number;
+  if (contiguous !== -1) {
+    for (let i = 0; i < query.length; i++) positions.push(contiguous + i);
+    tier = contiguous === 0
+      ? 4
+      : /[\s/_:&-]/.test(normalized[contiguous - 1]) ? 3 : 2;
+  } else {
+    let cursor = 0;
+    for (const character of query) {
+      const position = normalized.indexOf(character, cursor);
+      if (position === -1) return { score: 0, ranges: [] };
+      for (let i = 0; i < character.length; i++) positions.push(position + i);
+      cursor = position + character.length;
+    }
+    tier = 1;
+  }
+
+  const ranges: MatchRange[] = [];
+  for (const position of positions) {
+    const range = offsets[position];
+    const previous = ranges[ranges.length - 1];
+    if (previous && range.start <= previous.end) previous.end = range.end;
+    else ranges.push({ ...range });
+  }
+  const span = positions[positions.length - 1] - positions[0] + 1;
+  return {
+    score: tier * 1000 + 100 / (1 + span - query.length) + 1 / (1 + positions[0]),
+    ranges,
+  };
+}
+
+/** Rank matches without mutating the registry. Registry order breaks score ties. */
+export function searchCommands(query: string): CommandSearchResult[] {
   if (typeof query !== 'string') return [];
 
   const q = query.toLowerCase().trim();
   if (!q) return [];
 
-  return ALL_COMMANDS.filter((item) => {
-    if (!item || typeof item.label !== 'string') return false;
-
-    const itemDescription = typeof item.description === 'string' ? item.description : '';
-    return (
-      item.label.toLowerCase().includes(q) ||
-      itemDescription.toLowerCase().includes(q)
+  return ALL_COMMANDS.flatMap((item, index) => {
+    if (!item || typeof item.label !== 'string') return [];
+    const label = scoreText(item.label, q);
+    const description = scoreText(
+      typeof item.description === 'string' ? item.description : '', q,
     );
-  });
+    const score = Math.max(label.score, description.score);
+    if (!score) return [];
+    return [{
+      ...item,
+      score,
+      matches: { label: label.ranges, description: description.ranges },
+      index,
+    }];
+  })
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ index, ...result }) => result);
 }
 
 /** Apply per-group result limits and return groups that have results. */
-export function groupSearchResults(
-  items: CommandItem[],
-): { group: CommandGroup; items: CommandItem[] }[] {
+export function groupSearchResults<T extends CommandItem>(
+  items: T[],
+): { group: CommandGroup; items: T[] }[] {
   if (!Array.isArray(items)) return [];
 
-  return COMMAND_GROUPS.reduce<{ group: CommandGroup; items: CommandItem[] }[]>(
+  return COMMAND_GROUPS.reduce<{ group: CommandGroup; items: T[] }[]>(
     (acc, group) => {
       const matching = items
         .filter((i) => i && i.group === group.key)

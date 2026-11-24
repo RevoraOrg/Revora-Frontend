@@ -5,8 +5,10 @@ import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export const ForgotPassword: React.FC = () => {
+  useDocumentTitle('Forgot Password');
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -7,6 +7,33 @@ export default defineConfig({
   server: {
     port: 5173
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          const normalized = id.replace(/\\/g, '/');
+          if (!normalized.includes('/node_modules/')) return undefined;
+          if (normalized.includes('/node_modules/@stellar/')) {
+            return 'vendor-stellar';
+          }
+          if (
+            normalized.includes('/node_modules/react-router') ||
+            normalized.includes('/node_modules/@remix-run/')
+          ) {
+            return 'vendor-router';
+          }
+          if (
+            normalized.includes('/node_modules/react/') ||
+            normalized.includes('/node_modules/react-dom/') ||
+            normalized.includes('/node_modules/scheduler/')
+          ) {
+            return 'vendor-react';
+          }
+          return undefined;
+        },
+      },
+    },
+  },
   test: {
     globals: true,
     environment: 'jsdom',

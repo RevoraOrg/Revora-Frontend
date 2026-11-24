@@ -2,7 +2,7 @@
  * Unit tests for Stellar network configuration
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
   DEFAULT_NETWORK,
   DEFAULT_NETWORK_PASSPHRASE,
@@ -26,6 +26,11 @@ describe('stellar constants', () => {
   beforeEach(() => {
     // Reset import.meta.env before each test
     vi.stubGlobal('import.meta.env', {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it('has correct default values', () => {
@@ -87,5 +92,45 @@ describe('stellar constants', () => {
     expect(buildTransactionExplorerUrl('z'.repeat(64))).toBeNull();
     expect(buildTransactionExplorerUrl('../evil?x=1')).toBeNull();
     expect(buildTransactionExplorerUrl(` ${'a'.repeat(64)} `)).toBeNull();
+  });
+
+  describe('VITE_STELLAR_CONTRACT_ID validation', () => {
+    it('accepts a valid StrKey contract ID', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      vi.resetModules();
+      vi.stubEnv('VITE_STELLAR_CONTRACT_ID', DEFAULT_CONTRACT_ID);
+
+      const mod = await import('./stellar');
+      expect(mod.CONTRACT_ID).toBe(DEFAULT_CONTRACT_ID);
+      expect(errorSpy).not.toHaveBeenCalled();
+    });
+
+    it('falls back to default with console.error for a 56-char C-prefixed ID with bad checksum', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const badChecksumId = `${DEFAULT_CONTRACT_ID.slice(0, -1)}A`;
+      vi.resetModules();
+      vi.stubEnv('VITE_STELLAR_CONTRACT_ID', badChecksumId);
+
+      const mod = await import('./stellar');
+      expect(mod.CONTRACT_ID).toBe(DEFAULT_CONTRACT_ID);
+      expect(errorSpy).toHaveBeenCalledWith(
+        `[Stellar Config] Invalid VITE_STELLAR_CONTRACT_ID: "${badChecksumId}". Falling back to default:`,
+        DEFAULT_CONTRACT_ID,
+      );
+    });
+
+    it('falls back to default with console.error for lowercase contract ID input', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const lowercaseId = DEFAULT_CONTRACT_ID.toLowerCase();
+      vi.resetModules();
+      vi.stubEnv('VITE_STELLAR_CONTRACT_ID', lowercaseId);
+
+      const mod = await import('./stellar');
+      expect(mod.CONTRACT_ID).toBe(DEFAULT_CONTRACT_ID);
+      expect(errorSpy).toHaveBeenCalledWith(
+        `[Stellar Config] Invalid VITE_STELLAR_CONTRACT_ID: "${lowercaseId}". Falling back to default:`,
+        DEFAULT_CONTRACT_ID,
+      );
+    });
   });
 });

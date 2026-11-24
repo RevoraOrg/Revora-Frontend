@@ -279,6 +279,15 @@
   text-overflow: ellipsis;
 }
 
+/* Preserve the row's text contrast; weight and underline also identify matches. */
+.cp-match {
+  color: inherit;
+  background: transparent;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 /* Trailing shortcut badge(s) */
 .cp-result-shortcut {
   display: flex;

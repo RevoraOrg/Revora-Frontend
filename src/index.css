@@ -90,6 +90,8 @@
   --text-muted: #cbd5e1;
   --text-accent: #38bdf8;
   --error: #ef4444;
+  --danger-bg: #dc2626;
+  --danger-hover: #b91c1c;
   --success: #10b981;
 
   /* Auth Layout Design Tokens (Issue #80) */
@@ -237,6 +239,93 @@
   --chart-cat-6: var(--chart-cat-6-dark);
   --chart-cat-7: var(--chart-cat-7-dark);
   --chart-cat-8: var(--chart-cat-8-dark);
+}
+
+/* ─── Light theme token overrides (Issue: ThemeProvider) ─────────────────────
+ * Applied when data-theme="light" is set on <html>.
+ * Surfaces, text, borders and chart tokens are all redefined here.
+ * Chart cat tokens resolve to their -light variants.
+ * ─────────────────────────────────────────────────────────────────────────── */
+:root[data-theme="light"] {
+  /* Surfaces */
+  --bg-color: #f8fafc;
+  --bg-gradient: radial-gradient(
+    circle at top,
+    #e2e8f0 0,
+    #f8fafc 40%,
+    #ffffff 100%
+  );
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-bg-accent: rgba(241, 245, 249, 0.85);
+  --glass-border: rgba(100, 116, 139, 0.18);
+  --glass-border-bright: rgba(100, 116, 139, 0.45);
+
+  /* Text */
+  --text-main: #0f172a;
+  --text-muted: #475569;
+  --text-accent: #0369a1;
+
+  /* Brand */
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+
+  /* Semantic */
+  --error: #dc2626;
+  --success: #059669;
+
+  /* Elevation — softer shadows on light surface */
+  --shadow-sm:
+    0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md:
+    0 4px 8px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --shadow-lg:
+    0 8px 20px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 12px 40px rgba(0, 0, 0, 0.12);
+
+  /* Status timeline */
+  --st-completed-bg: rgba(5, 150, 105, 0.08);
+  --st-progress-bg: rgba(37, 99, 235, 0.08);
+  --st-blocked-bg: rgba(220, 38, 38, 0.08);
+  --st-pending-bg: rgba(100, 116, 139, 0.08);
+  --st-pending-border: rgba(100, 116, 139, 0.3);
+  --st-pending-fg: #64748b;
+
+  /* Shimmer */
+  --shimmer-gradient: linear-gradient(
+    90deg,
+    rgba(100, 116, 139, 0.06) 25%,
+    rgba(100, 116, 139, 0.14) 50%,
+    rgba(100, 116, 139, 0.06) 75%
+  );
+
+  /* Chart: tooltip on light surface */
+  --chart-tooltip-bg: #f1f5f9;
+  --chart-tooltip-fg: #0f172a;
+  --chart-tooltip-border: #cbd5e1;
+  --chart-axis-label-color: #64748b;
+
+  /* Chart categorical palette — light variants */
+  --chart-cat-1: var(--chart-cat-1-light);
+  --chart-cat-2: var(--chart-cat-2-light);
+  --chart-cat-3: var(--chart-cat-3-light);
+  --chart-cat-4: var(--chart-cat-4-light);
+  --chart-cat-5: var(--chart-cat-5-light);
+  --chart-cat-6: var(--chart-cat-6-light);
+  --chart-cat-7: var(--chart-cat-7-light);
+  --chart-cat-8: var(--chart-cat-8-light);
+
+  /* Discovery empty/error state */
+  --ds-empty-icon-bg: rgba(37, 99, 235, 0.08);
+  --ds-error-icon-bg: rgba(220, 38, 38, 0.08);
+
+  /* Page loader overlay */
+  color-scheme: light;
+}
+
+/* site-header on light theme */
+:root[data-theme="light"] .site-header {
+  background: rgba(248, 250, 252, 0.92);
+  border-bottom-color: var(--glass-border);
 }
 
 /* Density mode overrides */
@@ -473,7 +562,8 @@ body {
 }
 
 .btn-primary:focus-visible,
-.btn-secondary:focus-visible {
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible {
   outline: 2px solid white;
   outline-offset: 2px;
   border-radius: 0.75rem;
@@ -502,6 +592,48 @@ body {
 .btn-secondary:focus {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
+}
+
+.btn-danger,
+.btn--destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--danger-bg, #dc2626);
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-danger:hover,
+.btn--destructive:hover {
+  background: var(--danger-hover, #b91c1c);
+  transform: translateY(-1px);
+}
+
+.btn--sm {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-md);
+  width: auto;
+}
+
+.btn--md {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border-radius: var(--radius-lg);
+}
+
+.btn--lg {
+  padding: 1rem 1.75rem;
+  font-size: 1.125rem;
+  border-radius: var(--radius-xl);
 }
 
 .input-group {
@@ -957,13 +1089,6 @@ input:focus-visible,
   padding: var(--spacing-sm);
 }
 
-.btn--sm {
-  padding: 0.375rem 0.875rem;
-  font-size: 0.8125rem;
-  border-radius: var(--radius-md);
-  width: auto;
-}
-
 /* Restored: discovery states, home, placeholder (lost in earlier refactor) */
 
 /**
@@ -1301,4 +1426,13 @@ html, body { overflow-x: clip; }
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+.site-footer__status-error { color: var(--error); }
+.site-footer__retry {
+  background: none;
+  border: none;
+  padding: 0;
+  margin-inline-start: var(--spacing-xs);
+  font: inherit;
+  cursor: pointer;
 }

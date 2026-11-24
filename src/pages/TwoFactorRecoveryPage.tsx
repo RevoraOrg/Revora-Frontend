@@ -4,16 +4,24 @@ import { TwoFactorRecoveryFlow } from '../components/TwoFactorRecoveryFlow';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import {
+  requestRecoveryCode,
+  verifyRecoveryCode,
+  resendRecoveryCode,
+} from '../lib/api/twoFactorRecovery';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Two-factor recovery page.
  *
- * The simulated in-memory recovery flow is gated behind development mode
- * (`import.meta.env.DEV`) or an explicit `VITE_DEMO_MODE=true` env flag so
- * production builds never ship or accept a hard-coded demo code.
+ * Uses the centralized API client (`src/lib/api/twoFactorRecovery.ts`), which
+ * defaults to the mock adapter when `VITE_API_BASE_URL` is not configured.
+ * The flow is gated behind development mode (`import.meta.env.DEV`) or an
+ * explicit `VITE_DEMO_MODE=true` env flag.
  */
 
 export const TwoFactorRecoveryPage: React.FC = () => {
+  useDocumentTitle('2FA Recovery');
   const navigate = useNavigate();
   const isDemoMode =
     import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';
@@ -26,22 +34,20 @@ export const TwoFactorRecoveryPage: React.FC = () => {
     navigate('/login');
   };
 
-  // DEMO HANDLERS: simulate network latency and validate against a fixed code.
-  // Only reachable when `isDemoMode` is true; dead-code-eliminated in prod builds.
-  const handleRequestCode = async (_email: string): Promise<void> => {
-    await new Promise((r) => setTimeout(r, 800));
+  const handleRequestCode = async (email: string): Promise<void> => {
+    await requestRecoveryCode(email);
   };
 
   const handleVerify = async (code: string): Promise<boolean> => {
     if (!isDemoMode) {
       return false;
     }
-    await new Promise((r) => setTimeout(r, 600));
-    return code === '123456';
+    const response = await verifyRecoveryCode(code);
+    return response.verified;
   };
 
-  const handleResend = async (_email: string): Promise<void> => {
-    await new Promise((r) => setTimeout(r, 800));
+  const handleResend = async (email: string): Promise<void> => {
+    await resendRecoveryCode(email);
   };
 
   return (

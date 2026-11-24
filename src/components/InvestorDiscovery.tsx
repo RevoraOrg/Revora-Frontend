@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   Search,
   Filter,
@@ -16,10 +16,22 @@ import {
   AlertCircle,
   ArrowRight
 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { MOCK_OFFERINGS, type Offering } from "../data/offerings";
 import { EmptyState } from "./designSystem/EmptyState";
 import { AccessibleChart } from "./designSystem/AccessibleChart";
 import LedgerTable from "./LedgerTable/LedgerTable";
 import type { Column } from "./LedgerTable/LedgerTable";
+import {
+  DEFAULT_DISCOVERY_FILTERS,
+  DISCOVERY_PAGE_SIZE,
+  DISCOVERY_SEARCH_DEBOUNCE_MS,
+  type DiscoverySortOption,
+  filtersFromSearchParams,
+  isDiscoverySortOption,
+  syncDiscoveryFiltersToUrl,
+} from "./investorDiscoveryFilters";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
@@ -314,15 +326,6 @@ const DEFAULT_LEDGER_ENTRIES = generateLedgerEntries(50);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Offering {
-  id: number;
-  name: string;
-  category: string;
-  revenueShare: number;
-  target: number;
-  raised: number;
-}
-
 /** Discriminated union for all UI states of the discovery result area */
 type DiscoveryState =
   | { kind: 'loaded'; offerings: Offering[] }
@@ -348,15 +351,26 @@ interface InvestorDiscoveryProps {
   __simulateDistributionState?: DistributionState;
   __onClearFilters?: () => void;
   __onRetry?: () => void;
+  /** Number of offerings displayed per page (defaults to DISCOVERY_PAGE_SIZE). */
+  pageSize?: number;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+const sortOfferings = (offerings: Offering[], sort: DiscoverySortOption): Offering[] => {
+  switch (sort) {
+    case 'name-asc':
+      return [...offerings].sort((a, b) => a.name.localeCompare(b.name));
+    case 'name-desc':
+      return [...offerings].sort((a, b) => b.name.localeCompare(a.name));
+    case 'revenue-desc':
+      return [...offerings].sort((a, b) => b.revenueShare - a.revenueShare);
+    case 'funding-desc':
+      return [...offerings].sort((a, b) => b.raised / b.target - a.raised / a.target);
+    case 'default':
+      return offerings;
+  }
+};
 
-const MOCK_OFFERINGS: Offering[] = [
-  { id: 1, name: 'TechFlow AI', category: 'Enterprise SaaS', revenueShare: 15, target: 250000, raised: 112500 },
-  { id: 2, name: 'Quantum Ledger', category: 'DeFi Infrastructure', revenueShare: 12, target: 500000, raised: 140000 },
-  { id: 3, name: 'Nexus Pay', category: 'Cross-Border Payments', revenueShare: 18, target: 300000, raised: 186000 },
-];
+// ─── Mock Data ────────────────────────────────────────────────────────────────
 
 const MOCK_DISTRIBUTIONS: DistributionRecord[] = [
   { id: 'dist-jan', date: '2026-01-31', amount: 1240, currency: 'USDC' },
@@ -541,17 +555,66 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   __simulateDistributionState,
   __onClearFilters,
   __onRetry,
+  pageSize = DISCOVERY_PAGE_SIZE,
 }) => {
+  useDocumentTitle("Investor Portal");
   const [isLoading, setIsLoading] = useState(
     typeof process !== "undefined" && process.env.NODE_ENV === "test" ? false : true
   );
-  const [query, setQuery] = useState("");
-  const [filtersActive, setFiltersActive] = useState(false);
+  const initialFilters = useMemo(
+    () =>
+      typeof window !== "undefined"
+        ? filtersFromSearchParams(new URLSearchParams(window.location.search))
+        : DEFAULT_DISCOVERY_FILTERS,
+    [],
+  );
+  const [query, setQuery] = useState(initialFilters.query);
+  const [filtersActive, setFiltersActive] = useState(initialFilters.filtersActive);
+  const [sort, setSort] = useState<DiscoverySortOption>(initialFilters.sort);
+  const [page, setPage] = useState(initialFilters.page);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+  const filtersActive = searchParams.get('filters') === 'active';
+  const updateFilters = (nextQuery: string, active: boolean) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (nextQuery) next.set('q', nextQuery);
+      else next.delete('q');
+      if (active) next.set('filters', 'active');
+      else next.delete('filters');
+      return next;
+    }, { replace: true });
+  };
   const [retryCount, setRetryCount] = useState(0);
   const [distributionSimDismissed, setDistributionSimDismissed] = useState(false);
 
   /** When true, the externally-supplied __simulateState is ignored */
   const [simDismissed, setSimDismissed] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelPendingSearchSync = useCallback(() => {
+    if (searchDebounceRef.current !== null) {
+      clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => cancelPendingSearchSync();
+  }, [cancelPendingSearchSync]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      cancelPendingSearchSync();
+      const next = filtersFromSearchParams(new URLSearchParams(window.location.search));
+      setQuery(next.query);
+      setFiltersActive(next.filtersActive);
+      setSort(next.sort);
+      setPage(next.page);
+    };
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [cancelPendingSearchSync]);
 
   useEffect(() => {
     if (typeof process !== "undefined" && process.env.NODE_ENV === "test") {
@@ -570,7 +633,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
 
   /**
    * Resolve the current discovery state, merging the simulated state with the
-   * live search/filter controls when in "loaded" mode.
+   * live search/filter/sort controls when in "loaded" mode.
    */
   const resolveState = useCallback((): DiscoveryState => {
     if (effectiveSimState && effectiveSimState.kind !== 'loaded') {
@@ -585,19 +648,53 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
 
     if (seedOfferings.length === 0) return { kind: 'truly-empty' };
     if (filtered.length === 0) return { kind: 'filtered-empty', query: trimmed, hasFilters: filtersActive };
-    return { kind: 'loaded', offerings: filtered };
-  }, [query, filtersActive, effectiveSimState, seedOfferings]);
+    return { kind: 'loaded', offerings: sortOfferings(filtered, sort) };
+  }, [query, filtersActive, sort, effectiveSimState, seedOfferings]);
 
   const state = resolveState();
+  const safePageSize = Math.max(1, pageSize);
+  const totalPages =
+    state.kind === 'loaded' ? Math.max(1, Math.ceil(state.offerings.length / safePageSize)) : 1;
+  const effectivePage = Math.min(page, totalPages);
+  const pagedOfferings =
+    state.kind === 'loaded'
+      ? state.offerings.slice((effectivePage - 1) * safePageSize, effectivePage * safePageSize)
+      : [];
+
   const distributionState = distributionSimDismissed || !__simulateDistributionState
     ? { kind: 'loaded', distributions: MOCK_DISTRIBUTIONS } as DistributionState
     : __simulateDistributionState;
 
+  const handleQueryChange = (nextQuery: string) => {
+    setQuery(nextQuery);
+    setPage(1);
+    cancelPendingSearchSync();
+    searchDebounceRef.current = setTimeout(() => {
+      searchDebounceRef.current = null;
+      syncDiscoveryFiltersToUrl(
+        { query: nextQuery, filtersActive, sort, page: 1 },
+        'replace',
+      );
+    }, DISCOVERY_SEARCH_DEBOUNCE_MS);
+  };
+
+  const handleClearSearch = () => {
+    cancelPendingSearchSync();
+    setQuery('');
+    setPage(1);
+    syncDiscoveryFiltersToUrl({ query: '', filtersActive, sort, page: 1 }, 'replace');
+  };
+
   const handleClearFilters = () => {
+    cancelPendingSearchSync();
     setQuery('');
     setFiltersActive(false);
+    setSort('default');
+    setPage(1);
+    updateFilters('', false);
     setRetryCount(0);
     setSimDismissed(true);
+    syncDiscoveryFiltersToUrl(DEFAULT_DISCOVERY_FILTERS, 'push');
     __onClearFilters?.();
   };
 
@@ -612,7 +709,36 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   };
 
   const handleToggleFilters = () => {
-    setFiltersActive((f) => !f);
+    cancelPendingSearchSync();
+    const nextFiltersActive = !filtersActive;
+    setFiltersActive(nextFiltersActive);
+    setPage(1);
+    syncDiscoveryFiltersToUrl(
+      { query, filtersActive: nextFiltersActive, sort, page: 1 },
+      'push',
+    );
+  };
+
+  const handleSortChange = (nextValue: string) => {
+    if (!isDiscoverySortOption(nextValue)) return;
+    cancelPendingSearchSync();
+    setSort(nextValue);
+    setPage(1);
+    syncDiscoveryFiltersToUrl(
+      { query, filtersActive, sort: nextValue, page: 1 },
+      'push',
+    );
+  };
+
+  const handlePageChange = (nextPage: number) => {
+    const clamped = Math.min(Math.max(1, nextPage), totalPages);
+    cancelPendingSearchSync();
+    setPage(clamped);
+    syncDiscoveryFiltersToUrl(
+      { query, filtersActive, sort, page: clamped },
+      'push',
+    );
+    updateFilters(query, !filtersActive);
   };
 
   const handleDistributionRetry = () => {
@@ -642,13 +768,15 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
               className="input-field pl-10 h-10 text-sm"
               aria-label="Search startup offerings"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => handleQueryChange(e.target.value)}
+              onChange={(e) => updateFilters(e.target.value, filtersActive)}
               autoComplete="off"
             />
             {query && (
               <button
                 className="absolute right-3 top-2.5 text-muted hover:text-main transition-colors"
-                onClick={() => setQuery('')}
+                onClick={handleClearSearch}
+                onClick={() => updateFilters('', filtersActive)}
                 aria-label="Clear search"
                 data-testid="clear-search-btn"
               >
@@ -656,6 +784,19 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
               </button>
             )}
           </div>
+          <select
+            aria-label="Sort offerings"
+            data-testid="sort-select"
+            className="input-field h-10 text-sm"
+            value={sort}
+            onChange={(e) => handleSortChange(e.target.value)}
+          >
+            <option value="default">Featured</option>
+            <option value="name-asc">Name (A–Z)</option>
+            <option value="name-desc">Name (Z–A)</option>
+            <option value="revenue-desc">Highest Revenue Share</option>
+            <option value="funding-desc">Most Funded</option>
+          </select>
           <button
             className={`btn btn--icon btn--sm ${filtersActive ? 'discovery-filter-btn--active' : ''}`}
             aria-label={filtersActive ? 'Filters active — click to clear' : 'Filter results'}
@@ -713,14 +854,13 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
           </h2>
 
           {state.kind === 'loaded' && (
+            <>
             <div
               className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in"
               aria-label="Available startup offerings"
               aria-live="polite"
             >
-              {state.offerings.map((offering) => {
-                const progress = Math.round((offering.raised / offering.target) * 100);
-                const target = `$${offering.target.toLocaleString()}`;
+              {pagedOfferings.map((offering) => {
                 return (
                   <div
                     key={offering.id}
@@ -745,13 +885,47 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
                           height={120}
                         />
                       </div>
-                    <button className="btn-primary py-2 text-xs">
+                    <Link
+                      to={`/offerings/${offering.id}${searchParams.size ? `?${searchParams}` : ''}`}
+                      className="btn-primary py-2 text-xs"
+                      aria-label={`View prospectus for ${offering.name}`}
+                    >
                       View Prospectus
-                    </button>
+                    </Link>
                   </div>
                 );
               })}
             </div>
+            {totalPages > 1 && (
+              <nav
+                aria-label="Offerings pagination"
+                data-testid="offerings-pagination"
+                className="flex items-center justify-between pt-6"
+              >
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => handlePageChange(effectivePage - 1)}
+                  disabled={effectivePage <= 1}
+                  aria-label="Previous offerings page"
+                >
+                  Previous
+                </button>
+                <span className="text-sm text-muted" data-testid="offerings-page-indicator">
+                  Page {effectivePage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn--secondary btn--sm"
+                  onClick={() => handlePageChange(effectivePage + 1)}
+                  disabled={effectivePage >= totalPages}
+                  aria-label="Next offerings page"
+                >
+                  Next
+                </button>
+              </nav>
+            )}
+            </>
           )}
 
           {state.kind === 'filtered-empty' && (

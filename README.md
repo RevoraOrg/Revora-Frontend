@@ -25,6 +25,7 @@ Deployed on the Stellar **testnet** (no real funds):
 - Startup: issuer dashboard, monthly revenue reporting, offering registration wizard with document uploader, governance proposal creation and vote receipt
 - Investor: offering discovery with filters, portfolio summary (allocation, performance), virtualized ledger table, payout schedule (Gantt/timeline)
 - Admin: alerts inbox, scheduled exports
+- Keyboard navigation: open the command palette with Cmd/Ctrl+K, search and navigate to app pages, and press `?` to view shortcuts (Escape closes either overlay)
 - Design system: tokens, density modes, empty/error states, status timelines, notification bell, command palette, RTL and accessibility guidelines
 
 ## Quickstart
@@ -44,6 +45,7 @@ npm run dev        # http://localhost:5173
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint over `src/` |
+| `npm run validate:terminology` | Check production TypeScript copy for prohibited terms (ignores comments, URLs, tests, and the terminology reference) |
 | `npm test` | Vitest with coverage (`npm run test:watch` to watch) |
 
 ## Environment variables
@@ -55,7 +57,7 @@ None are required. The app runs entirely client-side with mock data.
 `/`, `/login`, `/signup`, `/forgot-password`, `/recover-2fa`, `/settings/2fa/backup-codes`,
 `/startup/dashboard`, `/startup/revenue-calendar`, `/startup/report-revenue`, `/startup/offering-registration`,
 `/startup/governance/proposals/create`, `/startup/governance/vote-receipt`,
-`/investor/portal`, `/investor/portfolio`, `/investor/ledger`, `/investor/payouts`,
+`/investor/portal`, `/offerings/:id`, `/investor/portfolio`, `/investor/ledger`, `/investor/payouts`,
 `/admin/alerts`, `/admin/scheduled-exports`. Unknown paths show a "Page not found" screen.
 
 ## Deploy

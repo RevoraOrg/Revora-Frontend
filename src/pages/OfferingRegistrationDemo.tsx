@@ -7,6 +7,7 @@ import type { UploadableFile } from '../components/DocumentUploader';
 import { SaveAsDraft } from '../components/designSystem/SaveAsDraft';
 import { HelpDrawer, HelpTrigger, OFFERING_HELP_CONTENT } from '../components/HelpDrawer';
 import type { OfferingStep } from '../components/HelpDrawer';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const MAX_SIZE_BYTES = 10 * 1024 * 1024; // 10 MB
 const ACCEPT = '.pdf,.png,.jpg,.jpeg';
@@ -22,6 +23,7 @@ const SIMULATED_STEP = 20;
  * demonstrate the uploading / completed / error states without a backend.
  */
 export const OfferingRegistrationDemo: React.FC = () => {
+  useDocumentTitle('Offering Registration');
   const [files, setFiles] = useState<UploadableFile[]>([]);
   const nextId = useRef(0);
   const timers = useRef<Map<string, ReturnType<typeof setInterval>>>(new Map());

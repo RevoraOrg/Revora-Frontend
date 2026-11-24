@@ -24,18 +24,25 @@
 import React, { useState } from 'react';
 import { Bell } from 'lucide-react';
 import { useReducedMotion } from '../../hooks/useReducedMotion';
+import { useOptionalNotifications } from './NotificationProvider';
 import NotificationPanel from './NotificationPanel';
 import type { Notification } from './notificationsData';
 import './NotificationBell.css';
 
 export interface NotificationBellProps {
-  notifications: Notification[];
+  /** Optional override; the provider feed is used when omitted. */
+  notifications?: Notification[];
 }
 
 const NotificationBell: React.FC<NotificationBellProps> = ({ notifications }) => {
   const [isOpen, setIsOpen]     = useState(false);
   const reducedMotion           = useReducedMotion();
-  const unreadCount             = notifications.filter((n) => !n.read).length;
+  const context                 = useOptionalNotifications();
+  const visibleNotifications    = notifications ?? context?.notifications ?? [];
+  const unreadCount             = visibleNotifications.filter((n) => !n.read).length;
+  const announcement            = unreadCount > 0
+    ? `You have ${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}.`
+    : 'You have no unread notifications.';
 
   const toggle = () => setIsOpen((o) => !o);
 
@@ -72,10 +79,18 @@ const NotificationBell: React.FC<NotificationBellProps> = ({ notifications }) =>
         )}
       </button>
 
+      <div className="sr-only" aria-live="polite" aria-atomic="true" data-testid="nb-announcer">
+        {announcement}
+      </div>
+
       {isOpen && (
         <NotificationPanel
-          notifications={notifications}
+          notifications={visibleNotifications}
           onClose={() => setIsOpen(false)}
+          onMarkAllRead={context?.markAllRead}
+          onMarkRead={context?.markRead}
+          onDismiss={context?.dismiss}
+          onGenerate={context?.generateNotifications}
         />
       )}
     </div>

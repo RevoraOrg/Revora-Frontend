@@ -1,0 +1,7 @@
+const copy = "RevenueShare payouts and distributions";
+// dividend and revenue sharing are old terminology
+/* revenue-share
+   dividends without a leading asterisk
+*/ const label = "RevenueShare";
+const docs = "https://docs.revora.io/offerings/revenue-share";
+const markers = "/* not a comment */ // still a string";

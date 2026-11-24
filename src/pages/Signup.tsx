@@ -1,16 +1,31 @@
 import { ConnectWalletButton } from '../components/WalletConnection/ConnectWalletButton';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
+import {
+  type AuthRole,
+  sanitizeNextPath,
+  useOptionalAuth,
+  writeStoredAuthSession,
+} from '../components/AuthProvider';
 import { PasswordStrength } from '../components/PasswordStrength';
 import { evaluatePasswordStrength } from '../utils/passwordStrength';
 import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Button } from '../components/Button';
+import { useI18n } from '../i18n/I18nProvider';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type Step = 'persona' | 'form' | 'success';
 
 export const Signup: React.FC = () => {
+  const { t } = useI18n();
+  const auth = useOptionalAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const nextParam = searchParams.get('next');
+
+  useDocumentTitle('Sign Up');
   const [step, setStep] = useState<Step>('persona');
   const [persona, setPersona] = useState<'startup' | 'investor' | null>(null);
   const [email, setEmail] = useState('');
@@ -20,6 +35,14 @@ export const Signup: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   const handlePersonaSelect = (type: 'startup' | 'investor') => {
     setPersona(type);
@@ -31,34 +54,47 @@ export const Signup: React.FC = () => {
     if (isSubmitting) return;
     
     const newErrors: Record<string, string> = {};
-    if (!name.trim()) newErrors.name = 'Full name is required';
-    if (!email.includes('@')) newErrors.email = 'Please enter a valid email address';
+    if (!name.trim()) newErrors.name = t('auth.signup.full-name-required');
+    if (!email.includes('@')) newErrors.email = t('auth.signup.email-invalid');
     const pwStrength = evaluatePasswordStrength(password);
-    if (pwStrength.score < 5) newErrors.password = 'Password must meet all requirements below.';
+    if (pwStrength.score < 5) newErrors.password = t('auth.signup.password-requirements');
     
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
 
+    const assignedRole: AuthRole = persona ?? 'startup';
+
     setIsSubmitting(true);
 
     await new Promise(resolve => setTimeout(resolve, 800));
+    if (!isMountedRef.current) return;
+
+    const userId = email.trim().toLowerCase();
+    if (auth) {
+      auth.signIn({ id: userId, role: assignedRole });
+    } else {
+      writeStoredAuthSession({ id: userId, role: assignedRole });
+    }
 
     setIsSubmitting(false);
     setIsSuccess(true);
 
     await new Promise(resolve => setTimeout(resolve, 600));
+    if (!isMountedRef.current) return;
 
     setStep('success');
   };
 
+  const targetDestination = sanitizeNextPath(nextParam, persona ?? 'startup');
+
   if (step === 'success') {
     return (
-      <AuthLayout title="Check your inbox">
+      <AuthLayout title={t('auth.signup.success-title')}>
         <ConfirmationNextSteps
           email={email}
-          title="Check your inbox"
+          title={t('auth.signup.success-title')}
           variant="transactionSuccess"
           onResend={async (e) => {
             // mock resend -- wire to API
@@ -66,9 +102,12 @@ export const Signup: React.FC = () => {
             return new Promise<void>((res) => setTimeout(res, 600));
           }}
           onChangeEmail={() => setStep('form')}
-          primaryLabel="Back to persona selection"
+          primaryLabel={t('auth.signup.back-to-persona')}
           onPrimary={() => setStep('persona')}
           primaryTo={undefined}
+          primaryLabel="Continue to workspace"
+          onPrimary={() => navigate(targetDestination, { replace: true })}
+          primaryTo={targetDestination}
         />
       </AuthLayout>
     );
@@ -76,9 +115,13 @@ export const Signup: React.FC = () => {
 
   return (
     <AuthLayout 
-      title={step === 'persona' ? "Choose your account type" : "Create your account"}
-      subtitle={step === 'persona' ? "Select how you'll be using Revora to tailor your experience." : `Setting up your ${persona} profile.`}
-      helperText={step === 'form' ? "Already have credentials? Return to Sign in to recover or access your account." : undefined}
+      title={step === 'persona' ? t('auth.signup.persona-title') : t('auth.signup.create-title')}
+      subtitle={step === 'persona'
+        ? t('auth.signup.persona-subtitle')
+        : t('auth.signup.profile-subtitle', {
+          persona: persona === 'startup' ? t('auth.signup.startup') : t('auth.signup.investor'),
+        })}
+      helperText={step === 'form' ? t('auth.signup.helper') : undefined}
     >
       {step === 'persona' ? (
         <div className="grid gap-4">
@@ -91,8 +134,8 @@ export const Signup: React.FC = () => {
               <Briefcase size={24} />
             </div>
             <div>
-              <div className="font-semibold text-main">Startup Founder</div>
-              <div className="text-xs text-muted">Create offerings and manage RevenueShare distributions.</div>
+              <div className="font-semibold text-main">{t('auth.signup.startup')}</div>
+              <div className="text-xs text-muted">{t('auth.signup.startup-description')}</div>
             </div>
           </button>
 
@@ -105,13 +148,14 @@ export const Signup: React.FC = () => {
               <TrendingUp size={24} />
             </div>
             <div>
-              <div className="font-semibold text-main">Investor</div>
-              <div className="text-xs text-muted">Discover and invest in tokenized offerings.</div>
+              <div className="font-semibold text-main">{t('auth.signup.investor')}</div>
+              <div className="text-xs text-muted">{t('auth.signup.investor-description')}</div>
             </div>
           </button>
 
           <p className="mt-6 text-center text-sm text-muted">
-            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
+            {t('auth.signup.already-account')} <Link to="/login" className="link-styled">{t('auth.signup.sign-in')}</Link>
+            Already have an account? <Link to={nextParam ? `/login?next=${encodeURIComponent(nextParam)}` : "/login"} className="link-styled">Sign in</Link>
           </p>
         </div>
       ) : (
@@ -121,7 +165,7 @@ export const Signup: React.FC = () => {
           <div className="relative my-6 py-2 flex items-center">
             <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
             <span className="flex-shrink mx-4 text-muted text-xs uppercase tracking-wider font-medium">
-              Or sign up with email
+              {t('auth.signup.or-email')}
             </span>
             <div className="flex-grow border-t border-[rgba(148,163,184,0.1)]"></div>
           </div>
@@ -131,23 +175,23 @@ export const Signup: React.FC = () => {
               role="alert"
             >
               <AlertCircle size={16} className="mt-0.5 mr-2 flex-shrink-0" />
-              <span>Please fix the errors below to continue.</span>
+              <span>{t('auth.signup.fix-errors')}</span>
             </div>
           )}
 
           <div className="input-group">
-            <label className="input-label" htmlFor="name">Full Name</label>
+            <label className="input-label" htmlFor="name">{t('auth.signup.full-name')}</label>
             <div className="relative">
               <User className="absolute left-3 top-3 text-muted" size={18} />
               <input 
                 id="name"
                 className={`input-field pl-10 ${errors.name ? 'input-error' : ''}`} 
-                placeholder="John Doe"
+                placeholder={t('auth.signup.full-name-placeholder')}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
                 aria-required="true"
-                aria-label="Full Name"
+                aria-label={t('auth.signup.full-name')}
                 disabled={isSubmitting}
               />
             </div>
@@ -155,19 +199,19 @@ export const Signup: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="email">Email Address</label>
+            <label className="input-label" htmlFor="email">{t('auth.signup.email-label')}</label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 text-muted" size={18} />
               <input 
                 id="email"
                 type="email" 
                 className={`input-field pl-10 ${errors.email ? 'input-error' : ''}`} 
-                placeholder="name@company.com" 
+                placeholder={t('auth.signup.email-placeholder')}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 aria-required="true"
-                aria-label="Email Address"
+                aria-label={t('auth.signup.email-label')}
                 disabled={isSubmitting}
               />
             </div>
@@ -175,7 +219,7 @@ export const Signup: React.FC = () => {
           </div>
 
           <div className="input-group">
-            <label className="input-label" htmlFor="password">Password</label>
+            <label className="input-label" htmlFor="password">{t('auth.signup.password-label')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-3 text-muted" size={18} />
               <input 
@@ -187,7 +231,7 @@ export const Signup: React.FC = () => {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 aria-required="true"
-                aria-label="Password"
+                aria-label={t('auth.signup.password-label')}
                 aria-describedby="password-rules"
                 disabled={isSubmitting}
               />
@@ -195,7 +239,7 @@ export const Signup: React.FC = () => {
                 type="button"
                 className="absolute right-3 top-3 text-muted hover:text-main transition-colors"
                 onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? t('auth.login.hide-password') : t('auth.login.show-password')}
                 disabled={isSubmitting}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -206,7 +250,7 @@ export const Signup: React.FC = () => {
           </div>
 
           <Button type="submit" loading={isSubmitting} success={isSuccess} variant="secondary" className="mt-4 w-full">
-            Create Account
+            {t('auth.signup.create-account')}
           </Button>
           
           <button 
@@ -215,11 +259,12 @@ export const Signup: React.FC = () => {
             className="btn-secondary w-full"
             disabled={isSubmitting}
           >
-            Back
+            {t('auth.signup.back')}
           </button>
 
           <p className="text-center text-sm text-muted">
-            Already have an account? <Link to="/login" className="link-styled">Sign in</Link>
+            {t('auth.signup.already-account')} <Link to="/login" className="link-styled">{t('auth.signup.sign-in')}</Link>
+            Already have an account? <Link to={nextParam ? `/login?next=${encodeURIComponent(nextParam)}` : "/login"} className="link-styled">Sign in</Link>
           </p>
         </form>
       )}

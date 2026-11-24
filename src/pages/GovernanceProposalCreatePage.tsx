@@ -8,15 +8,21 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GovernanceProposalForm, ProposalDraft } from '../components/GovernanceProposalForm/GovernanceProposalForm';
+import { useOptionalGovernanceProposals } from '../context/GovernanceProposalsContext';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export const GovernanceProposalCreatePage: React.FC = () => {
+  useDocumentTitle('Create Governance Proposal');
   const navigate = useNavigate();
+  const store = useOptionalGovernanceProposals();
 
   const handleSubmit = (draft: ProposalDraft) => {
-    console.log('Proposal submitted:', draft);
-    // In a real app, this would submit the proposal to the blockchain
-    // and navigate to the proposal detail page
-    navigate('/startup/dashboard');
+    if (store) {
+      const created = store.create(draft);
+      navigate(`/startup/governance/proposals/${created.id}`);
+      return;
+    }
+    navigate('/startup/governance/proposals');
   };
 
   const handleCancel = () => {

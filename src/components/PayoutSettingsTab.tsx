@@ -113,8 +113,8 @@ export const PayoutSettingsTab: React.FC = () => {
             <div key={split.id} className="flex items-center justify-between p-4 bg-slate-900/50 rounded-lg border border-slate-700">
               <div className="flex items-center gap-3">
                 {split.isLocked ? (
-                  <div className="text-slate-500" aria-label="Locked role" title="This role's percentage is locked by smart contract">
-                    <Lock size={16} />
+                  <div className="text-slate-500" role="img" aria-label="Locked role" title="This role's percentage is locked by smart contract">
+                    <Lock size={16} aria-hidden="true" />
                   </div>
                 ) : (
                   <div className="w-4" />

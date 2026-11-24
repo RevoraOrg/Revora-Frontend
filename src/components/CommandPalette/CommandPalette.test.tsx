@@ -29,6 +29,49 @@ function renderPalette(overrides: Partial<React.ComponentProps<typeof CommandPal
   return render(<CommandPalette {...defaults} {...overrides} />);
 }
 
+describe('fuzzy search highlighting', () => {
+  it('highlights an abbreviation and activates the matching command by keyboard', () => {
+    const onCommandExecute = vi.fn();
+    renderPalette({ onCommandExecute });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'lgr' } });
+    const option = screen.getByRole('option', { name: /Export Ledger Download CSV \/ PDF/ });
+    expect(option.querySelector('.cp-result-label')?.textContent).toBe('Export Ledger');
+    expect(Array.from(option.querySelectorAll('mark')).map((mark) => mark.textContent)).toEqual(['L', 'g', 'r']);
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'ArrowDown' });
+    fireEvent.keyDown(screen.getByRole('combobox'), { key: 'Enter' });
+    expect(onCommandExecute).toHaveBeenCalledWith(expect.objectContaining({ id: 'action:export-ledger' }));
+  });
+
+  it('highlights descriptions and clears highlights when returning to recents', () => {
+    renderPalette({ recentCommands: RECENT_ITEMS });
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '/dashboard' } });
+    const option = screen.getByRole('option', { name: /Go to Dashboard/ });
+    expect(option.querySelector('.cp-result-label mark')).toBeNull();
+    expect(option.querySelector('.cp-result-desc mark')?.textContent).toBe('/dashboard');
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: '' } });
+    expect(screen.getByRole('group', { name: 'Recent' }).querySelector('mark')).toBeNull();
+  });
+
+  it('renders matched markup as literal text and retains accessible result names', async () => {
+    const item: CommandItem = {
+      id: 'test:markup', group: 'actions', label: 'Open <img src=x onerror=alert(1)>',
+      description: '<script>text</script>',
+    };
+    ALL_COMMANDS.push(item);
+    try {
+      const { container } = renderPalette();
+      fireEvent.change(screen.getByRole('combobox'), { target: { value: '<' } });
+      const option = screen.getByRole('option', { name: `${item.label} ${item.description}` });
+      expect(option.querySelector('.cp-result-label')?.textContent).toBe(item.label);
+      expect(option.querySelectorAll('mark')).toHaveLength(2);
+      expect(container.querySelector('img, script')).toBeNull();
+      expect(await axe(container)).toHaveNoViolations();
+    } finally {
+      ALL_COMMANDS.pop();
+    }
+  });
+});
+
 // ─── Rendering ───────────────────────────────────────────────────────────────
 
 describe('CommandPalette', () => {

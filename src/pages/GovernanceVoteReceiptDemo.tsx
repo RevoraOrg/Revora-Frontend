@@ -8,6 +8,7 @@ import { ArrowLeft, Vote } from 'lucide-react';
 import { GovernanceVoteReceipt } from '../components/GovernanceVoteReceipt';
 import type { VoteChoice, TxStatus } from '../components/GovernanceVoteReceipt';
 import { Button } from '../components/Button';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const TX_HASH = '0xdeadbeefcafe1234deadbeefcafe1234deadbeefcafe1234deadbeefcafe1234';
 const VOTER   = '0xabc123def456abc123def456abc123def456abc1';
@@ -29,6 +30,7 @@ const CHOICES: { key: VoteChoice; label: string }[] = [
 ];
 
 export const GovernanceVoteReceiptDemo: React.FC = () => {
+  useDocumentTitle('Governance Vote Receipt');
   const [open,     setOpen]     = useState(false);
   const [scenario, setScenario] = useState<Scenario>('confirmed');
   const [choice,   setChoice]   = useState<VoteChoice>('for');

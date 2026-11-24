@@ -90,6 +90,8 @@
   --text-muted: #cbd5e1;
   --text-accent: #38bdf8;
   --error: #ef4444;
+  --danger-bg: #dc2626;
+  --danger-hover: #b91c1c;
   --success: #10b981;
 
   /* Auth Layout Design Tokens (Issue #80) */
@@ -473,7 +475,8 @@ body {
 }
 
 .btn-primary:focus-visible,
-.btn-secondary:focus-visible {
+.btn-secondary:focus-visible,
+.btn-danger:focus-visible {
   outline: 2px solid white;
   outline-offset: 2px;
   border-radius: 0.75rem;
@@ -502,6 +505,48 @@ body {
 .btn-secondary:focus {
   outline: 2px solid var(--text-main);
   outline-offset: 2px;
+}
+
+.btn-danger,
+.btn--destructive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  background: var(--danger-bg, #dc2626);
+  color: #ffffff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.btn-danger:hover,
+.btn--destructive:hover {
+  background: var(--danger-hover, #b91c1c);
+  transform: translateY(-1px);
+}
+
+.btn--sm {
+  padding: 0.375rem 0.875rem;
+  font-size: 0.8125rem;
+  border-radius: var(--radius-md);
+  width: auto;
+}
+
+.btn--md {
+  padding: 0.75rem 1.25rem;
+  font-size: 1rem;
+  border-radius: var(--radius-lg);
+}
+
+.btn--lg {
+  padding: 1rem 1.75rem;
+  font-size: 1.125rem;
+  border-radius: var(--radius-xl);
 }
 
 .input-group {
@@ -955,13 +1000,6 @@ input:focus-visible,
   border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: var(--spacing-sm);
-}
-
-.btn--sm {
-  padding: 0.375rem 0.875rem;
-  font-size: 0.8125rem;
-  border-radius: var(--radius-md);
-  width: auto;
 }
 
 /* Restored: discovery states, home, placeholder (lost in earlier refactor) */

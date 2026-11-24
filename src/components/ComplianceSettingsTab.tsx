@@ -81,6 +81,14 @@ export const REGIONS_BY_CONTINENT: Record<Continent, Region[]> = {
 // Build a flat list of all regions for summary calculations
 const ALL_REGIONS: Region[] = Object.values(REGIONS_BY_CONTINENT).flat();
 
+export const COMPLIANCE_SETTINGS_STORAGE_KEY = "revora:compliance:regionStatuses";
+
+const VALID_STATUSES: ReadonlySet<RegionStatus> = new Set([
+  "allowed",
+  "blocked",
+  "restricted",
+]);
+
 // Default statuses: everything allowed
 const buildDefaultStatuses = (): Record<string, RegionStatus> => {
   const result: Record<string, RegionStatus> = {};
@@ -88,6 +96,28 @@ const buildDefaultStatuses = (): Record<string, RegionStatus> => {
     result[r.code] = "allowed";
   });
   return result;
+};
+
+const loadInitialStatuses = (): Record<string, RegionStatus> => {
+  const defaults = buildDefaultStatuses();
+  try {
+    const raw = localStorage.getItem(COMPLIANCE_SETTINGS_STORAGE_KEY);
+    if (!raw) return defaults;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return defaults;
+    }
+    const record = parsed as Record<string, unknown>;
+    ALL_REGIONS.forEach((r) => {
+      const val = record[r.code];
+      if (typeof val === "string" && VALID_STATUSES.has(val as RegionStatus)) {
+        defaults[r.code] = val as RegionStatus;
+      }
+    });
+    return defaults;
+  } catch {
+    return defaults;
+  }
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -314,13 +344,14 @@ const WorldMapDecoration: React.FC = () => (
 
 export const ComplianceSettingsTab: React.FC = () => {
   const [regionStatuses, setRegionStatuses] = useState<Record<string, RegionStatus>>(
-    buildDefaultStatuses
+    loadInitialStatuses
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedContinents, setExpandedContinents] = useState<Set<string>>(
     () => new Set(Object.keys(REGIONS_BY_CONTINENT))
   );
   const [showHighRiskWarning, setShowHighRiskWarning] = useState(true);
+  const [isSaved, setIsSaved] = useState(false);
 
   // Derived: is any high-risk region currently allowed?
   const hasAllowedHighRisk = useMemo(() => {
@@ -357,6 +388,7 @@ export const ComplianceSettingsTab: React.FC = () => {
   const handleStatusChange = useCallback(
     (code: string, status: RegionStatus) => {
       setRegionStatuses((prev) => ({ ...prev, [code]: status }));
+      setIsSaved(false);
     },
     []
   );
@@ -382,6 +414,7 @@ export const ComplianceSettingsTab: React.FC = () => {
       });
       return next;
     });
+    setIsSaved(false);
   }, []);
 
   const handleBlockAll = useCallback((continent: Continent) => {
@@ -393,6 +426,7 @@ export const ComplianceSettingsTab: React.FC = () => {
       });
       return next;
     });
+    setIsSaved(false);
   }, []);
 
   const handleReset = useCallback(() => {
@@ -400,11 +434,24 @@ export const ComplianceSettingsTab: React.FC = () => {
     setSearchQuery("");
     setExpandedContinents(new Set(Object.keys(REGIONS_BY_CONTINENT)));
     setShowHighRiskWarning(true);
+    setIsSaved(false);
+    try {
+      localStorage.removeItem(COMPLIANCE_SETTINGS_STORAGE_KEY);
+    } catch {
+      // ignore storage errors
+    }
   }, []);
 
   const handleSave = useCallback(() => {
-    // TODO: wire up to API
-    console.log("Saving compliance settings:", regionStatuses);
+    try {
+      localStorage.setItem(
+        COMPLIANCE_SETTINGS_STORAGE_KEY,
+        JSON.stringify(regionStatuses)
+      );
+    } catch {
+      // ignore storage errors
+    }
+    setIsSaved(true);
   }, [regionStatuses]);
 
   const continentEntries = Object.entries(filteredData);
@@ -519,6 +566,15 @@ export const ComplianceSettingsTab: React.FC = () => {
 
         {/* Action buttons */}
         <div className="flex items-center gap-3">
+          {isSaved && (
+            <span
+              role="status"
+              aria-live="polite"
+              className="text-sm text-green-400 font-medium"
+            >
+              Settings saved
+            </span>
+          )}
           <button
             type="button"
             onClick={handleReset}

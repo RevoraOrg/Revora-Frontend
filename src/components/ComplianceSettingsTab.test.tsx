@@ -1,12 +1,17 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ComplianceSettingsTab,
+  COMPLIANCE_SETTINGS_STORAGE_KEY,
   REGIONS_BY_CONTINENT,
 } from './ComplianceSettingsTab';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+beforeEach(() => {
+  localStorage.clear();
+});
 
 const renderComponent = () => render(<ComplianceSettingsTab />);
 
@@ -485,10 +490,11 @@ describe('ComplianceSettingsTab – Save Changes', () => {
     expect(saveBtn).not.toBeDisabled();
   });
 
-  it('logs the current RegionStatus values when saving', async () => {
-    const saveLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+  it('persists the current RegionStatus values to localStorage and shows a role="status" confirmation', async () => {
     renderComponent();
     const user = userEvent.setup();
+
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Block Nigeria' }));
     await user.click(screen.getByRole('button', { name: 'Restrict Iran' }));
@@ -506,16 +512,64 @@ describe('ComplianceSettingsTab – Save Changes', () => {
               : 'allowed',
         ])
     );
-    expect(saveLog).toHaveBeenCalledWith(
-      'Saving compliance settings:',
-      expectedStatuses
-    );
+    const savedRaw = localStorage.getItem(COMPLIANCE_SETTINGS_STORAGE_KEY);
+    expect(savedRaw).not.toBeNull();
+    expect(JSON.parse(savedRaw!)).toEqual(expectedStatuses);
 
-    saveLog.mockRestore();
+    const statusMsg = screen.getByRole('status');
+    expect(statusMsg).toHaveTextContent('Settings saved');
+  });
+
+  it('restores saved region statuses when remounted (simulating page reload)', async () => {
+    const { unmount } = renderComponent();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Block Nigeria' }));
+    await user.click(screen.getByRole('button', { name: 'Restrict Japan' }));
+    await user.click(screen.getByRole('button', { name: 'Save compliance settings' }));
+
+    unmount();
+
+    renderComponent();
+
+    expect(screen.getByRole('button', { name: 'Block Nigeria' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Restrict Japan' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: 'Allow Germany' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('1 blocked')).toBeInTheDocument();
+    expect(screen.getByText('1 restricted')).toBeInTheDocument();
+  });
+
+  it('clears the saved confirmation message when a status is subsequently changed or reset', async () => {
+    renderComponent();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole('button', { name: 'Block Nigeria' }));
+    await user.click(screen.getByRole('button', { name: 'Save compliance settings' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Settings saved');
+
+    await user.click(screen.getByRole('button', { name: 'Allow Nigeria' }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Save compliance settings' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Settings saved');
+
+    await user.click(screen.getByRole('button', { name: 'Reset compliance settings to defaults' }));
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(localStorage.getItem(COMPLIANCE_SETTINGS_STORAGE_KEY)).toBeNull();
+  });
+
+  it('falls back to default statuses when localStorage contains corrupt or non-object JSON', () => {
+    localStorage.setItem(COMPLIANCE_SETTINGS_STORAGE_KEY, '{corrupt-json');
+    const { unmount } = renderComponent();
+    expect(screen.getByRole('button', { name: 'Allow Nigeria' })).toHaveAttribute('aria-pressed', 'true');
+    unmount();
+
+    localStorage.setItem(COMPLIANCE_SETTINGS_STORAGE_KEY, JSON.stringify(['invalid']));
+    renderComponent();
+    expect(screen.getByRole('button', { name: 'Allow Nigeria' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('keeps the current statuses when saving while the search has no results', async () => {
-    const saveLog = vi.spyOn(console, 'log').mockImplementation(() => undefined);
     renderComponent();
     const user = userEvent.setup();
 
@@ -525,12 +579,10 @@ describe('ComplianceSettingsTab – Save Changes', () => {
 
     await user.click(screen.getByRole('button', { name: 'Save compliance settings' }));
 
-    expect(saveLog).toHaveBeenCalledWith(
-      'Saving compliance settings:',
-      expect.objectContaining({ NG: 'blocked' })
-    );
-
-    saveLog.mockRestore();
+    const savedRaw = localStorage.getItem(COMPLIANCE_SETTINGS_STORAGE_KEY);
+    expect(savedRaw).not.toBeNull();
+    expect(JSON.parse(savedRaw!)).toEqual(expect.objectContaining({ NG: 'blocked' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Settings saved');
   });
 });
 

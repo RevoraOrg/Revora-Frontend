@@ -10,6 +10,7 @@ export interface ExportHistoryEntry {
   type: string; // 'CSV', 'PDF', etc.
   scope: string; // e.g. "Payouts in Q2"
   sizeBytes: number;
+  fileName?: string;
 }
 
 export const MOCK_EXPORTS: ExportHistoryEntry[] = [
@@ -26,13 +27,19 @@ function formatBytes(bytes: number) {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
 }
 
-export const ExportHistoryTable: React.FC = () => {
-  const [exports, setExports] = useState<ExportHistoryEntry[]>(MOCK_EXPORTS);
+export const ExportHistoryTable: React.FC<{
+  entries?: ExportHistoryEntry[];
+  onDownload?: (id: string) => void;
+  onDelete?: (id: string) => void;
+}> = ({ entries, onDownload, onDelete }) => {
+  const [localExports, setExports] = useState<ExportHistoryEntry[]>(MOCK_EXPORTS);
+  const exports = entries ?? localExports;
   const [shareDialogId, setShareDialogId] = useState<string | null>(null);
   const [deleteDialogId, setDeleteDialogId] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
-    setExports((prev) => prev.filter((e) => e.id !== id));
+    if (entries) onDelete?.(id);
+    else setExports((prev) => prev.filter((e) => e.id !== id));
     setDeleteDialogId(null);
   };
 
@@ -47,6 +54,13 @@ export const ExportHistoryTable: React.FC = () => {
     };
     setExports((prev) => [newEntry, ...prev]);
   };
+
+  if (entries && exports.length === 0) {
+    return <section className="glass-card p-6" aria-label="Export history">
+      <h2 className="text-xl font-bold">No export history</h2>
+      <p>Generated revenue files will appear here for download.</p>
+    </section>;
+  }
 
   if (exports.length === 0) {
     return (
@@ -74,6 +88,7 @@ export const ExportHistoryTable: React.FC = () => {
             <tr>
               <th scope="col">Date</th>
               <th scope="col">Type</th>
+              {entries && <th scope="col">File name</th>}
               <th scope="col">Scope Summary</th>
               <th scope="col">Size</th>
               <th scope="col" style={{ textAlign: 'right' }}>Actions</th>
@@ -94,12 +109,17 @@ export const ExportHistoryTable: React.FC = () => {
                     {entry.type}
                   </span>
                 </td>
+                {entries && <td>{entry.fileName}</td>}
                 <td>{entry.scope}</td>
                 <td>{formatBytes(entry.sizeBytes)}</td>
                 <td style={{ textAlign: 'right' }}>
                   <div style={{ display: 'inline-flex', gap: '0.5rem' }}>
-                    <button 
-                      className="btn btn--secondary btn--sm" 
+                    {entries && onDownload && <button type="button" className="btn btn--secondary btn--sm"
+                      onClick={() => onDownload(entry.id)} aria-label={`Download ${entry.fileName}`}>
+                      <FileDown size={14} aria-hidden="true" />
+                    </button>}
+                    {!entries && <><button
+                      className="btn btn--secondary btn--sm"
                       title="Rerun Export" 
                       onClick={() => handleRerun(entry.id)}
                       aria-label={`Rerun export ${entry.scope}`}
@@ -116,6 +136,7 @@ export const ExportHistoryTable: React.FC = () => {
                     >
                       <Share2 size={14} aria-hidden="true" />
                     </button>
+                    </>}
                     <button 
                       className="btn btn--secondary btn--sm" 
                       title="Delete Export"

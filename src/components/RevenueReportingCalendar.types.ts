@@ -1,3 +1,5 @@
+import type { PreviewRow } from './RevenueCalendarCsvImport.types';
+
 /**
  * Revenue Reporting Calendar — Issue #153
  *
@@ -98,6 +100,8 @@ export interface RevenueReportingCalendarProps {
   locale?: string;
   /** First day of week: 0 = Sunday, 1 = Monday, etc. */
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
+  /** Commit validated historical CSV rows to the owning report store. */
+  onImportReports?: (rows: PreviewRow[]) => void;
   /** Callback when a date is selected */
   onDateSelect?: (date: string) => void;
   /** Callback when multiple dates are selected */

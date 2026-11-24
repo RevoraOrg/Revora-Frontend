@@ -53,7 +53,7 @@ None are required. The app runs entirely client-side with mock data.
 ## Routes
 
 `/`, `/login`, `/signup`, `/forgot-password`, `/recover-2fa`, `/settings/2fa/backup-codes`,
-`/startup/dashboard`, `/startup/report-revenue`, `/startup/offering-registration`,
+`/startup/dashboard`, `/startup/revenue-calendar`, `/startup/report-revenue`, `/startup/offering-registration`,
 `/startup/governance/proposals/create`, `/startup/governance/vote-receipt`,
 `/investor/portal`, `/investor/portfolio`, `/investor/ledger`, `/investor/payouts`,
 `/admin/alerts`, `/admin/scheduled-exports`. Unknown paths show a "Page not found" screen.

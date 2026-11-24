@@ -16,7 +16,9 @@ import TwoFactorBackupCodesPage from "./pages/TwoFactorBackupCodesPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
-import { RevenueReportForm } from "./components/RevenueReportForm";
+import { RevenueReportSubmission } from "./pages/RevenueReportSubmission";
+import { RevenueReports } from "./pages/RevenueReports";
+import { RevenueReportsProvider } from "./lib/revenueReportsStore";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
@@ -102,7 +104,7 @@ function SiteFooter() {
 
 export const routes: RouteObject[] = [
   {
-    element: <AppLayout />,
+    element: <RevenueReportsProvider><AppLayout /></RevenueReportsProvider>,
     children: [
       { path: "/", element: <Home /> },
       { path: "/login", element: <Login /> },
@@ -115,7 +117,8 @@ export const routes: RouteObject[] = [
       { path: "/startup", element: <Navigate to="/startup/dashboard" replace /> },
       { path: "/startup/dashboard", element: <StartupDashboard /> },
       { path: "/startup/kyc", element: <KycWizardPage /> },
-      { path: "/startup/report-revenue", element: <RevenueReportForm /> },
+      { path: "/startup/revenue-calendar", element: <RevenueReports /> },
+      { path: "/startup/report-revenue", element: <RevenueReportSubmission /> },
       // Issue #199 – Inline document uploader (Offering Registration wizard)
       { path: "/startup/offering-registration", element: <OfferingRegistrationDemo /> },
       // Issue #247 – Governance proposal creation multi-step form

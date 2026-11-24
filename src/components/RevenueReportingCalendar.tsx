@@ -1249,6 +1249,7 @@ export const RevenueReportingCalendar: React.FC<
   error = null,
   locale = "en-US",
   weekStartsOn = 0, // Sunday by default
+  onImportReports,
   onDateSelect,
   onDatesSelect,
   onMonthChange,
@@ -1620,9 +1621,8 @@ export const RevenueReportingCalendar: React.FC<
           <RevenueCalendarCsvImport 
             onCancel={() => setShowImportWizard(false)}
             onImport={(rows) => {
-              console.log('Imported rows:', rows);
+              onImportReports?.(rows);
               setShowImportWizard(false);
-              // Handle import logic here
             }}
           />
         </div>

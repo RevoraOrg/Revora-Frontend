@@ -84,12 +84,26 @@ function downloadBlob(blob: Blob, fileName: string): void {
   URL.revokeObjectURL(url);
 }
 
-export function RevenueReportForm() {
-  const [reportPeriod, setReportPeriod] = useState(reportPeriods[0].value);
-  const [grossRevenue, setGrossRevenue] = useState("");
-  const [currency, setCurrency] = useState("USD");
-  const [locale, setLocale] = useState<SupportedLocale>(localeOptions[0].value);
-  const [notes, setNotes] = useState("");
+export interface RevenueReportFormValues {
+  reportPeriod: string;
+  grossRevenue: number;
+  currency: string;
+  locale: SupportedLocale;
+  notes: string;
+}
+
+export function RevenueReportForm({ initialValues, onSave }: {
+  initialValues?: Partial<RevenueReportFormValues>;
+  onSave?: (values: RevenueReportFormValues) => void;
+} = {}) {
+  const availablePeriods = initialValues?.reportPeriod && !reportPeriods.some((item) => item.value === initialValues.reportPeriod)
+    ? [{ value: initialValues.reportPeriod, label: new Date(`${initialValues.reportPeriod}-01T12:00:00`).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) }, ...reportPeriods]
+    : reportPeriods;
+  const [reportPeriod, setReportPeriod] = useState(initialValues?.reportPeriod ?? reportPeriods[0].value);
+  const [grossRevenue, setGrossRevenue] = useState(initialValues?.grossRevenue === undefined ? "" : new Intl.NumberFormat(initialValues.locale ?? "en-US", { useGrouping: false, maximumFractionDigits: 2 }).format(initialValues.grossRevenue));
+  const [currency, setCurrency] = useState(initialValues?.currency ?? "USD");
+  const [locale, setLocale] = useState<SupportedLocale>(initialValues?.locale ?? localeOptions[0].value);
+  const [notes, setNotes] = useState(initialValues?.notes ?? "");
   const [attachedFiles, setAttachedFiles] = useState<UploadableFile[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionState, setSubmissionState] = useState<"idle" | "success" | "error">("idle");
@@ -145,12 +159,13 @@ export function RevenueReportForm() {
     await new Promise((resolve) => setTimeout(resolve, 650));
     setIsSubmitting(false);
     setSubmissionState("success");
+    onSave?.({ reportPeriod, grossRevenue: revenueCents / 100, currency, locale, notes });
   };
 
   const hasSubmitted = submissionState === "success";
   const showError = submissionState === "error" && errorMessage;
   const selectedPeriodLabel =
-    reportPeriods.find((item) => item.value === reportPeriod)?.label ?? reportPeriod;
+    availablePeriods.find((item) => item.value === reportPeriod)?.label ?? reportPeriod;
 
   const handleExport = async () => {
     if (isExporting) {
@@ -237,9 +252,10 @@ export function RevenueReportForm() {
                     id="reportPeriod"
                     className="input-field"
                     value={reportPeriod}
+                    disabled={Boolean(initialValues?.reportPeriod)}
                     onChange={(event) => setReportPeriod(event.target.value)}
                   >
-                    {reportPeriods.map((option) => (
+                    {availablePeriods.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -354,7 +370,7 @@ export function RevenueReportForm() {
               <div className="space-y-4">
                 <div className="rounded-2xl bg-slate-950/60 p-4">
                   <p className="text-sm text-muted">Selected period</p>
-                  <p className="mt-1 text-lg font-semibold">{reportPeriods.find((item) => item.value === reportPeriod)?.label}</p>
+                  <p className="mt-1 text-lg font-semibold">{availablePeriods.find((item) => item.value === reportPeriod)?.label}</p>
                   <p className="text-xs text-muted">{formatDate(new Date(reportPeriod + "-01"), locale)}</p>
                 </div>
 
@@ -393,7 +409,7 @@ export function RevenueReportForm() {
               <div className="grid gap-3 sm:grid-cols-3">
                 <div className="rounded-2xl bg-slate-950/80 p-4">
                   <p className="text-xs text-muted uppercase tracking-[0.18em]">Period</p>
-                  <p className="mt-2 font-semibold">{reportPeriods.find((item) => item.value === reportPeriod)?.label}</p>
+                  <p className="mt-2 font-semibold">{availablePeriods.find((item) => item.value === reportPeriod)?.label}</p>
                 </div>
                 <div className="rounded-2xl bg-slate-950/80 p-4">
                   <p className="text-xs text-muted uppercase tracking-[0.18em]">Reported</p>

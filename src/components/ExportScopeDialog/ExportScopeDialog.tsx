@@ -4,7 +4,7 @@ import { EMPTY_FILTERS, hasActiveFilters } from '../AuditTrailFilters/savedFilte
 import './ExportScopeDialog.css';
 
 export type ExportScope = 'current-filter' | 'date-range' | 'all-events' | 'per-actor';
-export type ExportFormat = 'CSV' | 'PDF' | 'JSON';
+export type ExportFormat = 'CSV' | 'PDF' | 'JSON' | 'XLSX';
 
 export interface ExportParams {
   scope: ExportScope;
@@ -21,11 +21,15 @@ export interface ExportScopeDialogProps {
   filteredEntries: number;
   onExport: (params: ExportParams) => void;
   onClose: () => void;
+  title?: string;
+  formats?: ExportFormat[];
+  scopeOptions?: ScopeConfig[];
+  estimateRows?: (scope: ExportScope) => number;
 }
 
 const FORMATS: ExportFormat[] = ['CSV', 'PDF', 'JSON'];
 
-interface ScopeConfig {
+export interface ScopeConfig {
   value: ExportScope;
   label: string;
   description: string;
@@ -100,6 +104,10 @@ export const ExportScopeDialog: React.FC<ExportScopeDialogProps> = ({
   filteredEntries,
   onExport,
   onClose,
+  title = 'Export Audit Trail',
+  formats = FORMATS,
+  scopeOptions = SCOPE_OPTIONS,
+  estimateRows,
 }) => {
   const [scope, setScope] = useState<ExportScope>('current-filter');
   const [format, setFormat] = useState<ExportFormat>('CSV');
@@ -118,7 +126,7 @@ export const ExportScopeDialog: React.FC<ExportScopeDialogProps> = ({
     if (open) {
       previouslyFocused.current = document.activeElement as HTMLElement | null;
       setScope('current-filter');
-      setFormat('CSV');
+      setFormat(formats[0] ?? 'CSV');
       setDateFrom('');
       setDateTo('');
       setActorField(filters.actor || '');
@@ -133,7 +141,7 @@ export const ExportScopeDialog: React.FC<ExportScopeDialogProps> = ({
     } else {
       previouslyFocused.current?.focus?.();
     }
-  }, [open, filters]);
+  }, [open, filters, formats]);
 
   useEffect(() => {
     if (!open) return;
@@ -166,7 +174,7 @@ export const ExportScopeDialog: React.FC<ExportScopeDialogProps> = ({
     []
   );
 
-  const estimatedRows = estimateRowsForScope(scope, totalEntries, filteredEntries, dateFrom, dateTo, actorField);
+  const estimatedRows = estimateRows?.(scope) ?? estimateRowsForScope(scope, totalEntries, filteredEntries, dateFrom, dateTo, actorField);
   const estimatedBytes = estimateBytes(estimatedRows);
   const isLargeExport = estimatedRows > 10000 || estimatedBytes > 5 * 1024 * 1024;
   const showDateRange = scope === 'date-range';
@@ -202,13 +210,13 @@ export const ExportScopeDialog: React.FC<ExportScopeDialogProps> = ({
         onKeyDown={handleKeyDown}
       >
         <h2 id={titleId} className="atf-dialog-title">
-          Export Audit Trail
+          {title}
         </h2>
 
         <fieldset className="esd-fieldset">
           <legend id={scopeLegendId} className="esd-legend">Scope</legend>
           <div role="radiogroup" aria-labelledby={scopeLegendId} className="esd-radio-group">
-            {SCOPE_OPTIONS.map((opt) => (
+            {scopeOptions.map((opt) => (
               <label
                 key={opt.value}
                 className={`esd-radio-label ${scope === opt.value ? 'esd-radio-label--active' : ''}`}
@@ -275,7 +283,7 @@ export const ExportScopeDialog: React.FC<ExportScopeDialogProps> = ({
         <fieldset className="esd-fieldset">
           <legend id={formatLegendId} className="esd-legend">Format</legend>
           <div role="radiogroup" aria-labelledby={formatLegendId} className="esd-format-group">
-            {FORMATS.map((fmt) => (
+            {formats.map((fmt) => (
               <label
                 key={fmt}
                 className={`esd-format-label ${format === fmt ? 'esd-format-label--active' : ''}`}

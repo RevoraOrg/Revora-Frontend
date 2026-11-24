@@ -44,6 +44,7 @@ npm run dev        # http://localhost:5173
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint over `src/` |
+| `npm run validate:terminology` | Check production TypeScript copy for prohibited terms (ignores comments, URLs, tests, and the terminology reference) |
 | `npm test` | Vitest with coverage (`npm run test:watch` to watch) |
 
 ## Environment variables

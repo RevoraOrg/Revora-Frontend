@@ -61,9 +61,10 @@ const AppShellContent: React.FC<AppShellProps> = ({ children }) => {
   }, []);
 
   // Close mobile menu on route change
+  const pathname = window.location.pathname;
   useEffect(() => {
     setIsMobileMenuOpen(false);
-  }, [window.location.pathname]);
+  }, [pathname]);
 
   const [activeNetwork, setActiveNetwork] = useState('');
   

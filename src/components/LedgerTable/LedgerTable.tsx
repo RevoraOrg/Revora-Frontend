@@ -5,7 +5,6 @@ import {
   X,
   ChevronRight,
   ChevronDown,
-  ExternalLink,
 } from 'lucide-react';
 import './LedgerTable.css';
 
@@ -46,7 +45,7 @@ export interface LedgerTableProps<T> {
   stickyHeader?: boolean;
   ariaLabel?: string;
   groupableColumns?: { key: keyof T; label: string }[];
-  renderGroupHeader?: (groupValue: any, items: T[]) => React.ReactNode;
+  renderGroupHeader?: (groupValue: T[keyof T], items: T[]) => React.ReactNode;
   /** How row detail is revealed. Defaults to 'inline' (legacy expanding panel). */
   detailMode?: DetailMode;
   /** Configuration for the row-detail side drawer (used when detailMode='drawer'). */
@@ -94,7 +93,7 @@ function applyPermalink(param: string, key: string | number | null): void {
 }
 
 type FlattenedRow<T> = 
-  | { isGroup: true; key: string; value: any; items: T[] }
+  | { isGroup: true; key: string; value: T[keyof T]; items: T[] }
   | { isGroup: false; row: T };
 
 function LedgerTable<T>({
@@ -202,7 +201,7 @@ function LedgerTable<T>({
       return data.map(row => ({ isGroup: false, row } as FlattenedRow<T>));
     }
 
-    const groups = new Map<any, T[]>();
+    const groups = new Map<T[keyof T], T[]>();
     data.forEach(row => {
       const val = row[groupBy];
       if (!groups.has(val)) groups.set(val, []);

@@ -13,10 +13,17 @@ import { Download, AlertTriangle } from 'lucide-react';
 export type ExportScope = 'current' | 'date_range' | 'actor' | 'all';
 export type ExportFormat = 'csv' | 'json' | 'pdf';
 
+/** Extra filters forwarded with an export request. */
+export interface ExportDialogOptions {
+  actor: string;
+  dateFrom: string;
+  dateTo: string;
+}
+
 export interface ExportDialogProps {
   open: boolean;
   filters: AuditFilterState;
-  onExport: (scope: ExportScope, format: ExportFormat, options: any) => void;
+  onExport: (scope: ExportScope, format: ExportFormat, options: ExportDialogOptions) => void;
   onClose: () => void;
 }
 

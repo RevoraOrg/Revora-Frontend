@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { axe } from 'jest-axe';
 import ActivityItem, { TransactionReceipt, normalizeTxStatus } from './ActivityItem';
@@ -175,7 +175,7 @@ describe('ActivityItem & TransactionReceipt', () => {
     expect(screen.getByTestId('tx-toast')).toHaveTextContent(/copied to clipboard/i);
 
     // Clean up
-    delete (document as any).execCommand;
+    delete (document as { execCommand?: unknown }).execCommand;
   });
 
   it('renders fallbacks for missing or empty data', () => {

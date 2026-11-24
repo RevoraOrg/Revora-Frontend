@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import { AlertTriangle, Download } from "lucide-react";
 import { LocalizedText } from "./LocalizedText";
 import {
-  formatCurrency,
   formatDate,
   LOCALE_FORMAT_SETTINGS,
   SupportedLocale,

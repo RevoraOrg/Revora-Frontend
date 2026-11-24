@@ -258,7 +258,7 @@ export const GovernanceVoteReceipt: React.FC<GovernanceVoteReceiptProps> = ({
   isOpen,
   onClose,
   proposalTitle,
-  proposalId,
+  proposalId: _proposalId,
   voteChoice,
   votedAt,
   voterAddress,

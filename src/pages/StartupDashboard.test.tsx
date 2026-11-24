@@ -7,7 +7,7 @@ import React from 'react';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { StartupDashboard } from './StartupDashboard';
 

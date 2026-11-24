@@ -5,7 +5,7 @@ interface DevicePreviewProps {
   surface: "light" | "dark";
 }
 
-export function DevicePreview({ surface }: DevicePreviewProps) {
+export function DevicePreview(_props: DevicePreviewProps) {
   const mobileRef = useRef<HTMLDivElement>(null);
   const tabletRef = useRef<HTMLDivElement>(null);
   const desktopRef = useRef<HTMLDivElement>(null);

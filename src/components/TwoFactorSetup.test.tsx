@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { TwoFactorSetup } from './TwoFactorSetup';
 
@@ -208,7 +208,6 @@ describe('Complete 2FA Setup Flow Integration', () => {
 describe('Accessibility', () => {
 
   it('has proper keyboard navigation', async () => {
-    const user = userEvent.setup();
     renderSetup();
 
     // Tab through all elements
@@ -227,7 +226,7 @@ describe('Accessibility', () => {
 });
 
 // Helper function
-const navigateToStep4 = async (user: ReturnType<typeof userEvent.setup>) => {
+const _navigateToStep4 = async (user: ReturnType<typeof userEvent.setup>) => {
   renderSetup();
   await user.click(screen.getByRole('button', { name: /authenticator app/i }));
   await user.click(screen.getByRole('button', { name: /i've added the account/i }));

@@ -7,7 +7,7 @@ describe('I18nFormatterPreview.types', () => {
       const validProps: I18nFormatterPreviewProps = {
         initialLocale: 'en-US',
         systemDefaultLocale: 'en-US',
-        onLocaleChange: (locale: string) => {},
+        onLocaleChange: (_locale: string) => {},
         className: 'test-class',
         ariaHeadingId: 'test-id',
       };
@@ -28,7 +28,7 @@ describe('I18nFormatterPreview.types', () => {
         categoryLabel: 'Number',
         description: 'Test number',
         rawSample: '1000',
-        formatValue: (locale: string) => '1,000',
+        formatValue: (_locale: string) => '1,000',
         diffNote: 'None',
       };
       expectTypeOf(validRow).toMatchTypeOf<SampleRowData>();
@@ -36,20 +36,20 @@ describe('I18nFormatterPreview.types', () => {
 
     it('should enforce specific literal types for category', () => {
       // @ts-expect-error 'invalid' is not a valid category
-      const invalidRow: SampleRowData = {
+      const _invalidRow: SampleRowData = {
         id: '2',
         category: 'invalid', 
         categoryLabel: 'Invalid',
         description: 'Invalid category',
         rawSample: 'test',
-        formatValue: (locale: string) => 'test',
+        formatValue: (_locale: string) => 'test',
         diffNote: 'None',
       };
     });
     
     it('should require all fields', () => {
       // @ts-expect-error missing fields
-      const incompleteRow: SampleRowData = {
+      const _incompleteRow: SampleRowData = {
         id: '3',
       };
     });

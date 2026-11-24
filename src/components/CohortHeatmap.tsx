@@ -83,7 +83,7 @@ export const CohortHeatmap: React.FC<CohortHeatmapProps> = ({ data, maxMonths = 
           </div>
 
           {/* Data Rows */}
-          {data.map((cohort, rowIndex) => (
+          {data.map((cohort) => (
             <div key={cohort.cohortName} role="row" className="contents">
               <div role="rowheader" className="heatmap-row-label">
                 {cohort.cohortName} <span className="text-muted ml-2 text-xs">({cohort.cohortSize})</span>

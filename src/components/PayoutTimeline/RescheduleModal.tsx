@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { AlertCircle, AlertTriangle, X } from 'lucide-react';
 import { PayoutEvent } from './PayoutTimeline';
-import { analyzeConflicts, Conflict } from './conflictAnalysis';
+import { analyzeConflicts } from './conflictAnalysis';
 
 interface RescheduleModalProps {
   payout: PayoutEvent;

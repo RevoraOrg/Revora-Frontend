@@ -9,6 +9,7 @@ import { REPORT_STATUS_LABELS, type ReportStatus } from '../components/RevenueRe
 import { REPORT_EXPORT_MIME_TYPES, reportExportFileName, toCsv, toXlsxBytes, toPdfBytes, type ReportExportFormat } from '../utils/reportExport';
 import { useRevenueReports } from '../lib/revenueReportsStore';
 import { revenueSubmissionUrl } from './RevenueReportSubmission';
+import { RevenueReport } from '../components/RevenueReportingCalendar.types';
 
 const FORMATS: ExportFormat[] = ['CSV', 'XLSX', 'PDF'];
 const SCOPES: ScopeConfig[] = [

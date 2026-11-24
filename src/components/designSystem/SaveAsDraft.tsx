@@ -28,9 +28,11 @@ export const SaveAsDraft: React.FC<SaveAsDraftProps> = ({ onSave, className = ''
       await onSave();
       setStatus('success');
       setLastSaved(new Date());
-    } catch (error: any) {
+    } catch (error) {
       setStatus('error');
-      setErrorMessage(error?.message || 'Save failed. Check connection.');
+      setErrorMessage(
+        (error as { message?: string } | null)?.message || 'Save failed. Check connection.',
+      );
     }
   };
 

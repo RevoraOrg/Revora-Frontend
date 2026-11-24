@@ -101,7 +101,6 @@ describe('TwoFactorBackupCodesPage', () => {
     let appendedToBody = false;
 
     const originalAppendChild = document.body.appendChild.bind(document.body);
-    const originalRemoveChild = document.body.removeChild.bind(document.body);
 
     vi.spyOn(document.body, 'appendChild').mockImplementation((node: Node) => {
       if (node instanceof HTMLAnchorElement) {

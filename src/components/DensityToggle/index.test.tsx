@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
@@ -37,7 +38,7 @@ describe('DensityToggle module exports (index.ts)', () => {
     
     // Testing with an empty object as props (which is technically invalid if we required props, but we don't, 
     // still it covers "representative invalid inputs" or boundary cases like passing unknown props).
-    const { container } = render(<DensityToggle {...({ invalidProp: '123' } as any)} />, { wrapper: Wrapper });
+    const { container } = render(<DensityToggle {...({ invalidProp: '123' } as unknown as ComponentProps<typeof DensityToggle>)} />, { wrapper: Wrapper });
     expect(container).toBeInTheDocument();
   });
 });

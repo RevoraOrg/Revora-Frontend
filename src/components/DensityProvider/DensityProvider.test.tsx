@@ -1,8 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DensityProvider, DensityContext } from './DensityProvider';
-import type { DensityContextValue, DensityMode } from './DensityProvider';
+import type { DensityContextValue } from './DensityProvider';
 
 // ─── localStorage mock ───────────────────────────────────────────────────────
 const store: Record<string, string> = {};

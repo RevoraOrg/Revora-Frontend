@@ -1,6 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { FormError } from './FormError';
 import { ApiError } from '../lib/api/errors';
@@ -132,7 +131,7 @@ describe('FormError Component', () => {
       );
 
       const closeBtn = screen.getByLabelText('Close error dialog');
-      const retryBtn = screen.getByRole('button', { name: /retry/i });
+      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
       const dismissBtn = screen.getByRole('button', { name: /cancel/i });
 
       // Focus first element

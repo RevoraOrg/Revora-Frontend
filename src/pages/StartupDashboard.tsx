@@ -18,6 +18,7 @@ import type { RevenueReport, ReportStatus } from '../components/RevenueReporting
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRevenueReports } from '../lib/revenueReportsStore';
 import { revenueSubmissionUrl } from './RevenueReportSubmission';
+import type { RevenueReport } from '../components/RevenueReportingCalendar.types';
 
 /* ─── Helper ────────────────────────────────────────────────────────── */
 

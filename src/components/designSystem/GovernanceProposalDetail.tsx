@@ -12,7 +12,7 @@
  */
 
 import React from 'react';
-import { CheckCircle2, XCircle, MinusCircle, Clock, Vote, ChevronRight, Users, BarChart3 } from 'lucide-react';
+import { CheckCircle2, XCircle, MinusCircle, Clock, Users, BarChart3 } from 'lucide-react';
 import './GovernanceProposalDetail.css';
 
 /* ─── Types ────────────────────────────────────────────────────────── */

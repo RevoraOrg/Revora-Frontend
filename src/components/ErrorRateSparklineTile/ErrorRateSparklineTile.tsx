@@ -97,7 +97,6 @@ export const ErrorRateSparklineTile: React.FC<ErrorRateSparklineTileProps> = ({
   const headingId = useId();
   const isDeltaPositive = delta > 0;
   const isDeltaNegative = delta < 0;
-  const isDeltaZero = delta === 0;
 
   const deltaColorClass = isDeltaPositive
     ? "error-rate-delta--bad"

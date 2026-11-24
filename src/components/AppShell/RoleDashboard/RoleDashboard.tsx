@@ -105,6 +105,8 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
   }, [activeRole]);
 
   const showSwitcher = whitelist.length > 1;
+  // Called before the early return so the hook order is stable across renders.
+  const hint = useOnboardingHint(selected, storage, dismissOnboarding);
 
   if (!activeRole) {
     return (
@@ -123,7 +125,6 @@ export const RoleDashboard: React.FC<RoleDashboardProps> = ({
   }
 
   const config = getRoleDashboardConfig(selected);
-  const hint = useOnboardingHint(selected, storage, dismissOnboarding);
 
   const statusFor = (widget: DashboardWidget): DashboardWidget['status'] =>
     widgetStatus?.[widget.id] ?? widget.status;

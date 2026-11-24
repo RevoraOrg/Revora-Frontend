@@ -1,14 +1,11 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import ActivityFeed, {
   generateMockActivities,
   ACTORS,
   ACTION_TYPES,
-  type Activity,
-  type FilterState,
 } from './ActivityFeed';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

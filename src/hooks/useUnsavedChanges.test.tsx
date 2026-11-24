@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
 import { useUnsavedChanges } from './useUnsavedChanges';
-import { vi } from 'vitest';
+import { vi, type MockInstance } from 'vitest';
 import { useBlocker } from 'react-router-dom';
 
 vi.mock('react-router-dom', () => ({
@@ -8,8 +8,8 @@ vi.mock('react-router-dom', () => ({
 }));
 
 describe('useUnsavedChanges', () => {
-  let addEventListenerSpy: any;
-  let removeEventListenerSpy: any;
+  let addEventListenerSpy: MockInstance;
+  let removeEventListenerSpy: MockInstance;
 
   beforeEach(() => {
     addEventListenerSpy = vi.spyOn(window, 'addEventListener');
@@ -36,13 +36,13 @@ describe('useUnsavedChanges', () => {
   it('prevents default on beforeunload when isDirty is true', () => {
     renderHook(() => useUnsavedChanges(true));
     const handleBeforeUnload = addEventListenerSpy.mock.calls.find(
-      (call: any) => call[0] === 'beforeunload'
+      (call: unknown[]) => call[0] === 'beforeunload'
     )[1];
 
     const event = {
       preventDefault: vi.fn(),
       returnValue: undefined,
-    } as any;
+    } as unknown as BeforeUnloadEvent;
 
     handleBeforeUnload(event);
 
@@ -53,13 +53,13 @@ describe('useUnsavedChanges', () => {
   it('does not prevent default on beforeunload when isDirty is false', () => {
     renderHook(() => useUnsavedChanges(false));
     const handleBeforeUnload = addEventListenerSpy.mock.calls.find(
-      (call: any) => call[0] === 'beforeunload'
+      (call: unknown[]) => call[0] === 'beforeunload'
     )[1];
 
     const event = {
       preventDefault: vi.fn(),
       returnValue: undefined,
-    } as any;
+    } as unknown as BeforeUnloadEvent;
 
     handleBeforeUnload(event);
 
@@ -72,7 +72,7 @@ describe('useUnsavedChanges', () => {
     
     expect(useBlocker).toHaveBeenCalledTimes(1);
     
-    const blockerFn = (useBlocker as any).mock.calls[0][0];
+    const blockerFn = vi.mocked(useBlocker).mock.calls[0][0] as (args: unknown) => boolean;
     
     // Different path and isDirty = true -> should block
     expect(blockerFn({

@@ -4,7 +4,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
 import { ScheduleFormDialog } from './ScheduleFormDialog';
-import type { ScheduleFormData, RecurrenceRule } from './types';
 
 function renderDialog(props: Partial<React.ComponentProps<typeof ScheduleFormDialog>> = {}) {
   const onSave = vi.fn();
@@ -19,13 +18,6 @@ function renderDialog(props: Partial<React.ComponentProps<typeof ScheduleFormDia
   );
   return { onSave, onClose, ...view };
 }
-
-const validFormData: ScheduleFormData = {
-  name: 'Test Export',
-  description: 'A test export',
-  format: 'csv',
-  schedule: { frequency: 'daily', time: '09:00', timezone: 'UTC' },
-};
 
 describe('ScheduleFormDialog', () => {
   afterEach(() => {

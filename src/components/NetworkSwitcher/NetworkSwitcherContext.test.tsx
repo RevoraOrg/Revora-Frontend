@@ -7,7 +7,6 @@ import {
 } from "./NetworkSwitcherContext";
 import type {
 	NetworkSwitcherContextValue,
-	NetworkSwitcherProviderProps,
 } from "./NetworkSwitcherContext";
 import { DEFAULT_APP_CHAIN_ID, getChainMetadata } from "../../constants/chains";
 import { getWalletCapability } from "../../constants/walletCapabilities";

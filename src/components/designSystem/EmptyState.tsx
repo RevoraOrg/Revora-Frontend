@@ -273,7 +273,7 @@ const fillStyle = (color: string, opacity = 0.1) => ({
 
 const DistributionDashboardGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({
   primaryColor,
-  mutedColor,
+  mutedColor: _mutedColor,
   isError,
 }) => (
   <g>
@@ -427,7 +427,7 @@ const AuditTrailGlyph: React.FC<{ primaryColor: string; mutedColor: string; isEr
 
 const NotificationsGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({
   primaryColor,
-  mutedColor,
+  mutedColor: _mutedColor,
   isError,
 }) => (
   <g>
@@ -537,7 +537,7 @@ const GovernanceVotesGlyph: React.FC<{ primaryColor: string; mutedColor: string;
   </g>
 );
 
-const GovernanceDelegatesGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({ primaryColor, mutedColor, isError }) => (
+const GovernanceDelegatesGlyph: React.FC<{ primaryColor: string; mutedColor: string; isError: boolean }> = ({ primaryColor, mutedColor: _mutedColor, isError }) => (
   <g>
     <circle cx="0" cy="-6" r="6" {...fillStyle(primaryColor, 0.1)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />
     <path d="M-10 12 C-10 4 10 4 10 12" {...fillStyle(primaryColor, 0.1)} stroke={primaryColor} strokeOpacity="0.4" strokeWidth="2" />

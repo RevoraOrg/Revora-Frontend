@@ -32,7 +32,7 @@ function addSnapshot(overrides: Record<string, unknown> = {}): string {
       group: 'Forms',
       title: 'Failed to save draft',
       ...overrides,
-    } as any);
+    } as Parameters<typeof api.addSnapshot>[0]);
   });
   return id;
 }

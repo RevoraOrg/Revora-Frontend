@@ -11,7 +11,6 @@ import {
   ShieldCheck,
   AlertCircle,
 } from 'lucide-react';
-import { Button } from '../components/Button';
 import { RegenerateCodesDialog } from '../components/RegenerateCodesDialog';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import '../components/TwoFactorSetup.css';

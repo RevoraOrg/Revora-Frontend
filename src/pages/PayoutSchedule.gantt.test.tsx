@@ -3,13 +3,13 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
-import { render, screen, within, fireEvent } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
-import { PayoutSchedule, DEMO_PAYOUTS } from './PayoutSchedule';
+import { PayoutSchedule } from './PayoutSchedule';
 
 expect.extend(toHaveNoViolations);
 

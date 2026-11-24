@@ -73,6 +73,9 @@ export function WalletConnectionProvider({
   }, []);
 
   useEffect(() => {
+    // Same ref object as `generation`; captured so the cleanup below bumps the
+    // counter that is current when it runs.
+    const generationRef = generation;
     let disposed = false;
     let timer: number;
     const detect = async () => {
@@ -96,7 +99,7 @@ export function WalletConnectionProvider({
     return () => {
       disposed = true;
       window.clearTimeout(timer);
-      generation.current++;
+      generationRef.current++;
       busy.current = false;
     };
   }, []);

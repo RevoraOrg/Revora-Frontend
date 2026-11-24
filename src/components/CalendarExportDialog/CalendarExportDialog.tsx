@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, Copy, RefreshCw, Trash2, Check } from 'lucide-react';
 import { Button } from '../Button';
 import './CalendarExportDialog.css';

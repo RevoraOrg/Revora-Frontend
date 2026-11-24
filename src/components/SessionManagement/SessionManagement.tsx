@@ -14,7 +14,6 @@ import {
   MapPin,
   Network,
   Fingerprint,
-  Info,
 } from "lucide-react";
 import "./SessionManagement.css";
 import { MOCK_SESSIONS } from "./sessionsMock";
@@ -70,10 +69,6 @@ function DeviceIcon({ type }: { type: SessionDevice["deviceType"] }) {
     default:
       return <Monitor size={20} aria-hidden="true" />;
   }
-}
-
-function SROnly({ children }: { children: React.ReactNode }) {
-  return <span className="sm-sr-only">{children}</span>;
 }
 
 interface ConfirmDialogProps {
@@ -178,7 +173,6 @@ function ConfirmDialog({
 
 function LocationMap({ location }: { location: string }) {
   const isKnown = location && location !== "Unknown" && location !== "VPN detected";
-  const mapId = useId();
 
   return (
     <div
@@ -632,9 +626,6 @@ export function SessionManagement({
 
             <ul className="sm-session-list" role="list">
               {sessions.map((session) => {
-                const isRevoking = revokingId === session.id;
-                const canRevoke = !session.isCurrent && !isRevoking && !revokingAll;
-
                 return (
                   <li
                     key={session.id}

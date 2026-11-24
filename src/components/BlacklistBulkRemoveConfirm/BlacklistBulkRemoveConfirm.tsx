@@ -1,4 +1,4 @@
-import React, { useEffect, useId, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { X, AlertTriangle } from 'lucide-react';
 import { Button } from '../Button';
 import './BlacklistBulkRemoveConfirm.css';

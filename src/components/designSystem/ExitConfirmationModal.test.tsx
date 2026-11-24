@@ -86,7 +86,6 @@ describe('ExitConfirmationModal', () => {
   });
 
   it('restores focus when closed', async () => {
-    const user = userEvent.setup();
     render(
       <div>
         <button data-testid="outside-button">Outside</button>

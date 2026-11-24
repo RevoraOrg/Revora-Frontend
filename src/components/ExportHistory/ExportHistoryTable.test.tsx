@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { ExportHistoryTable, MOCK_EXPORTS } from './ExportHistoryTable';
+import { ExportHistoryTable } from './ExportHistoryTable';
 import '@testing-library/jest-dom/vitest';
 
 Object.assign(navigator, {

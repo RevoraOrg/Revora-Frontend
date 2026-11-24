@@ -5,7 +5,7 @@
  * Coarse pointer / touch: toggles the same panel as a popover.
  */
 
-import React, { useCallback, useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 
 
 import { Check, Copy, ExternalLink, Link2 } from 'lucide-react';

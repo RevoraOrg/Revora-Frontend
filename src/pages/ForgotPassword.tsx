@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { AuthLayout } from '../components/AuthLayout';
-import { AuthSubmitButton, SubmitButtonState } from '../components/AuthSubmitButton';
 import { Mail, ArrowLeft, AlertCircle } from 'lucide-react';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Link } from 'react-router-dom';

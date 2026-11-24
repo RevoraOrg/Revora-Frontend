@@ -54,6 +54,23 @@ function useIndeterminateCheckbox(isAll: boolean, isNone: boolean) {
   return ref;
 }
 
+/**
+ * Checkbox whose `indeterminate` DOM property tracks a partial selection.
+ * Wrapping the hook in a component lets list renders (`.map`) use it without
+ * calling a hook inside a callback.
+ */
+function IndeterminateCheckbox({
+  isAll,
+  isNone,
+  ...inputProps
+}: { isAll: boolean; isNone: boolean } & Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'ref'
+>) {
+  const ref = useIndeterminateCheckbox(isAll, isNone);
+  return <input ref={ref} type="checkbox" {...inputProps} />;
+}
+
 function AccordionItem(props: {
   title: string;
   isOpen: boolean;
@@ -422,14 +439,13 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
             {CHANNELS.map((ch) => {
               const id = `np-col-${ch.key}`;
               const { isAll, isNone } = allSelectedByChannel[ch.key];
-              const indRef = useIndeterminateCheckbox(isAll, isNone);
               return (
                 <div key={ch.key} className="flex items-center justify-center">
                   <div className="flex items-center gap-2">
-                    <input
-                      ref={indRef}
+                    <IndeterminateCheckbox
+                      isAll={isAll}
+                      isNone={isNone}
                       id={id}
-                      type="checkbox"
                       checked={isAll}
                       onChange={(e) => setChannelForAllCategories(ch.key, e.target.checked)}
                       aria-label={`Toggle ${ch.label} notifications for all categories`}
@@ -455,7 +471,6 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
               const rowCells = matrix[cat.key];
               const rowAny = Object.values(rowCells ?? {}).some(Boolean);
               const rowAll = Object.values(rowCells ?? {}).every(Boolean);
-              const rowIndRef = useIndeterminateCheckbox(rowAll, !rowAny);
               const isOverridden = !!overrides[cat.key];
 
               const rowToggleLabel = `Toggle all channels for ${cat.label}`;
@@ -464,9 +479,9 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
                 <React.Fragment key={cat.key}>
                   <div className="flex items-center justify-between gap-3 pr-2">
                     <span className="text-sm font-semibold text-text-main">{cat.label}</span>
-                    <input
-                      ref={rowIndRef}
-                      type="checkbox"
+                    <IndeterminateCheckbox
+                      isAll={rowAll}
+                      isNone={!rowAny}
                       checked={rowAll}
                       onChange={(e) => setCategoryForAllChannels(cat.key, e.target.checked)}
                       aria-label={rowToggleLabel}
@@ -518,7 +533,6 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
             const rowCells = matrix[cat.key];
             const rowAny = Object.values(rowCells ?? {}).some(Boolean);
             const rowAll = Object.values(rowCells ?? {}).every(Boolean);
-            const rowIndRef = useIndeterminateCheckbox(rowAll, !rowAny);
             const isOverridden = !!overrides[cat.key];
 
             const rowToggleLabel = `Toggle all channels for ${cat.label}`;
@@ -531,9 +545,9 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
                 onToggle={() => setOpenCategory(openCategory === cat.key ? null : cat.key)}
                 headerId={`np-acc-${cat.key}`}
                 rightSlot={
-                  <input
-                    ref={rowIndRef}
-                    type="checkbox"
+                  <IndeterminateCheckbox
+                    isAll={rowAll}
+                    isNone={!rowAny}
                     checked={rowAll}
                     onChange={(e) => setCategoryForAllChannels(cat.key, e.target.checked)}
                     aria-label={rowToggleLabel}
@@ -590,16 +604,15 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
               {CHANNELS.map((ch) => {
                 const id = `np-m-col-${ch.key}`;
                 const { isAll, isNone } = allSelectedByChannel[ch.key];
-                const indRef = useIndeterminateCheckbox(isAll, isNone);
                 return (
                   <div key={ch.key} className="flex items-center justify-between gap-3">
                     <label htmlFor={id} className="text-sm font-medium text-text-main">
                       {ch.label}
                     </label>
-                    <input
-                      ref={indRef}
+                    <IndeterminateCheckbox
+                      isAll={isAll}
+                      isNone={isNone}
                       id={id}
-                      type="checkbox"
                       checked={isAll}
                       onChange={(e) => setChannelForAllCategories(ch.key, e.target.checked)}
                       aria-label={`Toggle ${ch.label} notifications for all categories`}

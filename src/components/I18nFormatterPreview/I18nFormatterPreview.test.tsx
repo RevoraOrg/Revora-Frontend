@@ -1,6 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { axe, toHaveNoViolations } from "jest-axe";
 import { describe, expect, it, vi } from "vitest";
 import { I18nFormatterPreview } from "./I18nFormatterPreview";

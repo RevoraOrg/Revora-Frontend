@@ -1,4 +1,4 @@
-import { PayoutDetail, PayoutStatus, RecipientItem, RetryEvent } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
+import { PayoutDetail } from '../components/PayoutDrillDownPanel/PayoutDrillDownPanel.types';
 
 export interface ExtendedPayoutDetail extends PayoutDetail {
   tier?: string;

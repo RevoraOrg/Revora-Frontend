@@ -54,7 +54,7 @@ export const ConfirmationNextSteps: React.FC<Props> = ({
       await onResend?.(email);
       setSentMessage('Verification email resent. Check your inbox.');
       setCooldown(30);
-    } catch (err) {
+    } catch {
       setSentMessage('Unable to resend. Please try again later.');
     } finally {
       setSending(false);

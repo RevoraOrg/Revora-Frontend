@@ -1,10 +1,10 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, within, fireEvent } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 
-import { ExportScopeDialog, formatBytes, type ExportParams, type ExportScope, type ExportFormat } from './ExportScopeDialog';
+import { ExportScopeDialog, formatBytes, type ExportParams } from './ExportScopeDialog';
 import { EMPTY_FILTERS } from '../AuditTrailFilters/savedFilters';
 
 expect.extend(toHaveNoViolations);

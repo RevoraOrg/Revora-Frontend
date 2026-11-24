@@ -371,7 +371,7 @@ export const OfferingDetail: React.FC = () => {
 
       {isMobile ? (
         <div className="space-y-3" role="tablist" aria-label="Offering settings">
-          {SETTINGS_TABS.map((tab, index) => {
+          {SETTINGS_TABS.map((tab) => {
             const isSelected = activeTab === tab.id;
             return (
               <div key={tab.id} className="glass-card overflow-hidden">

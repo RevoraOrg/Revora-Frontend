@@ -1,4 +1,3 @@
-import React from "react";
 
 export interface I18nFormatterPreviewProps {
   /** Initial selected locale string (e.g. 'de-DE', 'ar-SA', 'ja-JP') */

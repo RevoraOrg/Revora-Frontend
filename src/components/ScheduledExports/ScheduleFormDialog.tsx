@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
-import { Plus, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import type { RecurrenceRule, ExportFormat, ScheduleFormData } from './types';
 import { EXPORT_FORMATS, FORMAT_LABELS } from './types';
 import { validateScheduleForm, defaultRecurrenceRule } from './recurrence';

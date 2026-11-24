@@ -84,8 +84,8 @@ function getRange(payouts: Payout[], zoom: ZoomLevel): { start: Date; end: Date 
   }
 
   const dates = payouts.map((p) => parseIsoDate(p.scheduledFor));
-  let min = new Date(Math.min(...dates.map((d) => d.getTime())));
-  let max = new Date(Math.max(...dates.map((d) => d.getTime())));
+  const min = new Date(Math.min(...dates.map((d) => d.getTime())));
+  const max = new Date(Math.max(...dates.map((d) => d.getTime())));
 
   // Pad the range based on zoom level
   const padDays = zoom === 'week' ? 7 : zoom === 'month' ? 30 : 90;

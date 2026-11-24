@@ -25,7 +25,7 @@ describe("RemediationChecklist", () => {
   });
 
   it("renders nothing when steps is null", () => {
-    const { container } = render(<RemediationChecklist steps={null as any} />);
+    const { container } = render(<RemediationChecklist steps={null as never} />);
     expect(container.firstChild).toBeNull();
   });
 
@@ -356,7 +356,7 @@ describe("RemediationChecklist", () => {
 
   it("renders nothing when steps is undefined", () => {
     const { container } = render(
-      <RemediationChecklist steps={undefined as any} />
+      <RemediationChecklist steps={undefined as never} />
     );
     expect(container.firstChild).toBeNull();
   });

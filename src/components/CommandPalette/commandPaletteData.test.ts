@@ -112,12 +112,12 @@ describe('commandPaletteData', () => {
     };
 
     expect(validItem.group).toBe('navigate');
-    expect(searchCommands(null as any)).toEqual([]);
-    expect(searchCommands(undefined as any)).toEqual([]);
-    expect(searchCommands(123 as any)).toEqual([]);
-    expect(groupSearchResults(null as any)).toEqual([]);
-    expect(groupSearchResults(undefined as any)).toEqual([]);
-    expect(groupSearchResults(['bad'] as any)).toEqual([]);
+    expect(searchCommands(null as never)).toEqual([]);
+    expect(searchCommands(undefined as never)).toEqual([]);
+    expect(searchCommands(123 as never)).toEqual([]);
+    expect(groupSearchResults(null as never)).toEqual([]);
+    expect(groupSearchResults(undefined as never)).toEqual([]);
+    expect(groupSearchResults(['bad'] as never)).toEqual([]);
   });
 
   it('matches commands case-insensitively and preserves ordered groups', () => {

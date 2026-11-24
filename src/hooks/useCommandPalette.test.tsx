@@ -3,7 +3,7 @@
  * Coverage target: ≥95%
  */
 import React from 'react';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import {
   useCommandPalette,
   RECENT_LIMIT,

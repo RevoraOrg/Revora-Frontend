@@ -124,7 +124,7 @@ describe('BlacklistBulkRemoveConfirm', () => {
   });
 
   it('handles network failure mid-remove', async () => {
-    let rejectPromise!: (reason?: any) => void;
+    let rejectPromise!: (reason?: unknown) => void;
     const pendingPromise = new Promise<void>((_, reject) => {
       rejectPromise = reject;
     });

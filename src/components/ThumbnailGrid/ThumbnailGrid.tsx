@@ -11,7 +11,6 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  GripVertical,
   FileType,
   type LucideIcon,
 } from 'lucide-react';

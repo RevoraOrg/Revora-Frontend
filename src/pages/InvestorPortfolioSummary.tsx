@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { DashboardHero, KPIData } from "../components/DashboardHero";
@@ -6,6 +6,7 @@ import { AllocationWidget, AllocationSlice } from "../components/AllocationWidge
 import { PerformanceTrendWidget, PerformanceDataPoint } from "../components/PerformanceTrendWidget";
 import { InvestorStatement, usePrintStatement } from "../components/InvestorStatement";
 import { useDocumentTitle } from "../hooks/useDocumentTitle";
+import { usePrintStatement } from "../components/InvestorStatement";
 
 // ─── Mock data (replace with real API call) ───────────────────────────────────
 
@@ -82,7 +83,7 @@ export const InvestorPortfolioSummary: React.FC<InvestorPortfolioSummaryProps> =
 
   const sparklineData = __performance.map(p => p.value);
 
-  const { showStatement, printStatement } = usePrintStatement();
+  usePrintStatement();
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in" data-testid="portfolio-summary">

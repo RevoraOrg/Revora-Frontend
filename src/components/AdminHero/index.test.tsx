@@ -27,7 +27,6 @@ import { BrowserRouter } from 'react-router-dom';
 import * as barrel from './index';
 import { AdminHero as AdminHeroLeaf } from './AdminHero';
 import { StatusGlyph as StatusGlyphLeaf } from './StatusGlyph';
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import type {
   AdminHeroProps,
   AdminTileData,
@@ -37,7 +36,6 @@ import type {
   StatusGlyphProps,
 } from './index';
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const { AdminHero, StatusGlyph } = barrel;
 
 function renderWithRouter(ui: React.ReactElement) {
@@ -45,7 +43,6 @@ function renderWithRouter(ui: React.ReactElement) {
 }
 
 // Types are intentionally consumed so a broken re-export fails type-checking.
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const TILES: AdminTileData[] = [
   {
     id: 'api-latency',
@@ -78,7 +75,6 @@ const TILES: AdminTileData[] = [
   },
 ];
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const INCIDENT: IncidentData = {
   id: 'inc-1',
   severity: 'critical' satisfies IncidentSeverity,
@@ -86,9 +82,7 @@ const INCIDENT: IncidentData = {
   message: 'Some services may be affected',
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const HERO_PROPS: AdminHeroProps = { tiles: TILES };
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const GLYPH_PROPS: StatusGlyphProps = { status: 'healthy' };
 
 describe('AdminHero barrel (index.ts) — export surface', () => {
@@ -96,7 +90,6 @@ describe('AdminHero barrel (index.ts) — export surface', () => {
     expect(Object.keys(barrel).sort()).toEqual(['AdminHero', 'StatusGlyph']);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('has no default export (named-only barrel)', () => {
     expect(barrel).not.toHaveProperty('default');
   });
@@ -106,7 +99,6 @@ describe('AdminHero barrel (index.ts) — export surface', () => {
     expect(typeof AdminHero).toBe('function');
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('re-exports the same StatusGlyph reference as the leaf module', () => {
     expect(StatusGlyph).toBe(StatusGlyphLeaf);
     expect(typeof StatusGlyph).toBe('function');
@@ -119,7 +111,6 @@ describe('AdminHero barrel (index.ts) — export surface', () => {
 });
 
 describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('renders the section, heading, tiles and drill-down links', () => {
     renderWithRouter(<AdminHero {...HERO_PROPS} />);
 
@@ -135,7 +126,6 @@ describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
     );
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('renders optional tile detail only when supplied', () => {
     renderWithRouter(<AdminHero tiles={TILES} />);
 
@@ -145,7 +135,6 @@ describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
     expect(withoutDetail.querySelector('.ah-tile-detail')).toBeNull();
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('renders an empty tile list without crashing and without an incident banner', () => {
     renderWithRouter(<AdminHero tiles={[]} />);
 
@@ -154,7 +143,6 @@ describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
     expect(screen.getByRole('heading', { name: 'Admin Dashboard' })).toBeInTheDocument();
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it.each([
     ['undefined', undefined],
     ['null', null],
@@ -164,7 +152,6 @@ describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('renders the incident banner and honours onDismissIncident', async () => {
     const user = userEvent.setup();
     const onDismissIncident = vi.fn();
@@ -181,14 +168,12 @@ describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
     expect(onDismissIncident).toHaveBeenCalledWith('inc-1');
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('hides the dismiss control when no dismiss handler is provided', () => {
     renderWithRouter(<AdminHero tiles={TILES} incident={INCIDENT} />);
 
     expect(screen.queryByRole('button', { name: /Dismiss incident/ })).not.toBeInTheDocument();
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('applies custom className and id from the public props', () => {
     renderWithRouter(<AdminHero tiles={TILES} className="custom-class" id="hero-x" />);
 
@@ -200,7 +185,6 @@ describe('AdminHero barrel — AdminHero rendering through the barrel', () => {
 });
 
 describe('AdminHero barrel — StatusGlyph rendering through the barrel', () => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it.each([
     ['healthy', 'Status: Healthy'],
     ['degraded', 'Status: Degraded'],
@@ -214,7 +198,6 @@ describe('AdminHero barrel — StatusGlyph rendering through the barrel', () => 
     expect(glyph).toHaveAttribute('aria-label', label);
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('merges the optional className and defaults it to empty', () => {
     const { unmount } = render(<StatusGlyph {...GLYPH_PROPS} />);
     expect(screen.getByRole('img')).toHaveClass('sg-glyph');
@@ -224,7 +207,6 @@ describe('AdminHero barrel — StatusGlyph rendering through the barrel', () => 
     expect(screen.getByRole('img')).toHaveClass('extra');
   });
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   it('marks the inner icon as decorative (no duplicate announcement)', () => {
     const { container } = render(<StatusGlyph status="degraded" />);
 

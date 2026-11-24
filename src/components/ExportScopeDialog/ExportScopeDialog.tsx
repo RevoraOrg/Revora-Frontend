@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { AuditFilterState } from '../AuditTrailFilters/savedFilters';
-import { EMPTY_FILTERS, hasActiveFilters } from '../AuditTrailFilters/savedFilters';
 import './ExportScopeDialog.css';
 
 export type ExportScope = 'current-filter' | 'date-range' | 'all-events' | 'per-actor';

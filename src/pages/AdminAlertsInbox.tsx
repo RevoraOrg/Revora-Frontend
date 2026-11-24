@@ -15,7 +15,7 @@ export const AdminAlertsInbox: React.FC = () => {
   useDocumentTitle('Admin Alerts');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error] = useState<string | null>(null);
   
   // Undo state
   const [toastMessage, setToastMessage] = useState<string | null>(null);

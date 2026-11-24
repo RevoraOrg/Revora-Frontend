@@ -101,7 +101,7 @@ export const RevenueReportUpload: React.FC<RevenueReportUploadProps> = ({
   notes,
   onNotesChange,
   uploader = simulatedUploader,
-  onFilesChange,
+  onFilesChange: _onFilesChange,
   disabled = false,
   className = '',
 }) => {

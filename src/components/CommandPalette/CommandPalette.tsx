@@ -30,6 +30,7 @@ import React, {
   useCallback,
   useEffect,
   useId,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -61,8 +62,8 @@ import {
 import type {
   CommandItem, CommandGroup, CommandSearchResult, MatchRange,
 } from './commandPaletteData';
+import type { CommandItem } from './commandPaletteData';
 import {
-  COMMAND_GROUPS,
   groupSearchResults,
   searchCommands,
 } from './commandPaletteData';
@@ -192,16 +193,21 @@ export function CommandPalette({
   // ------------------------------------------------------------------
 
   /** Items grouped & limited for a non-empty query */
-  const searchResultGroups = query.trim()
-    ? groupSearchResults(searchCommands(query))
-    : [];
+  const searchResultGroups = useMemo(
+    () => (query.trim() ? groupSearchResults(searchCommands(query)) : []),
+    [query],
+  );
 
   /** Total flat list of items currently visible — used for keyboard nav */
-  const flatItems: CommandItem[] = query.trim()
-    ? searchResultGroups.flatMap((sg) => sg.items)
-    : recentCommands.length > 0
-      ? recentCommands
-      : [];
+  const flatItems: CommandItem[] = useMemo(
+    () =>
+      query.trim()
+        ? searchResultGroups.flatMap((sg) => sg.items)
+        : recentCommands.length > 0
+          ? recentCommands
+          : [],
+    [query, searchResultGroups, recentCommands],
+  );
 
   const hasResults = flatItems.length > 0;
   const showEmptyQuery = !query.trim() && recentCommands.length === 0;
@@ -421,9 +427,12 @@ export function CommandPalette({
     }
   }, [confirmingItemId]);
 
-  // Clear confirmation when user types at least 2 chars (avoids accidental cancel on single keystroke)
+  // Clear confirmation when user types at least 2 chars (avoids accidental cancel on single keystroke).
+  // Keyed on `query` only: setting null when nothing is being confirmed is a
+  // no-op, and depending on confirmingItemId would cancel a confirmation the
+  // moment it opens while a query is present.
   useEffect(() => {
-    if (confirmingItemId && query.trim().length >= 2) {
+    if (query.trim().length >= 2) {
       setConfirmingItemId(null);
     }
   }, [query]);

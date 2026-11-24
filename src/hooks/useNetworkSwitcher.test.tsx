@@ -234,7 +234,7 @@ describe('useNetworkSwitcher', () => {
 
   it('handles parseChainId decimal strings and unknown inputs', () => {
     const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <NetworkSwitcherProvider initialConnectedChainId="137" initialAppChainId={null as any}>
+      <NetworkSwitcherProvider initialConnectedChainId="137" initialAppChainId={null as never}>
         {children}
       </NetworkSwitcherProvider>
     );

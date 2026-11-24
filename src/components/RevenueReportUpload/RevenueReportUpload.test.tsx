@@ -21,7 +21,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor, within, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import {
   RevenueReportUpload,
@@ -70,13 +70,6 @@ const defaultProps: RevenueReportUploadProps = {
 function renderComponent(overrides: Partial<RevenueReportUploadProps> = {}) {
   const props: RevenueReportUploadProps = { ...defaultProps, ...overrides };
   return render(<RevenueReportUpload {...props} />);
-}
-
-/** Helper to get the inner DocumentUploader live region (not the rrv batch region) */
-function getDocUploaderLiveRegion(): HTMLElement {
-  return screen.getByTestId('rrv-upload-live').parentElement!
-    .querySelector('.doc-uploader-sr-only') as HTMLElement
-    ?? screen.getAllByRole('status')[1];
 }
 
 /** Helper to get the outer RRV live region specifically */

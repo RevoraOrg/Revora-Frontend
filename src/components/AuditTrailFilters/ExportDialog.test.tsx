@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ExportDialog } from './ExportDialog';
 import { EMPTY_FILTERS } from './savedFilters';

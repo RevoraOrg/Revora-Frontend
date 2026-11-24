@@ -1,13 +1,11 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
-  Upload,
   FileSpreadsheet,
   AlertTriangle,
   CheckCircle2,
   X,
   ChevronRight,
   ChevronLeft,
-  Search,
   ArrowRight,
 } from 'lucide-react';
 import { Button } from './Button';

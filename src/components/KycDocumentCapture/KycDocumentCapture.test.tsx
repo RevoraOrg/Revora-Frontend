@@ -4,9 +4,9 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { axe, toHaveNoViolations } from 'jest-axe';
-import { KycDocumentCapture, DocumentType } from './KycDocumentCapture';
+import { KycDocumentCapture } from './KycDocumentCapture';
 
 expect.extend(toHaveNoViolations);
 
@@ -15,10 +15,6 @@ const mockGetUserMedia = vi.fn();
 Object.defineProperty(navigator, 'mediaDevices', {
   value: { getUserMedia: mockGetUserMedia },
   configurable: true,
-});
-
-const createMockStream = (trackStopSpy: ReturnType<typeof vi.fn>) => ({
-  getTracks: () => [{ stop: trackStopSpy }],
 });
 
 const setupCanvasMock = () => {
@@ -32,11 +28,8 @@ const setupCanvasMock = () => {
 };
 
 describe('KycDocumentCapture', () => {
-  let trackStopSpy: ReturnType<typeof vi.fn>;
-
   beforeEach(() => {
     mockGetUserMedia.mockReset();
-    trackStopSpy = vi.fn();
     Object.defineProperty(global, 'URL', {
       value: {
         createObjectURL: vi.fn(() => 'blob:mock-url'),

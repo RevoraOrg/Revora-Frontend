@@ -23,12 +23,12 @@ describe("ComplianceHoldBanner", () => {
     });
 
     it("renders nothing when holds is null", () => {
-      const { container } = render(<ComplianceHoldBanner holds={null as any} />);
+      const { container } = render(<ComplianceHoldBanner holds={null as never} />);
       expect(container.firstChild).toBeNull();
     });
 
     it("renders nothing when holds is undefined", () => {
-      const { container } = render(<ComplianceHoldBanner holds={undefined as any} />);
+      const { container } = render(<ComplianceHoldBanner holds={undefined as never} />);
       expect(container.firstChild).toBeNull();
     });
   });
@@ -42,7 +42,7 @@ describe("ComplianceHoldBanner", () => {
 
   describe("boundary behavior", () => {
     it("throws an explicit error when provided an invalid severity", () => {
-      const invalidHold = { ...mockHold, severity: "invalid-severity" as any };
+      const invalidHold = { ...mockHold, severity: "invalid-severity" as never };
       const spy = vi.spyOn(console, "error").mockImplementation(() => {});
       try {
         expect(() => {

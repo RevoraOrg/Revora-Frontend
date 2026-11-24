@@ -8,7 +8,6 @@ import {
   NetworkSwitcherPanel,
   ChainMismatchModal,
   NetworkSwitcherBadge,
-  NetworkSwitcherContext,
   NetworkSwitcherProvider,
   useNetworkSwitcher,
 } from './index';

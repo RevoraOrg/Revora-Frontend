@@ -1,3 +1,4 @@
+import type { ComponentProps } from 'react';
 /**
  * Focused coverage for the `ErrorScope` failure and boundary branches in
  * `FormError.tsx`.
@@ -29,7 +30,7 @@ describe('FormError ErrorScope contracts', () => {
       ['details only', { details: { code: 'E_BOOM' } }],
       ['children only', { children: <span>child content</span> }],
     ])('still renders when there is %s', (_label, props) => {
-      const { container } = render(<FormError {...(props as any)} />);
+      const { container } = render(<FormError {...(props as ComponentProps<typeof FormError>)} />);
       expect(container.firstChild).not.toBeNull();
     });
 

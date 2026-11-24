@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export type SnapshotGroup = 'Forms' | 'Uploads' | 'Transactions' | 'Other';
 

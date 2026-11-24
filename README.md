@@ -46,7 +46,30 @@ npm run dev        # http://localhost:5173
 | `npm run preview` | Serve the production build locally |
 | `npm run lint` | ESLint over `src/` |
 | `npm run validate:terminology` | Check production TypeScript copy for prohibited terms (ignores comments, URLs, tests, and the terminology reference) |
+| `npm run lint` | ESLint over `src/`, including tests (see [Linting](#linting)) |
 | `npm test` | Vitest with coverage (`npm run test:watch` to watch) |
+
+### Linting
+
+`eslint.config.mjs` (ESLint 9 flat config) lints every `.ts`/`.tsx` file under
+`src/`, test files included. Any reported problem fails `npm run lint` and CI.
+
+- `@eslint/js` recommended and `@typescript-eslint` recommended
+  (this includes `@typescript-eslint/no-explicit-any`).
+- `react-hooks/rules-of-hooks` and `react-hooks/exhaustive-deps`, both as errors.
+- `@typescript-eslint/no-unused-vars`: prefix a variable, argument or caught
+  error with `_` to mark it as intentionally unused. The core `no-unused-vars`
+  rule is off in favour of the TypeScript-aware one.
+- `no-undef` is off for TypeScript files, because the compiler already reports
+  unknown identifiers.
+- `no-empty` is on, but empty `catch` blocks are allowed.
+
+Disabling a rule inline needs a comment explaining why, for example:
+
+```ts
+// Mount-only by design: re-running would advance the flow again.
+// eslint-disable-next-line react-hooks/exhaustive-deps
+```
 
 ## Environment variables
 

@@ -16,16 +16,14 @@
  *  - Pagination for large files
  */
 
-import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
-  Upload,
   FileSpreadsheet,
   AlertTriangle,
   CheckCircle2,
   X,
   ChevronRight,
   ChevronLeft,
-  Search,
   ArrowRight,
 } from 'lucide-react';
 import { Button } from './Button';

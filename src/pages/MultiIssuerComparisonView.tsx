@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
-import { IssuerComparisonData, MOCK_COMPARISON_ISSUERS } from './DistributionDashboard.types';
+import { IssuerComparisonData } from './DistributionDashboard.types';
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 

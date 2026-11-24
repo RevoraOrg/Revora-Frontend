@@ -47,6 +47,7 @@ import NotificationBell from "./components/Notifications/NotificationBell";
 import { NotificationProvider } from "./components/Notifications/NotificationProvider";
 import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
+import { notificationsMock } from "./components/Notifications/notificationsData";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
 import { KycWizardPage } from "./pages/KycWizardPage";

@@ -116,8 +116,7 @@ describe("localStorage helpers", () => {
 
   it("returns null in non-browser environments (window is undefined)", () => {
     const originalWindow = global.window;
-    // @ts-ignore
-    delete global.window;
+    delete (global as { window?: unknown }).window;
     
     expect(readRecoveryFrame("/ssr", 7)).toBeNull();
     

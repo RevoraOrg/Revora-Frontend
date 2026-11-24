@@ -30,7 +30,7 @@ vi.mock('@stellar/stellar-sdk', async (importOriginal) => {
       ...actual.rpc,
       Server: class MockServer {
         queryContract: ReturnType<typeof vi.fn>;
-        constructor(url: string) {
+        constructor(_url: string) {
           this.queryContract = vi.fn();
         }
       },

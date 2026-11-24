@@ -586,6 +586,9 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
     }, { replace: true });
   };
   const [retryCount, setRetryCount] = useState(0);
+  const [query, setQuery] = useState("");
+  const [filtersActive, setFiltersActive] = useState(false);
+  const [, setRetryCount] = useState(0);
   const [distributionSimDismissed, setDistributionSimDismissed] = useState(false);
 
   /** When true, the externally-supplied __simulateState is ignored */
@@ -861,6 +864,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
               aria-live="polite"
             >
               {pagedOfferings.map((offering) => {
+              {state.offerings.map((offering) => {
                 return (
                   <div
                     key={offering.id}
@@ -1017,7 +1021,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
 
       {/* ── Payout Schedule ── */}
       {!isLoading && state.kind === 'loaded' && (
-        <PayoutSchedule payouts={effectiveSimState?.kind === 'loaded' ? (effectiveSimState as any).payouts || [] : []} />
+        <PayoutSchedule payouts={effectiveSimState?.kind === 'loaded' ? (effectiveSimState as { payouts?: React.ComponentProps<typeof PayoutSchedule>['payouts'] }).payouts || [] : []} />
       )}
     </div>
   );

@@ -20,8 +20,6 @@ import React from 'react';
 import { RevenueReportingCalendar } from './RevenueReportingCalendar';
 import { RevenueReport, ReportStatus } from './RevenueReportingCalendar.types';
 
-const noop = () => { };
-
 const baseReports: RevenueReport[] = [
   {
     id: 'rpt-1',
@@ -492,8 +490,6 @@ describe('RevenueReportingCalendar', () => {
 //
 // These internal components are exercised through the public
 // RevenueReportingCalendar API so no internal exports are needed.
-
-const FIXED_MONTH = '2026-06-01'; // viewMonth for a stable, controlled render
 
 /** A minimal report for June 2026 */
 function makeReport(

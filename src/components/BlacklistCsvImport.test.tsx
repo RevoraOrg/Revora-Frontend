@@ -250,7 +250,7 @@ describe('BlacklistCsvImport', () => {
     });
 
     it('shows done button', async () => {
-      const { user } = await goToConfirmStep();
+      await goToConfirmStep();
       expect(screen.getByRole('button', { name: /done/i })).toBeInTheDocument();
     });
 

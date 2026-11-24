@@ -174,6 +174,9 @@ export function computeNextRun(rule: RecurrenceRule, after?: Date): string {
   // ── Step 2: Snap local calendar components to target weekday / day-of-month ─
   if (rule.frequency === 'weekly' && rule.dayOfWeek !== undefined) {
     let diff = rule.dayOfWeek - localNow.weekday;
+    const targetDay = rule.dayOfWeek;
+    const currentDay = candidate.getUTCDay();
+    let diff = targetDay - currentDay;
     if (diff < 0) diff += 7;
     if (diff > 0) {
       [targetYear, targetMonth0, targetDay] = addLocalDays(
@@ -223,6 +226,14 @@ export function computeNextRun(rule: RecurrenceRule, after?: Date): string {
           [targetYear, targetMonth0, targetDay, hours, minutes],
           rule.timezone,
         );
+        candidate = new Date(candidate.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const targetDay = rule.dayOfWeek!;
+        const currentDay = candidate.getUTCDay();
+        let diff = targetDay - currentDay;
+        if (diff < 0) diff += 7;
+        if (diff > 0) {
+          candidate = new Date(candidate.getTime() + diff * 24 * 60 * 60 * 1000);
+        }
         break;
       }
 

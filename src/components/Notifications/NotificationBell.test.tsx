@@ -3,7 +3,7 @@
  * vitest + @testing-library/react + jest-axe
  */
 import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe } from 'jest-axe';
@@ -22,13 +22,6 @@ const mkNote = (id: string, read: boolean): Notification => ({
 const UNREAD_3 = [mkNote('1', false), mkNote('2', false), mkNote('3', false)];
 const READ_ALL = [mkNote('1', true),  mkNote('2', true)];
 const MIXED    = [mkNote('1', false), mkNote('2', true), mkNote('3', false)];
-
-/** Mock useReducedMotion to return a specific value */
-function mockReducedMotion(value: boolean) {
-  vi.doMock('../../hooks/useReducedMotion', () => ({
-    useReducedMotion: () => value,
-  }));
-}
 
 /* ─── Rendering ─────────────────────────────────────────── */
 

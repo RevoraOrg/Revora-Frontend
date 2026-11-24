@@ -14,6 +14,8 @@
  * single seam to swap for the real session user id later.
  */
 
+import { readStoredAuthSession } from '../AuthProvider/AuthProvider';
+
 /* ─── Filter state ──────────────────────────────────────────────────────── */
 
 export interface AuditFilterState {
@@ -154,12 +156,11 @@ export function validationMessage(error: SavedFilterValidationError): string {
 const STORAGE_PREFIX = 'revora-audit-saved-filters';
 
 /**
- * The current user id. No auth context exists in this app yet, so this
- * returns a stable local identifier; swap for the session user id when auth
- * lands. Keeping the seam here means storage stays per-user by default.
+ * The current user id. Resolves to the active authenticated session user id
+ * when signed in, falling back to 'local-user' when unauthenticated.
  */
 export function getCurrentUserId(): string {
-  return 'local-user';
+  return readStoredAuthSession()?.id ?? 'local-user';
 }
 
 export function storageKeyForUser(userId: string = getCurrentUserId()): string {

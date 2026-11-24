@@ -85,6 +85,14 @@ All numeric, date, and currency display should use `Intl`-based locale formattin
 - Provide a shared utility module for locale-specific formatting and plural selection
 - Document all supported locale behaviors in the design system
 
+## Runtime translation layer (`src/i18n`)
+- `I18nProvider` supplies `useI18n().t(key, params)` and `setLocale(locale)` to UI components.
+- The runtime catalogs currently include `en-US` and `ar-SA`. The header language selector exposes only locales with a catalog.
+- The selected locale is stored as `revora-locale` in local storage and updates the document's `lang` and `dir` attributes.
+- String translations accept `{name}` placeholders. Plural catalog entries use `IcuPluralForms`; pass a numeric `count` parameter to select the locale's plural category and interpolate the count.
+- Missing translations fall back to `en-US` and log a warning in development. If the key is missing from both catalogs, the key itself is rendered.
+- Keep every catalog's key set identical. The catalog parity test in `src/i18n/I18nProvider.test.tsx` enforces this contract.
+
 ## Copy expansion utilities (`src/constants/i18n.ts`)
 - `COPY_EXPANSION_SAMPLES` - per-locale baseline/expanded sample pairs (en-US, de-DE, ja-JP, ar-SA, zh-CN) with a note explaining why each string grows. These drive the translator-facing preview in `I18nFormatterPreview` and pin the edge cases the design system must tolerate: German compounds, Japanese no-space text, Arabic RTL reordering, CJK density.
 - `copyExpansionRatio(expanded, baseline)` - growth ratio of a localized string relative to its English baseline. `1.4` = 40% longer.

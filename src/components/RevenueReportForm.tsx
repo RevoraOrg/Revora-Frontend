@@ -24,6 +24,9 @@ import {
   toXlsxBytes,
 } from "../utils/reportExport";
 import { parseMoneyInput, computePayoutEstimateCents, formatCentsAsCurrency } from "../utils/parseMoneyInput";
+import { FormError } from "./FormError";
+import { ApiError, normalizeError } from "../lib/api/errors";
+import { submitRevenueReport } from "../lib/api/revenueReports";
 
 const currencyOptions = [
   { value: "USD", label: "USD - US Dollar" },
@@ -94,6 +97,7 @@ export function RevenueReportForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionState, setSubmissionState] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [exportFormat, setExportFormat] = useState<ReportExportFormat>("csv");
   const [exportScope, setExportScope] = useState<ReportExportScope>("current");
   const [isExporting, setIsExporting] = useState(false);
@@ -114,10 +118,10 @@ export function RevenueReportForm() {
 
   const hasUploadingFiles = attachedFiles.some((f) => f.status === "uploading");
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const submitReport = async () => {
     setSubmissionState("idle");
     setErrorMessage("");
+    setApiError(null);
 
     if (revenueError) {
       const errorMessages: Record<string, string> = {
@@ -142,13 +146,31 @@ export function RevenueReportForm() {
     }
 
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 650));
-    setIsSubmitting(false);
-    setSubmissionState("success");
+    try {
+      await submitRevenueReport({
+        reportPeriod,
+        grossRevenueCents: revenueCents,
+        currency,
+        locale,
+        notes,
+        attachmentCount: attachedFiles.filter((f) => f.status === "completed").length,
+      });
+      setSubmissionState("success");
+    } catch (err) {
+      setApiError(normalizeError(err));
+      setSubmissionState("error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await submitReport();
   };
 
   const hasSubmitted = submissionState === "success";
-  const showError = submissionState === "error" && errorMessage;
+  const showError = submissionState === "error" && Boolean(errorMessage || apiError);
   const selectedPeriodLabel =
     reportPeriods.find((item) => item.value === reportPeriod)?.label ?? reportPeriod;
 
@@ -320,9 +342,13 @@ export function RevenueReportForm() {
                 </div>
 
                 {showError && (
-                  <div className="rounded-2xl border border-[#ef4444] bg-[#4c1d1d] p-4 text-sm text-error" role="alert">
-                    {errorMessage}
-                  </div>
+                  <FormError
+                    message={errorMessage || undefined}
+                    apiError={apiError}
+                    errorType={apiError ? undefined : "validation"}
+                    onRetry={apiError?.retryable ? submitReport : undefined}
+                    isRetrying={isSubmitting}
+                  />
                 )}
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mt-6">

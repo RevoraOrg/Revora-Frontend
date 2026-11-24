@@ -1,11 +1,15 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { AuthLayout } from './AuthLayout';
+import { I18nProvider } from '../i18n/I18nProvider';
 import { describe, it, expect } from 'vitest';
+
+const renderWithI18n = (ui: React.ReactNode) =>
+  render(<I18nProvider>{ui}</I18nProvider>);
 
 describe('AuthLayout', () => {
   it('renders with title and children', () => {
-    render(
+    renderWithI18n(
       <AuthLayout title="Test Title">
         <p>Test Content</p>
       </AuthLayout>
@@ -16,7 +20,7 @@ describe('AuthLayout', () => {
   });
 
   it('renders with subtitle when provided', () => {
-    render(
+    renderWithI18n(
       <AuthLayout title="Test Title" subtitle="Test Subtitle">
         <p>Test Content</p>
       </AuthLayout>
@@ -26,7 +30,7 @@ describe('AuthLayout', () => {
   });
 
   it('renders with helperText when provided', () => {
-    render(
+    renderWithI18n(
       <AuthLayout title="Test Title" helperText="Test Helper">
         <p>Test Content</p>
       </AuthLayout>
@@ -36,7 +40,7 @@ describe('AuthLayout', () => {
   });
 
   it('has responsive container classes for mobile-first design', () => {
-    const { container } = render(
+    const { container } = renderWithI18n(
       <AuthLayout title="Test Title">
         <p>Test Content</p>
       </AuthLayout>
@@ -48,7 +52,7 @@ describe('AuthLayout', () => {
   });
 
   it('has proper card responsive padding', () => {
-    const { container } = render(
+    const { container } = renderWithI18n(
       <AuthLayout title="Test Title">
         <p>Test Content</p>
       </AuthLayout>
@@ -59,7 +63,7 @@ describe('AuthLayout', () => {
   });
 
   it('has responsive heading size', () => {
-    const { container } = render(
+    const { container } = renderWithI18n(
       <AuthLayout title="Test Title">
         <p>Test Content</p>
       </AuthLayout>
@@ -70,7 +74,7 @@ describe('AuthLayout', () => {
   });
 
   it('meets minimum max-width for readability', () => {
-    const { container } = render(
+    const { container } = renderWithI18n(
       <AuthLayout title="Test Title">
         <p>Test Content</p>
       </AuthLayout>

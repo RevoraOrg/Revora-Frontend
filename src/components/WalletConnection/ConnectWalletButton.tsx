@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Wallet } from "lucide-react";
+import { AlertTriangle, Wallet } from "lucide-react";
 import { Button } from "../Button";
 import { ConnectWalletModal } from "./ConnectWalletModal";
-import { useWalletConnection } from "./WalletConnectionContext";
+import {
+  TESTNET_PASSPHRASE,
+  useWalletConnection,
+} from "./WalletConnectionContext";
 
 export function ConnectWalletButton({
   disabled = false,
@@ -38,6 +41,18 @@ export function ConnectWalletButton({
             Disconnect wallet
           </Button>
         </div>
+      )}
+      {wallet.address && wallet.networkPassphrase !== TESTNET_PASSPHRASE && (
+        <p
+          className="mt-3 flex items-start gap-2 rounded-xl border border-amber-500/50 bg-amber-500/10 p-3 text-sm text-amber-200"
+          role="alert"
+        >
+          <AlertTriangle size={18} aria-hidden="true" />
+          <span>
+            Your wallet is connected to {wallet.network || "a different network"}.
+            Revora uses Stellar Testnet. Verify the network before continuing.
+          </span>
+        </p>
       )}
       <ConnectWalletModal
         isOpen={open}

@@ -21,6 +21,33 @@ describe('Button', () => {
     expect(container.querySelector('.btn-secondary')).toBeInTheDocument();
   });
 
+  it('renders as danger variant with distinct btn-danger class when specified', () => {
+    const { container } = render(<Button variant="danger">Revoke Delegation</Button>);
+
+    const button = screen.getByRole('button', { name: 'Revoke Delegation' });
+    expect(button).toHaveClass('btn-danger');
+    expect(button).not.toHaveClass('btn-secondary');
+    expect(button).not.toHaveClass('btn-primary');
+    expect(container.querySelector('.btn-danger')).toBeInTheDocument();
+  });
+
+  it.each([
+    ['sm', 'btn--sm'],
+    ['md', 'btn--md'],
+    ['lg', 'btn--lg'],
+  ] as const)('applies %s size class (%s) when size prop is provided', (size, expectedClass) => {
+    render(<Button size={size}>Action</Button>);
+
+    expect(screen.getByRole('button', { name: 'Action' })).toHaveClass(expectedClass);
+  });
+
+  it('does not apply a size class when size prop is omitted', () => {
+    render(<Button>Default Size</Button>);
+
+    const button = screen.getByRole('button', { name: 'Default Size' });
+    expect(button).not.toHaveClass('btn--sm', 'btn--md', 'btn--lg');
+  });
+
   it('shows spinner when loading', () => {
     const { container } = render(<Button loading>Submit</Button>);
 

@@ -5,7 +5,7 @@
  * Revora revenue-deposit contract on Stellar testnet.
  */
 
-import { Networks } from '@stellar/stellar-sdk';
+import { Networks, StrKey } from '@stellar/stellar-sdk';
 
 export type NetworkType = 'TESTNET' | 'PUBLIC';
 
@@ -17,10 +17,10 @@ export const DEFAULT_EXPLORER_BASE = 'https://stellar.expert/explorer/testnet';
 export const DEFAULT_STELLAR_LAB_BASE = 'https://lab.stellar.org/r/testnet';
 
 /**
- * Validates that a string is a valid Stellar contract ID (starts with 'C' and is 56 chars)
+ * Validates that a string is a valid Stellar contract ID using StrKey checksum verification
  */
 function isValidContractId(id: string): boolean {
-  return typeof id === 'string' && id.length === 56 && id.startsWith('C');
+  return typeof id === 'string' && StrKey.isValidContract(id);
 }
 
 /**

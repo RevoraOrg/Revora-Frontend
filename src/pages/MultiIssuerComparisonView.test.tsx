@@ -208,4 +208,58 @@ describe('MultiIssuerComparisonView', () => {
     expect(col1).not.toHaveClass('mic-column--hover');
     expect(col2).not.toHaveClass('mic-column--dim');
   });
+
+  it('renders with default mock issuers, an h1 heading, and sets document title', () => {
+    const { unmount } = render(<MultiIssuerComparisonView />);
+
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Multi-Issuer Comparison' })
+    ).toBeInTheDocument();
+    expect(document.title).toBe('Multi-Issuer Comparison | Revora');
+    expect(screen.getAllByRole('button', { pressed: false }).length).toBeGreaterThan(0);
+
+    unmount();
+  });
+
+  it('sorts compared issuers by totalDistributed, activePayouts, and name', () => {
+    render(<MultiIssuerComparisonView availableIssuers={MOCK_ISSUERS} />);
+
+    fireEvent.click(screen.getByTestId('mic-chip-iss-1')); // 125000, 3, Nexus Cloud Series A
+    fireEvent.click(screen.getByTestId('mic-chip-iss-2')); // 98000, 2, AeroDynamics AI
+    fireEvent.click(screen.getByTestId('mic-chip-iss-3')); // 156000, 4, BioHealth Tech
+
+    const sortSelect = screen.getByTestId('mic-sort-select');
+
+    const getColumnOrder = () =>
+      within(screen.getByTestId('mic-grid'))
+        .getAllByRole('gridcell')
+        .map((cell) => cell.getAttribute('data-testid'));
+
+    expect(getColumnOrder()).toEqual([
+      'mic-column-iss-1',
+      'mic-column-iss-2',
+      'mic-column-iss-3',
+    ]);
+
+    fireEvent.change(sortSelect, { target: { value: 'totalDistributed' } });
+    expect(getColumnOrder()).toEqual([
+      'mic-column-iss-3',
+      'mic-column-iss-1',
+      'mic-column-iss-2',
+    ]);
+
+    fireEvent.change(sortSelect, { target: { value: 'activePayouts' } });
+    expect(getColumnOrder()).toEqual([
+      'mic-column-iss-3',
+      'mic-column-iss-1',
+      'mic-column-iss-2',
+    ]);
+
+    fireEvent.change(sortSelect, { target: { value: 'name' } });
+    expect(getColumnOrder()).toEqual([
+      'mic-column-iss-2',
+      'mic-column-iss-3',
+      'mic-column-iss-1',
+    ]);
+  });
 });

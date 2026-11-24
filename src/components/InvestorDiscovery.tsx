@@ -20,6 +20,7 @@ import { EmptyState } from "./designSystem/EmptyState";
 import { AccessibleChart } from "./designSystem/AccessibleChart";
 import LedgerTable from "./LedgerTable/LedgerTable";
 import type { Column } from "./LedgerTable/LedgerTable";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 // ─── Skeleton Loading Card ─────────────────────────────────────────────────────
 
@@ -542,6 +543,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   __onClearFilters,
   __onRetry,
 }) => {
+  useDocumentTitle("Investor Portal");
   const [isLoading, setIsLoading] = useState(
     typeof process !== "undefined" && process.env.NODE_ENV === "test" ? false : true
   );

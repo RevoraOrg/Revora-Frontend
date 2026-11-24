@@ -15,6 +15,7 @@ import type {
 } from '../components/IssuerDashboardHero';
 import { RevenueReportingCalendar } from '../components/RevenueReportingCalendar';
 import type { RevenueReport, ReportStatus } from '../components/RevenueReportingCalendar.types';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /* ─── Helper ────────────────────────────────────────────────────────── */
 
@@ -173,6 +174,7 @@ const scenarios: Record<Scenario, ScenarioConfig> = {
 /* ─── Page component ────────────────────────────────────────────────── */
 
 export const StartupDashboard: React.FC = () => {
+  useDocumentTitle('Startup Dashboard');
   const [activeScenario, setActiveScenario] = useState<Scenario>('due-soon');
   const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
   const [viewMonth, setViewMonth] = useState<string | undefined>(undefined);

@@ -7,10 +7,12 @@ import { Mail, Lock, User, Briefcase, TrendingUp, Eye, EyeOff, AlertCircle } fro
 import { Link } from 'react-router-dom';
 import ConfirmationNextSteps from '../components/ConfirmationNextSteps';
 import { Button } from '../components/Button';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 type Step = 'persona' | 'form' | 'success';
 
 export const Signup: React.FC = () => {
+  useDocumentTitle('Sign Up');
   const [step, setStep] = useState<Step>('persona');
   const [persona, setPersona] = useState<'startup' | 'investor' | null>(null);
   const [email, setEmail] = useState('');

@@ -1,6 +1,7 @@
 import React from 'react';
 import LedgerTable from '../components/LedgerTable/LedgerTable';
 import type { Column } from '../components/LedgerTable/LedgerTable';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 interface LedgerEntry {
   id: string;
@@ -125,6 +126,7 @@ function DetailContent({ row }: { row: LedgerEntry }) {
 }
 
 export const LedgerDemoPage: React.FC = () => {
+  useDocumentTitle('Investor Ledger');
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-8 animate-fade-in">
       <div>

@@ -24,6 +24,7 @@ import {
   toXlsxBytes,
 } from "../utils/reportExport";
 import { parseMoneyInput, computePayoutEstimateCents, formatCentsAsCurrency } from "../utils/parseMoneyInput";
+import { useDocumentTitle } from "../hooks/useDocumentTitle";
 
 const currencyOptions = [
   { value: "USD", label: "USD - US Dollar" },
@@ -85,6 +86,7 @@ function downloadBlob(blob: Blob, fileName: string): void {
 }
 
 export function RevenueReportForm() {
+  useDocumentTitle("Report Revenue");
   const [reportPeriod, setReportPeriod] = useState(reportPeriods[0].value);
   const [grossRevenue, setGrossRevenue] = useState("");
   const [currency, setCurrency] = useState("USD");

@@ -28,6 +28,7 @@ import { UploadQueue } from '../components/UploadQueue';
 import { WizardStepper } from '../components/WizardStepper';
 import { useUnsavedChanges } from '../hooks/useUnsavedChanges';
 import { useUploadQueue, type Uploader } from '../hooks/useUploadQueue';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const STEP_HEADINGS = [
   'Tell us about yourself',
@@ -53,6 +54,7 @@ export interface KycWizardPageProps {
 }
 
 export const KycWizardPage: React.FC<KycWizardPageProps> = ({ uploader }) => {
+  useDocumentTitle('KYC Verification');
   const [availableDraft] = useState<KycWizardDraft | null>(() => loadKycDraft());
   const [showResumeBanner, setShowResumeBanner] = useState(availableDraft !== null);
   const [step, setStep] = useState(0);

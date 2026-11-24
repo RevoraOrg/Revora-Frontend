@@ -1,5 +1,5 @@
 import type { ReactElement } from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { WalletConnectionProvider } from "./components/WalletConnection/WalletConnectionContext";
 
@@ -41,10 +41,10 @@ describe('App Components Accessibility', () => {
     ["/forgot-password", "Forgot Password?"],
     ["/startup/dashboard", "Acme Corp Dashboard"],
     ["/investor/portal", "Discover Offerings"],
-  ])("renders the existing route %s", (path, heading) => {
+  ])("renders the existing route %s", async (path, heading) => {
     renderAtPath(path);
     expect(
-      screen.getByRole("heading", { name: heading }),
+      await screen.findByRole("heading", { name: heading }, { timeout: 10000 }),
     ).toBeInTheDocument();
   });
 
@@ -83,27 +83,33 @@ describe('App Components Accessibility', () => {
     getElementByIdSpy.mockRestore();
   });
 
-  it('enforces one h1 on the investor discovery route and keeps heading hierarchy', () => {
+  it('enforces one h1 on the investor discovery route and keeps heading hierarchy', async () => {
     window.history.pushState({}, '', '/investor/portal');
     render(withProviders(<App />));
 
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /discover offerings/i }, { timeout: 10000 }),
+    ).toBeInTheDocument();
     expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
-    expect(screen.getByRole('heading', { level: 1, name: /discover offerings/i })).toBeInTheDocument();
 
     expect(screen.getByRole('heading', { level: 2, name: /offerings/i })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 3 }).length).toBeGreaterThan(0);
   });
 
-  it('renders the startup dashboard route', () => {
+  it('renders the startup dashboard route', async () => {
     window.history.pushState({}, '', '/startup/dashboard');
     render(withProviders(<App />));
-    expect(screen.getByRole('heading', { level: 1, name: /acme corp dashboard/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /acme corp dashboard/i }, { timeout: 10000 }),
+    ).toBeInTheDocument();
   });
 
-  it('renders the offering registration route with its document uploader', () => {
+  it('renders the offering registration route with its document uploader', async () => {
     window.history.pushState({}, '', '/startup/offering-registration');
     render(withProviders(<App />));
-    expect(screen.getByRole('heading', { level: 1, name: /offering registration/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: /offering registration/i }, { timeout: 10000 }),
+    ).toBeInTheDocument();
     expect(screen.getByText('Upload KYC documents')).toBeInTheDocument();
   });
 
@@ -153,5 +159,27 @@ describe('App Components Accessibility', () => {
     const investItem = screen.getByText('Invest using USDC on Stellar');
     expect(investItem.tagName.toLowerCase()).toBe('li');
     expect(investItem.querySelector('a')).toBeNull();
+  });
+
+  it.each([
+    ['/', 'Home - Revora'],
+    ['/login', 'Sign In - Revora'],
+    ['/signup', 'Sign Up - Revora'],
+    ['/forgot-password', 'Forgot Password - Revora'],
+    ['/startup/dashboard', 'Startup Dashboard - Revora'],
+    ['/investor/portal', 'Investor Portal - Revora'],
+    ['/admin/alerts', 'Admin Alerts - Revora'],
+    ['/non-existent-route', 'Page not found - Revora'],
+  ])('sets document.title to %s on route %s', async (path, expectedTitle) => {
+    const previousTitle = document.title;
+    const { unmount } = renderAtPath(path);
+    await waitFor(
+      () => {
+        expect(document.title).toBe(expectedTitle);
+      },
+      { timeout: 10000 },
+    );
+    unmount();
+    expect(document.title).toBe(previousTitle);
   });
 });

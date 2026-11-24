@@ -18,6 +18,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { Calendar, BarChart3, Table2 } from 'lucide-react';
 import { PayoutStatusPill, PAYOUT_STATUS_ORDER } from '../components/PayoutStatusPill';
 import { EmptyState } from '../components/designSystem/EmptyState';
@@ -129,6 +130,7 @@ export const PayoutSchedule: React.FC<PayoutScheduleProps> = ({
   empty = false,
   locale = 'en-US',
 }) => {
+  useDocumentTitle('Payout Schedule');
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [showGantt, setShowGantt] = useState(false);
   const [zoom, setZoom] = useState<ZoomLevel>('month');

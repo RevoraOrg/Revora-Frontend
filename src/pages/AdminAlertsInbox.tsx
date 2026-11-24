@@ -3,6 +3,7 @@ import { AlertsInboxTable } from '../components/AdminAlertsInbox/AlertsInboxTabl
 import { Alert } from '../components/AdminAlertsInbox/types';
 import { mockAlerts } from '../components/AdminAlertsInbox/alertsData';
 import { Bell } from 'lucide-react';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 const ACTION_PAST_TENSE: Record<'acknowledge' | 'assign' | 'resolve', string> = {
   acknowledge: 'acknowledged',
@@ -11,6 +12,7 @@ const ACTION_PAST_TENSE: Record<'acknowledge' | 'assign' | 'resolve', string> = 
 };
 
 export const AdminAlertsInbox: React.FC = () => {
+  useDocumentTitle('Admin Alerts');
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

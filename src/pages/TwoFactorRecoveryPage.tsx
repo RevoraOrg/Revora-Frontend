@@ -4,6 +4,7 @@ import { TwoFactorRecoveryFlow } from '../components/TwoFactorRecoveryFlow';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 /**
  * Two-factor recovery page.
@@ -14,6 +15,7 @@ import { Link } from 'react-router-dom';
  */
 
 export const TwoFactorRecoveryPage: React.FC = () => {
+  useDocumentTitle('2FA Recovery');
   const navigate = useNavigate();
   const isDemoMode =
     import.meta.env.DEV || import.meta.env.VITE_DEMO_MODE === 'true';

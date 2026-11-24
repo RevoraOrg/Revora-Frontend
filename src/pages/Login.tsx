@@ -6,8 +6,10 @@ import { Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/Button';
 import { FormError } from '../components/FormError';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 export const Login: React.FC = () => {
+  useDocumentTitle('Sign In');
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

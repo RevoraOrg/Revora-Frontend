@@ -51,6 +51,7 @@ import {
   Calendar,
   BarChart2,
   Clock,
+  Settings,
   X,
   ChevronRight,
   AlertTriangle,
@@ -64,6 +65,7 @@ import {
   searchCommands,
 } from './commandPaletteData';
 import { formatKeyLabels, shortcutAriaLabel } from '../../utils/keyLabels';
+import { FOCUSABLE_SELECTOR } from '../../hooks/useFocusTrap';
 import './CommandPalette.css';
 
 // ---------------------------------------------------------------------------
@@ -88,6 +90,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   ShieldCheck,
   Globe,
   Clock,
+  Settings,
   ChevronRight,
   AlertTriangle,
   LoaderCircle,
@@ -129,8 +132,7 @@ export interface CommandPaletteProps {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const FOCUSABLE_SELECTOR =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+// FOCUSABLE_SELECTOR is imported from useFocusTrap
 
 // ---------------------------------------------------------------------------
 // Component

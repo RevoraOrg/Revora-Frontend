@@ -1,5 +1,6 @@
-import React, { useEffect, useId, useRef } from 'react';
+import React, { useId, useRef } from 'react';
 import { FormError } from './FormError';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 interface RegenerateCodesDialogProps {
   /** True while the regenerate request is in flight */
@@ -9,8 +10,6 @@ interface RegenerateCodesDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
-
-const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
  * Accessible confirmation dialog for regenerating recovery codes.
@@ -28,34 +27,14 @@ export const RegenerateCodesDialog: React.FC<RegenerateCodesDialogProps> = ({
   const titleId = useId();
   const descId = useId();
 
-  useEffect(() => {
-    cancelRef.current?.focus();
-  }, []);
+  // returnFocus is false — the caller owns focus restoration (see JSDoc above).
+  useFocusTrap(dialogRef, true, { returnFocus: false, initialFocus: cancelRef });
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === 'Escape') {
       e.preventDefault();
       e.stopPropagation();
       if (!isPending) onCancel();
-      return;
-    }
-    if (e.key !== 'Tab') return;
-
-    const focusable = dialogRef.current?.querySelectorAll<HTMLElement>(FOCUSABLE);
-    if (!focusable || focusable.length === 0) {
-      e.preventDefault();
-      return;
-    }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    const outside = !dialogRef.current?.contains(active);
-    if (e.shiftKey && (active === first || outside)) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && (active === last || outside)) {
-      e.preventDefault();
-      first.focus();
     }
   };
 

@@ -3,6 +3,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi, afterEach } from 'vitest';
 import { TwoFactorRecoveryPage } from './TwoFactorRecoveryPage';
+import { ApiError } from '../lib/api/errors';
+import { configureMockAdapter, resetMockAdapter } from '../lib/api/mockAdapter';
 
 const renderPage = () =>
   render(
@@ -13,6 +15,7 @@ const renderPage = () =>
 
 describe('TwoFactorRecoveryPage', () => {
   afterEach(() => {
+    resetMockAdapter();
     vi.unstubAllEnvs();
     vi.useRealTimers();
   });
@@ -84,5 +87,32 @@ describe('TwoFactorRecoveryPage', () => {
       screen.queryByText(/two-factor recovery is currently unavailable/i)
     ).not.toBeInTheDocument();
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+  });
+
+  it('surfaces ApiError through FormError when the mock adapter fails', async () => {
+    vi.stubEnv('DEV', true);
+    vi.stubEnv('VITE_DEMO_MODE', '');
+    configureMockAdapter({
+      latencyMs: 0,
+      failNext: new ApiError({
+        code: 'SERVER_ERROR',
+        message: 'Recovery service temporarily unavailable.',
+        status: 503,
+        retryable: true,
+      }),
+    });
+
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText(/email/i), {
+      target: { value: 'user@example.com' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /send recovery code/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('alert')).toHaveTextContent(
+        /recovery service temporarily unavailable/i
+      );
+    });
   });
 });

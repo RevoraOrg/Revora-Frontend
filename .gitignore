@@ -42,3 +42,6 @@ vite.config.ts.timestamp-*
 .opencode
 .vercel
 .env*
+
+# Tooling artifacts
+branch_structure.json

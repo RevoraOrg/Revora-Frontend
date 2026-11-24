@@ -25,7 +25,21 @@ Reset affordance
 
 Accessibility
 - Ensure keyboard focus, ARIA labels, and `aria-valuenow`/`aria-valuemin`/`aria-valuemax` on the handle.
+- Expose `aria-rowcount` on the grid and 1-based `aria-rowindex` on every rendered row (accounting for pagination and virtualization).
+- Use roving `tabIndex` on rows so only the active row is in the tab order (`tabIndex={0}`), and automatically scroll the focused row into the virtualized viewport.
 - Test with screen readers and RTL layouts.
+
+Keyboard Navigation (Virtualized Rows)
+| Key | Action |
+| --- | --- |
+| `ArrowDown` / `ArrowUp` | Move focus to the next / previous row and scroll it into view |
+| `ArrowRight` / `ArrowLeft` | Move focus between cells within the focused row (RTL-aware) |
+| `PageDown` / `PageUp` | Jump down / up by one visible viewport of rows and scroll into view |
+| `Ctrl+Home` / `Cmd+Home` | Jump to the first row on the current page and scroll into view |
+| `Ctrl+End` / `Cmd+End` | Jump to the last row on the current page and scroll into view |
+| `Home` / `End` | Move cell focus to the first / last column in the focused row |
+| `Enter` / `Space` | Open or toggle the row detail drawer (or expand/collapse a group row) |
+| `Escape` | Close the open row detail drawer |
 
 Edge cases
 - Very narrow columns clamp to 36px min.

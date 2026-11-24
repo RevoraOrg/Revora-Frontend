@@ -256,8 +256,48 @@ function LedgerTable<T>({
   const [focusedColumnIndex, setFocusedColumnIndex] = useState<number>(-1);
   const [focusBounds, setFocusBounds] = useState<{ left: number; width: number } | null>(null);
   const focusedRowRef = useRef<HTMLDivElement | null>(null);
+  const shouldFocusRowRef = useRef(false);
 
   const totalCols = (rowDetail ? 1 : 0) + filteredColumns.length;
+  const rovingRowIndex =
+    selectedRowIndex >= 0 ? Math.min(selectedRowIndex, Math.max(0, pageData.length - 1)) : 0;
+
+  const scrollRowIntoView = useCallback(
+    (index: number) => {
+      if (index < 0 || index >= pageData.length) return;
+      const rowTop = index * rowHeight;
+      const rowBottom = rowTop + rowHeight;
+      const viewTop = scrollRef.current ? scrollRef.current.scrollTop : scrollTop;
+      const viewBottom = viewTop + containerHeight;
+
+      let nextScrollTop = viewTop;
+      if (rowTop < viewTop) {
+        nextScrollTop = rowTop;
+      } else if (rowBottom > viewBottom) {
+        nextScrollTop = Math.max(0, rowBottom - containerHeight);
+      }
+
+      if (nextScrollTop !== viewTop) {
+        setScrollTop(nextScrollTop);
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = nextScrollTop;
+        }
+      }
+    },
+    [pageData.length, rowHeight, scrollTop, containerHeight],
+  );
+
+  useEffect(() => {
+    if (!shouldFocusRowRef.current) return;
+    if (detailMode === 'drawer' && detailRow != null) {
+      shouldFocusRowRef.current = false;
+      return;
+    }
+    if (focusedRowRef.current) {
+      focusedRowRef.current.focus({ preventScroll: true });
+      shouldFocusRowRef.current = false;
+    }
+  }, [selectedRowIndex, startIndex, endIndex, detailMode, detailRow]);
 
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
@@ -408,9 +448,28 @@ function LedgerTable<T>({
     });
   }, []);
 
+  const focusRowAtIndex = useCallback(
+    (next: number, openDetail = false) => {
+      if (pageData.length === 0) return;
+      const clamped = Math.max(0, Math.min(next, pageData.length - 1));
+      shouldFocusRowRef.current = true;
+      setSelectedRowIndex(clamped);
+      const item = pageData[clamped];
+      if (item && !item.isGroup) {
+        setSelectedRow(rowKey(item.row));
+        if (openDetail && rowDetail) {
+          setDetailRow(rowKey(item.row));
+        }
+      }
+      scrollRowIntoView(clamped);
+    },
+    [pageData, rowKey, rowDetail, scrollRowIntoView],
+  );
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const maxIndex = pageData.length - 1;
+      const pageStep = Math.max(1, Math.floor(containerHeight / rowHeight));
       const isRtl = scrollRef.current
         ? getComputedStyle(scrollRef.current).direction === 'rtl' || document.dir === 'rtl'
         : false;
@@ -418,31 +477,19 @@ function LedgerTable<T>({
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setSelectedRowIndex((prev) => {
-            const next = Math.min(prev + 1, maxIndex);
-            if (next >= 0) {
-              const item = pageData[next];
-              if (!item.isGroup) {
-                setSelectedRow(rowKey(item.row));
-                if (rowDetail) setDetailRow(rowKey(item.row));
-              }
-            }
-            return next;
-          });
+          focusRowAtIndex(selectedRowIndex + 1, true);
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setSelectedRowIndex((prev) => {
-            const next = Math.max(prev - 1, 0);
-            if (next >= 0) {
-              const item = pageData[next];
-              if (!item.isGroup) {
-                setSelectedRow(rowKey(item.row));
-                if (rowDetail) setDetailRow(rowKey(item.row));
-              }
-            }
-            return next;
-          });
+          focusRowAtIndex(selectedRowIndex <= 0 ? 0 : selectedRowIndex - 1, true);
+          break;
+        case 'PageDown':
+          e.preventDefault();
+          focusRowAtIndex((selectedRowIndex < 0 ? 0 : selectedRowIndex) + pageStep);
+          break;
+        case 'PageUp':
+          e.preventDefault();
+          focusRowAtIndex((selectedRowIndex < 0 ? 0 : selectedRowIndex) - pageStep);
           break;
         case 'ArrowRight':
           e.preventDefault();
@@ -467,7 +514,7 @@ function LedgerTable<T>({
         case 'Home':
           e.preventDefault();
           if (e.ctrlKey || e.metaKey) {
-            setSelectedRowIndex(0);
+            focusRowAtIndex(0);
           } else {
             setFocusedColumnIndex(0);
           }
@@ -475,7 +522,7 @@ function LedgerTable<T>({
         case 'End':
           e.preventDefault();
           if (e.ctrlKey || e.metaKey) {
-            setSelectedRowIndex(maxIndex);
+            focusRowAtIndex(maxIndex);
           } else {
             setFocusedColumnIndex(Math.max(0, totalCols - 1));
           }
@@ -483,12 +530,15 @@ function LedgerTable<T>({
         case 'Enter':
         case ' ':
           e.preventDefault();
-          if (selectedRowIndex >= 0 && selectedRowIndex <= maxIndex) {
-            const item = pageData[selectedRowIndex];
-            if (item.isGroup) {
-              toggleGroup(item.key);
-            } else {
-              handleRowClick(item.row, selectedRowIndex);
+          {
+            const targetIndex = selectedRowIndex >= 0 ? selectedRowIndex : 0;
+            if (targetIndex >= 0 && targetIndex <= maxIndex) {
+              const item = pageData[targetIndex];
+              if (item.isGroup) {
+                toggleGroup(item.key);
+              } else {
+                handleRowClick(item.row, targetIndex);
+              }
             }
           }
           break;
@@ -497,7 +547,17 @@ function LedgerTable<T>({
           break;
       }
     },
-    [pageData, selectedRowIndex, totalCols, rowKey, rowDetail, handleRowClick, toggleGroup, closeDetail],
+    [
+      pageData,
+      selectedRowIndex,
+      containerHeight,
+      rowHeight,
+      totalCols,
+      focusRowAtIndex,
+      handleRowClick,
+      toggleGroup,
+      closeDetail,
+    ],
   );
 
   if (columns.length === 0) {
@@ -622,7 +682,7 @@ function LedgerTable<T>({
       <div
         ref={scrollRef}
         className={`lt-table-wrap ${DENSITY_CLASS[density]}`}
-        tabIndex={0}
+        tabIndex={pageData.length === 0 ? 0 : -1}
         role="grid"
         aria-label={ariaLabel}
         onKeyDown={handleKeyDown}
@@ -672,7 +732,9 @@ function LedgerTable<T>({
           )}
           {visibleRows.map((item, i) => {
             const globalIndex = startIndex + i;
+            const ariaRowIndex = currentPage * pageSize + globalIndex + 1;
             const isRowFocused = selectedRowIndex === globalIndex;
+            const isRovingTabStop = globalIndex === rovingRowIndex;
             
             if (item.isGroup) {
               const isCollapsed = collapsedGroups.has(item.key);
@@ -682,7 +744,7 @@ function LedgerTable<T>({
                   ref={isRowFocused ? focusedRowRef : undefined}
                   className={`lt-row lt-row--group ${selectedRowIndex === globalIndex ? 'lt-row--selected' : ''}`}
                   role="row"
-                  aria-rowindex={globalIndex + 1}
+                  aria-rowindex={ariaRowIndex}
                   aria-expanded={!isCollapsed}
                   style={{
                     position: 'absolute',
@@ -692,7 +754,10 @@ function LedgerTable<T>({
                     height: rowHeight,
                   }}
                   onClick={() => toggleGroup(item.key)}
-                  tabIndex={-1}
+                  onFocus={() => {
+                    if (selectedRowIndex < 0) setSelectedRowIndex(globalIndex);
+                  }}
+                  tabIndex={isRovingTabStop ? 0 : -1}
                 >
                   <div className="lt-cell lt-cell--group-header" role="gridcell" style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <button
@@ -722,7 +787,7 @@ function LedgerTable<T>({
                   ref={isRowFocused ? focusedRowRef : undefined}
                   className={`lt-row ${isSelected ? 'lt-row--selected' : ''} ${isRowFocused ? 'lt-row--focused' : ''}`}
                   role="row"
-                  aria-rowindex={globalIndex + 1}
+                  aria-rowindex={ariaRowIndex}
                   aria-selected={isSelected}
                   style={{
                     position: 'absolute',
@@ -732,7 +797,10 @@ function LedgerTable<T>({
                     height: rowHeight,
                   }}
                   onClick={() => handleRowClick(row, globalIndex)}
-                  tabIndex={-1}
+                  onFocus={() => {
+                    if (selectedRowIndex < 0) setSelectedRowIndex(globalIndex);
+                  }}
+                  tabIndex={isRovingTabStop ? 0 : -1}
                 >
                   {rowDetail && (
                     <div

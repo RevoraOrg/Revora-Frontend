@@ -14,6 +14,7 @@ import { ForgotPassword } from "./pages/ForgotPassword";
 import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
 import TwoFactorBackupCodesPage from "./pages/TwoFactorBackupCodesPage";
 import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
+import { OfferingProspectusPage } from "./pages/OfferingProspectusPage";
 import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
 import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
 import { RevenueReportForm } from "./components/RevenueReportForm";
@@ -126,6 +127,7 @@ export const routes: RouteObject[] = [
       // Investor routes
       { path: "/investor", element: <Navigate to="/investor/portal" replace /> },
       { path: "/investor/portal", element: <InvestorDiscovery /> },
+      { path: "/offerings/:id", element: <OfferingProspectusPage /> },
       { path: "/investor/portfolio", element: <InvestorPortfolioSummary /> },
       { path: "/investor/payouts", element: <PayoutSchedule /> },
       // Issue #139 – Virtualized Ledger Table

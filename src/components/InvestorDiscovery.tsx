@@ -16,6 +16,8 @@ import {
   AlertCircle,
   ArrowRight
 } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { MOCK_OFFERINGS, type Offering } from "../data/offerings";
 import { EmptyState } from "./designSystem/EmptyState";
 import { AccessibleChart } from "./designSystem/AccessibleChart";
 import LedgerTable from "./LedgerTable/LedgerTable";
@@ -314,15 +316,6 @@ const DEFAULT_LEDGER_ENTRIES = generateLedgerEntries(50);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface Offering {
-  id: number;
-  name: string;
-  category: string;
-  revenueShare: number;
-  target: number;
-  raised: number;
-}
-
 /** Discriminated union for all UI states of the discovery result area */
 type DiscoveryState =
   | { kind: 'loaded'; offerings: Offering[] }
@@ -351,12 +344,6 @@ interface InvestorDiscoveryProps {
 }
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
-
-const MOCK_OFFERINGS: Offering[] = [
-  { id: 1, name: 'TechFlow AI', category: 'Enterprise SaaS', revenueShare: 15, target: 250000, raised: 112500 },
-  { id: 2, name: 'Quantum Ledger', category: 'DeFi Infrastructure', revenueShare: 12, target: 500000, raised: 140000 },
-  { id: 3, name: 'Nexus Pay', category: 'Cross-Border Payments', revenueShare: 18, target: 300000, raised: 186000 },
-];
 
 const MOCK_DISTRIBUTIONS: DistributionRecord[] = [
   { id: 'dist-jan', date: '2026-01-31', amount: 1240, currency: 'USDC' },
@@ -545,8 +532,19 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   const [isLoading, setIsLoading] = useState(
     typeof process !== "undefined" && process.env.NODE_ENV === "test" ? false : true
   );
-  const [query, setQuery] = useState("");
-  const [filtersActive, setFiltersActive] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+  const filtersActive = searchParams.get('filters') === 'active';
+  const updateFilters = (nextQuery: string, active: boolean) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (nextQuery) next.set('q', nextQuery);
+      else next.delete('q');
+      if (active) next.set('filters', 'active');
+      else next.delete('filters');
+      return next;
+    }, { replace: true });
+  };
   const [retryCount, setRetryCount] = useState(0);
   const [distributionSimDismissed, setDistributionSimDismissed] = useState(false);
 
@@ -594,8 +592,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
     : __simulateDistributionState;
 
   const handleClearFilters = () => {
-    setQuery('');
-    setFiltersActive(false);
+    updateFilters('', false);
     setRetryCount(0);
     setSimDismissed(true);
     __onClearFilters?.();
@@ -612,7 +609,7 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
   };
 
   const handleToggleFilters = () => {
-    setFiltersActive((f) => !f);
+    updateFilters(query, !filtersActive);
   };
 
   const handleDistributionRetry = () => {
@@ -642,13 +639,13 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
               className="input-field pl-10 h-10 text-sm"
               aria-label="Search startup offerings"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => updateFilters(e.target.value, filtersActive)}
               autoComplete="off"
             />
             {query && (
               <button
                 className="absolute right-3 top-2.5 text-muted hover:text-main transition-colors"
-                onClick={() => setQuery('')}
+                onClick={() => updateFilters('', filtersActive)}
                 aria-label="Clear search"
                 data-testid="clear-search-btn"
               >
@@ -745,9 +742,13 @@ export const InvestorDiscovery: React.FC<InvestorDiscoveryProps> = ({
                           height={120}
                         />
                       </div>
-                    <button className="btn-primary py-2 text-xs">
+                    <Link
+                      to={`/offerings/${offering.id}${searchParams.size ? `?${searchParams}` : ''}`}
+                      className="btn-primary py-2 text-xs"
+                      aria-label={`View prospectus for ${offering.name}`}
+                    >
                       View Prospectus
-                    </button>
+                    </Link>
                   </div>
                 );
               })}

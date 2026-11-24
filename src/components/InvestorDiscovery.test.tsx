@@ -11,12 +11,16 @@
  *   - Mobile layout: state containers render at narrow widths
  */
 
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { MemoryRouter } from "react-router-dom";
+import type { ReactElement } from "react";
+import { render as renderView, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { InvestorDiscovery, PayoutSchedule, type Payout } from './InvestorDiscovery';
 
 expect.extend(toHaveNoViolations);
+
+const render = (ui: ReactElement) => renderView(ui, { wrapper: MemoryRouter });
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

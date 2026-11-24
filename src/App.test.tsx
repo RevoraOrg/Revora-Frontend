@@ -41,6 +41,10 @@ describe('App Components Accessibility', () => {
     ["/forgot-password", "Forgot Password?"],
     ["/startup/dashboard", "Acme Corp Dashboard"],
     ["/investor/portal", "Discover Offerings"],
+    ["/offerings/1", "TechFlow AI"],
+    ["/offerings/2", "Quantum Ledger"],
+    ["/offerings/3", "Nexus Pay"],
+    ["/offerings/unknown", "Offering not found"],
   ])("renders the existing route %s", (path, heading) => {
     renderAtPath(path);
     expect(

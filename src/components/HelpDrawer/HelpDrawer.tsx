@@ -13,6 +13,7 @@
 
 import React, { useEffect, useRef, useCallback, ReactNode } from 'react';
 import { X, HelpCircle, BookOpen, Lightbulb, ExternalLink } from 'lucide-react';
+import { useFocusTrap, FOCUSABLE_SELECTOR } from '../../hooks/useFocusTrap';
 import './HelpDrawer.css';
 
 /* ─── Content slot types ────────────────────────────────────────────── */
@@ -56,29 +57,7 @@ export interface HelpDrawerProps {
   triggerRef?: React.RefObject<HTMLElement>;
 }
 
-/* ─── Focus trap helper ─────────────────────────────────────────────── */
-
-const FOCUSABLE =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), ' +
-  'textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
-function trapFocus(panelEl: HTMLElement, e: KeyboardEvent) {
-  const nodes = panelEl.querySelectorAll<HTMLElement>(FOCUSABLE);
-  if (!nodes.length) return;
-  const first = nodes[0];
-  const last = nodes[nodes.length - 1];
-  if (e.shiftKey) {
-    if (document.activeElement === first) {
-      last.focus();
-      e.preventDefault();
-    }
-  } else {
-    if (document.activeElement === last) {
-      first.focus();
-      e.preventDefault();
-    }
-  }
-}
+/* ─── Focus trap helper removed — now provided by useFocusTrap ──────── */
 
 /* ─── Component ─────────────────────────────────────────────────────── */
 
@@ -90,30 +69,46 @@ export const HelpDrawer: React.FC<HelpDrawerProps> = ({
 }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  // When a triggerRef is provided, use it as the return-focus target.
+  // Otherwise useFocusTrap captures document.activeElement on activation.
   const prevFocusRef = useRef<HTMLElement | null>(null);
 
-  /* Capture the element that triggered the drawer */
   useEffect(() => {
     if (isOpen) {
-      prevFocusRef.current = (triggerRef?.current ?? document.activeElement) as HTMLElement;
-      // Move focus to close button on open
-      requestAnimationFrame(() => {
-        closeButtonRef.current?.focus();
-      });
-      // Prevent body scroll
+      prevFocusRef.current = (triggerRef?.current ?? document.activeElement) as HTMLElement | null;
+    }
+  }, [isOpen, triggerRef]);
+
+  // useFocusTrap: initial focus on close button on open.
+  // Tab trapping is handled below in the document-level keydown handler
+  // (consistent with how tests fire keydown events at document level).
+  useFocusTrap(panelRef, isOpen, {
+    returnFocus: false,
+    initialFocus: closeButtonRef,
+  });
+
+  // Return focus on close
+  useEffect(() => {
+    if (!isOpen) {
+      const target = prevFocusRef.current;
+      if (target && typeof target.focus === 'function' && document.contains(target)) {
+        requestAnimationFrame(() => target.focus());
+      }
+      prevFocusRef.current = null;
+    }
+  }, [isOpen]);
+
+  /* Body scroll lock */
+  useEffect(() => {
+    if (isOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = '';
-      // Return focus to trigger on close
-      const target = prevFocusRef.current;
-      if (target && typeof target.focus === 'function') {
-        requestAnimationFrame(() => target.focus());
-      }
     }
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isOpen, triggerRef]);
+  }, [isOpen]);
 
   /* Keyboard: ESC to close, Tab to trap */
   const handleKeyDown = useCallback(
@@ -125,7 +120,22 @@ export const HelpDrawer: React.FC<HelpDrawerProps> = ({
         return;
       }
       if (e.key === 'Tab' && panelRef.current) {
-        trapFocus(panelRef.current, e);
+        const panel = panelRef.current;
+        const nodes = panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+        if (!nodes.length) return;
+        const first = nodes[0];
+        const last = nodes[nodes.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            last.focus();
+            e.preventDefault();
+          }
+        } else {
+          if (document.activeElement === last) {
+            first.focus();
+            e.preventDefault();
+          }
+        }
       }
     },
     [isOpen, onClose],

@@ -11,12 +11,24 @@
  *   - Mobile layout: state containers render at narrow widths
  */
 
-import { render, screen, within, waitFor } from '@testing-library/react';
+import { render, screen, within, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { InvestorDiscovery, PayoutSchedule, type Payout } from './InvestorDiscovery';
+import {
+  DEFAULT_DISCOVERY_FILTERS,
+  DISCOVERY_SEARCH_DEBOUNCE_MS,
+  buildUrlWithDiscoveryFilters,
+  filtersFromSearchParams,
+  filtersToSearchParams,
+  syncDiscoveryFiltersToUrl,
+} from './investorDiscoveryFilters';
 
 expect.extend(toHaveNoViolations);
+
+beforeEach(() => {
+  window.history.replaceState(null, '', '/');
+});
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -621,5 +633,192 @@ describe('LedgerEntriesSection – Issue #628', () => {
     renderLoaded();
     expect(screen.getByRole('heading', { name: 'Ledger Entries' })).toBeInTheDocument();
     expect(screen.getByText('LED-0001')).toBeInTheDocument();
+  });
+});
+
+// ─── URL Synchronization Tests ──────────────────────────────────────────────
+
+describe('investorDiscoveryFilters URL schema', () => {
+  it('omits default values when serializing to search params', () => {
+    const params = filtersToSearchParams(DEFAULT_DISCOVERY_FILTERS);
+    expect(params.toString()).toBe('');
+  });
+
+  it('serializes non-default filters and preserves unrelated params', () => {
+    const existing = new URLSearchParams('entry=LED-0001&sort=old');
+    const params = filtersToSearchParams(
+      { query: '  nexus  ', filtersActive: true, sort: 'revenue-desc', page: 3 },
+      existing,
+    );
+    expect(params.get('entry')).toBe('LED-0001');
+    expect(params.get('q')).toBe('nexus');
+    expect(params.get('filters')).toBe('1');
+    expect(params.get('sort')).toBe('revenue-desc');
+    expect(params.get('page')).toBe('3');
+  });
+
+  it('parses valid params and ignores unknown or invalid values', () => {
+    expect(
+      filtersFromSearchParams(
+        new URLSearchParams('q=tech&filters=true&sort=funding-desc&page=2&unknown=xyz'),
+      ),
+    ).toEqual({
+      query: 'tech',
+      filtersActive: true,
+      sort: 'funding-desc',
+      page: 2,
+    });
+
+    expect(
+      filtersFromSearchParams(
+        new URLSearchParams('filters=nope&sort=invalid&page=0&extra=1'),
+      ),
+    ).toEqual(DEFAULT_DISCOVERY_FILTERS);
+
+    expect(
+      filtersFromSearchParams(new URLSearchParams('page=-3')),
+    ).toEqual(DEFAULT_DISCOVERY_FILTERS);
+
+    expect(
+      filtersFromSearchParams(new URLSearchParams('page=2.5')),
+    ).toEqual(DEFAULT_DISCOVERY_FILTERS);
+  });
+
+  it('preserves pathname and hash when building URL', () => {
+    const url = buildUrlWithDiscoveryFilters(
+      { query: 'ai', filtersActive: false, sort: 'name-asc', page: 1 },
+      { pathname: '/discover', search: '?entry=LED-0002', hash: '#offerings' },
+    );
+    expect(url).toBe('/discover?entry=LED-0002&q=ai&sort=name-asc#offerings');
+  });
+
+  it('uses pushState vs replaceState and no-ops when URL is unchanged', () => {
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const replaceSpy = vi.spyOn(window.history, 'replaceState');
+
+    syncDiscoveryFiltersToUrl(DEFAULT_DISCOVERY_FILTERS, 'push');
+    expect(pushSpy).not.toHaveBeenCalled();
+
+    syncDiscoveryFiltersToUrl({ ...DEFAULT_DISCOVERY_FILTERS, sort: 'name-asc' }, 'push');
+    expect(pushSpy).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe('?sort=name-asc');
+
+    syncDiscoveryFiltersToUrl({ ...DEFAULT_DISCOVERY_FILTERS, sort: 'name-asc', query: 'ai' }, 'replace');
+    expect(replaceSpy).toHaveBeenCalledTimes(1);
+    expect(window.location.search).toBe('?q=ai&sort=name-asc');
+
+    pushSpy.mockRestore();
+    replaceSpy.mockRestore();
+  });
+});
+
+describe('InvestorDiscovery – URL synchronization', () => {
+  it('restores search, filters, sort, and page from the URL on load', () => {
+    window.history.replaceState(null, '', '/?q=nexus&filters=1&sort=revenue-desc&page=1');
+    renderLoaded();
+
+    expect(screen.getByRole('searchbox', { name: /Search startup offerings/i })).toHaveValue('nexus');
+    expect(screen.getByTestId('filter-toggle-btn')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('sort-select')).toHaveValue('revenue-desc');
+    expect(screen.getByText('Nexus Pay')).toBeInTheDocument();
+    expect(screen.queryByText('TechFlow AI')).not.toBeInTheDocument();
+  });
+
+  it('ignores invalid and unknown URL params on load', () => {
+    window.history.replaceState(null, '', '/?sort=bogus&page=abc&filters=maybe&foo=bar');
+    renderLoaded();
+
+    expect(screen.getByRole('searchbox', { name: /Search startup offerings/i })).toHaveValue('');
+    expect(screen.getByTestId('filter-toggle-btn')).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByTestId('sort-select')).toHaveValue('default');
+    expect(screen.getByTestId('offering-card-1')).toBeInTheDocument();
+    expect(screen.getByTestId('offering-card-2')).toBeInTheDocument();
+    expect(screen.getByTestId('offering-card-3')).toBeInTheDocument();
+  });
+
+  it('debounces text search updates and writes them with replaceState', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const replaceSpy = vi.spyOn(window.history, 'replaceState');
+
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderLoaded();
+      const search = screen.getByRole('searchbox', { name: /Search startup offerings/i });
+      await user.type(search, 'tech');
+
+      expect(pushSpy).not.toHaveBeenCalled();
+
+      act(() => {
+        vi.advanceTimersByTime(DISCOVERY_SEARCH_DEBOUNCE_MS + 20);
+      });
+
+      expect(new URLSearchParams(window.location.search).get('q')).toBe('tech');
+      expect(replaceSpy).toHaveBeenCalled();
+      expect(pushSpy).not.toHaveBeenCalled();
+    } finally {
+      pushSpy.mockRestore();
+      replaceSpy.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  it('pushes history entries for sort, filter toggle, and pagination and reorders offerings', async () => {
+    const pushSpy = vi.spyOn(window.history, 'pushState');
+    const user = userEvent.setup();
+
+    try {
+      renderLoaded({ pageSize: 2 });
+
+      // Initial page 1 of 2
+      expect(screen.getByTestId('offerings-page-indicator')).toHaveTextContent('Page 1 of 2');
+      expect(screen.getByTestId('offering-card-1')).toBeInTheDocument();
+      expect(screen.getByTestId('offering-card-2')).toBeInTheDocument();
+      expect(screen.queryByTestId('offering-card-3')).not.toBeInTheDocument();
+
+      // Next page -> pushes ?page=2
+      await user.click(screen.getByRole('button', { name: /Next offerings page/i }));
+      expect(screen.getByTestId('offerings-page-indicator')).toHaveTextContent('Page 2 of 2');
+      expect(screen.getByTestId('offering-card-3')).toBeInTheDocument();
+      expect(new URLSearchParams(window.location.search).get('page')).toBe('2');
+
+      // Sort by name-asc -> resets to page 1 and pushes ?sort=name-asc
+      const sortSelect = screen.getByTestId('sort-select');
+      await user.selectOptions(sortSelect, 'name-asc');
+      expect(new URLSearchParams(window.location.search).get('sort')).toBe('name-asc');
+      expect(new URLSearchParams(window.location.search).has('page')).toBe(false);
+      expect(screen.getByTestId('offerings-page-indicator')).toHaveTextContent('Page 1 of 2');
+
+      // Verify alphabetical order: Nexus Pay, Quantum Ledger on page 1
+      const headings = screen.getAllByRole('heading', { level: 3 }).map((h) => h.textContent);
+      expect(headings).toContain('Nexus Pay');
+      expect(headings).toContain('Quantum Ledger');
+
+      // Also exercise name-desc, revenue-desc, funding-desc
+      await user.selectOptions(sortSelect, 'name-desc');
+      expect(new URLSearchParams(window.location.search).get('sort')).toBe('name-desc');
+      await user.selectOptions(sortSelect, 'revenue-desc');
+      expect(new URLSearchParams(window.location.search).get('sort')).toBe('revenue-desc');
+      await user.selectOptions(sortSelect, 'funding-desc');
+      expect(new URLSearchParams(window.location.search).get('sort')).toBe('funding-desc');
+
+      expect(pushSpy).toHaveBeenCalled();
+    } finally {
+      pushSpy.mockRestore();
+    }
+  });
+
+  it('restores state when browser popstate fires', () => {
+    renderLoaded({ pageSize: 2 });
+
+    act(() => {
+      window.history.replaceState(null, '', '/?q=quantum&filters=1&sort=name-desc&page=1');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    });
+
+    expect(screen.getByRole('searchbox', { name: /Search startup offerings/i })).toHaveValue('quantum');
+    expect(screen.getByTestId('filter-toggle-btn')).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByTestId('sort-select')).toHaveValue('name-desc');
+    expect(screen.getByText('Quantum Ledger')).toBeInTheDocument();
   });
 });

@@ -17,6 +17,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import type { CommandItem } from '../components/CommandPalette/commandPaletteData';
 import { COMMAND_BY_ID } from '../components/CommandPalette/commandPaletteData';
+import { AUTH_STORAGE_KEY } from '../components/AuthProvider/AuthProvider';
 
 export const RECENT_LIMIT = 5;
 
@@ -25,9 +26,29 @@ export interface RecentCommandEntry {
   timestamp: number;
 }
 
-/** Stable storage key for a given user. Pass '' / undefined for anonymous. */
+function getSessionAuthUserId(): string | undefined {
+  try {
+    const raw = sessionStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return undefined;
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      parsed != null &&
+      typeof parsed === 'object' &&
+      typeof (parsed as { id?: unknown }).id === 'string' &&
+      (parsed as { id: string }).id.trim() !== ''
+    ) {
+      return (parsed as { id: string }).id.trim();
+    }
+  } catch {
+    // storage unavailable or invalid JSON
+  }
+  return undefined;
+}
+
+/** Stable storage key for a given user. Pass '' / undefined for anonymous (or signed-in session user). */
 export function recentCommandsKey(userId?: string): string {
-  return `revora:recent-commands:${userId ?? 'anonymous'}`;
+  const resolved = userId || getSessionAuthUserId() || 'anonymous';
+  return `revora:recent-commands:${resolved}`;
 }
 
 /** Reads the stored list without loading the hook (useful for sign-out). */

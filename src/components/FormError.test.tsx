@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { axe, toHaveNoViolations } from 'jest-axe';
 import { FormError } from './FormError';
+import { ApiError } from '../lib/api/errors';
 
 expect.extend(toHaveNoViolations);
 
@@ -638,6 +639,44 @@ describe('FormError Component', () => {
 
       const results = await axe(container);
       expect(results).toHaveNoViolations();
+    });
+  });
+
+  describe('ApiError integration', () => {
+    it('surfaces ApiError message, code, fieldErrors, and hides retry when not retryable', () => {
+      const apiError = new ApiError({
+        code: 'VALIDATION_ERROR',
+        message: 'Please fix the highlighted fields.',
+        status: 422,
+        retryable: false,
+        fieldErrors: {
+          grossRevenue: 'Must be greater than zero',
+        },
+      });
+
+      render(<FormError apiError={apiError} onRetry={vi.fn()} defaultShowDetails={true} />);
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Please fix the highlighted fields.');
+      expect(screen.getByText('VALIDATION_ERROR')).toBeInTheDocument();
+      expect(screen.getByText(/grossRevenue:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Must be greater than zero/i)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+    });
+
+    it('shows retry button when ApiError is retryable', () => {
+      const onRetry = vi.fn();
+      const apiError = new ApiError({
+        code: 'TIMEOUT',
+        message: 'The request timed out.',
+        status: null,
+        retryable: true,
+      });
+
+      render(<FormError apiError={apiError} onRetry={onRetry} />);
+
+      const retryBtn = screen.getByRole('button', { name: /^retry$/i });
+      fireEvent.click(retryBtn);
+      expect(onRetry).toHaveBeenCalledTimes(1);
     });
   });
 });

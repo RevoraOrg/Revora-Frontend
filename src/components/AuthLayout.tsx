@@ -1,4 +1,5 @@
 import React, { useId } from 'react';
+import { useI18n } from '../i18n/I18nProvider';
 
 /**
  * AuthLayout – shared wrapper for Login, Signup, and ForgotPassword pages.
@@ -38,29 +39,30 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   helperText,
 }) => {
   const titleId = useId();
+  const { t } = useI18n();
 
   return (
     <div className="auth-page-container">
       <aside className="auth-marketing-panel animate-fade-in">
         <div className="auth-marketing-content">
           <h2 className="auth-marketing-title">
-            Revora on <span className="text-primary">Stellar</span>
+            {t('auth.layout.brand-prefix')} <span className="text-primary">Stellar</span>
           </h2>
           <p className="auth-marketing-description">
-            Tokenized revenue-sharing infrastructure. Bridge the gap between visionaries and supporters with secure, on-chain execution.
+            {t('auth.layout.description')}
           </p>
           <ul className="auth-marketing-list">
             <li>
               <span className="auth-marketing-icon">✓</span>
-              Instant USDC payouts
+              {t('auth.layout.instant-payouts')}
             </li>
             <li>
               <span className="auth-marketing-icon">✓</span>
-              Transparent on-chain ledger
+              {t('auth.layout.transparent-ledger')}
             </li>
             <li>
               <span className="auth-marketing-icon">✓</span>
-              Automated compliance
+              {t('auth.layout.automated-compliance')}
             </li>
           </ul>
         </div>

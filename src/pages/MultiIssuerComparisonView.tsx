@@ -1,12 +1,14 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X, Plus } from 'lucide-react';
 import { IssuerComparisonData, MOCK_COMPARISON_ISSUERS } from './DistributionDashboard.types';
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
 
+export type ComparisonSortKey = 'default' | 'totalDistributed' | 'activePayouts' | 'name';
+
 export interface MultiIssuerComparisonViewProps {
   /** All available issuers to choose from */
-  availableIssuers: IssuerComparisonData[];
+  availableIssuers?: IssuerComparisonData[];
   /** Maximum number of issuers that can be compared at once */
   maxColumns?: number;
 }
@@ -32,16 +34,34 @@ const COMPLIANCE_CONFIG: Record<
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
 export const MultiIssuerComparisonView: React.FC<MultiIssuerComparisonViewProps> = ({
-  availableIssuers,
+  availableIssuers = MOCK_COMPARISON_ISSUERS,
   maxColumns = 4,
 }) => {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [hoveredColumn, setHoveredColumn] = useState<string | null>(null);
+  const [sortBy, setSortBy] = useState<ComparisonSortKey>('default');
 
-  const selectedIssuers = useMemo(
-    () => availableIssuers.filter((issuer) => selectedIds.includes(issuer.issuerId)),
-    [availableIssuers, selectedIds]
-  );
+  useEffect(() => {
+    const previousTitle = document.title;
+    document.title = 'Multi-Issuer Comparison | Revora';
+    return () => {
+      document.title = previousTitle;
+    };
+  }, []);
+
+  const selectedIssuers = useMemo(() => {
+    const filtered = availableIssuers.filter((issuer) => selectedIds.includes(issuer.issuerId));
+    if (sortBy === 'totalDistributed') {
+      return [...filtered].sort((a, b) => b.kpis.totalDistributed - a.kpis.totalDistributed);
+    }
+    if (sortBy === 'activePayouts') {
+      return [...filtered].sort((a, b) => b.kpis.activePayouts - a.kpis.activePayouts);
+    }
+    if (sortBy === 'name') {
+      return [...filtered].sort((a, b) => a.issuerName.localeCompare(b.issuerName));
+    }
+    return filtered;
+  }, [availableIssuers, selectedIds, sortBy]);
 
   const toggleIssuer = (issuerId: string) => {
     setSelectedIds((prev) => {
@@ -69,25 +89,44 @@ export const MultiIssuerComparisonView: React.FC<MultiIssuerComparisonViewProps>
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 id="mic-heading" className="text-xl font-bold tracking-tight">
+          <h1 id="mic-heading" className="text-xl font-bold tracking-tight">
             Multi-Issuer Comparison
-          </h2>
+          </h1>
           <p className="text-muted text-sm mt-1">
             Select up to {maxColumns} issuers to compare KPIs, trends, and compliance side by side.
           </p>
         </div>
 
-        {selectedIds.length > 0 && (
-          <button
-            type="button"
-            className="btn btn--sm btn-secondary self-start sm:self-auto"
-            onClick={clearAll}
-            aria-label="Clear all selected issuers"
-            data-testid="mic-clear-all"
-          >
-            Clear All
-          </button>
-        )}
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          {selectedIds.length > 1 && (
+            <label className="inline-flex items-center gap-2 text-xs text-muted font-medium">
+              <span>Sort by</span>
+              <select
+                aria-label="Sort compared issuers"
+                data-testid="mic-sort-select"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as ComparisonSortKey)}
+                className="rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg-accent)] px-2.5 py-1.5 text-sm text-main"
+              >
+                <option value="default">Default</option>
+                <option value="totalDistributed">Total Distributed</option>
+                <option value="activePayouts">Active Payouts</option>
+                <option value="name">Issuer Name</option>
+              </select>
+            </label>
+          )}
+          {selectedIds.length > 0 && (
+            <button
+              type="button"
+              className="btn btn--sm btn-secondary"
+              onClick={clearAll}
+              aria-label="Clear all selected issuers"
+              data-testid="mic-clear-all"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Picker Chip Row */}
@@ -201,9 +240,9 @@ export const MultiIssuerComparisonView: React.FC<MultiIssuerComparisonViewProps>
                   style={{ backgroundColor: issuer.color }}
                   aria-hidden="true"
                 />
-                <h3 className="text-sm font-semibold truncate" title={issuer.issuerName}>
+                <h2 className="text-sm font-semibold truncate" title={issuer.issuerName}>
                   {issuer.issuerName}
-                </h3>
+                </h2>
               </div>
 
               {/* KPI Tiles */}

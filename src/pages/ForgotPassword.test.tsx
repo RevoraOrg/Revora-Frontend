@@ -2,12 +2,15 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { ForgotPassword } from './ForgotPassword';
+import { I18nProvider } from '../i18n/I18nProvider';
 
 const renderForgotPassword = () => {
   return render(
-    <MemoryRouter>
-      <ForgotPassword />
-    </MemoryRouter>
+    <I18nProvider>
+      <MemoryRouter>
+        <ForgotPassword />
+      </MemoryRouter>
+    </I18nProvider>
   );
 };
 

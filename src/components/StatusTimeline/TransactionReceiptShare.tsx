@@ -1,6 +1,7 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { Download, Copy, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import html2canvas from 'html2canvas';
+import { buildTransactionExplorerUrl } from '../../constants/stellar';
 import './TransactionReceiptShare.css';
 
 export interface TransactionReceiptShareProps {
@@ -33,6 +34,8 @@ export const TransactionReceiptShare: React.FC<TransactionReceiptShareProps> = (
   const receiptRef = useRef<HTMLDivElement>(null);
   const [hideAmount, setHideAmount] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const resolvedExplorerUrl =
+    explorerUrl || (transactionHash ? buildTransactionExplorerUrl(transactionHash) : null);
 
   const handleDownload = useCallback(async () => {
     if (!receiptRef.current) return;
@@ -184,15 +187,15 @@ export const TransactionReceiptShare: React.FC<TransactionReceiptShareProps> = (
         <div className="tx-receipt-footer">
           <div>Generated securely by {issuerName}</div>
       
-          {explorerUrl && (
+          {resolvedExplorerUrl && (
               <div className="tx-explorer-link">
                   Explorer:
                   <a
-                      href={explorerUrl}
+                      href={resolvedExplorerUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                   >
-                      {explorerUrl}
+                      {resolvedExplorerUrl}
                   </a>
               </div>
           )}

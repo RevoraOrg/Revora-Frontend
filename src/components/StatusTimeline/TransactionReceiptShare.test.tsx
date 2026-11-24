@@ -148,4 +148,16 @@ describe('TransactionReceiptShare', () => {
     
     mockCreateElement.mockRestore();
   });
+
+  it('renders explorer link for a valid 64-hex transactionHash and hides it for an invalid hash', () => {
+    const validHash = 'a1b2c3d4'.repeat(8);
+    const { rerender } = render(
+      <TransactionReceiptShare {...defaultProps} transactionHash={validHash} />,
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', expect.stringContaining(`/tx/${validHash}`));
+
+    rerender(<TransactionReceiptShare {...defaultProps} transactionHash="../invalid-hash" />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
 });

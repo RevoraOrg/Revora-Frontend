@@ -17,8 +17,9 @@ import {
   Info,
 } from "lucide-react";
 import "./SessionManagement.css";
+import { MOCK_SESSIONS } from "./sessionsMock";
 
-interface SessionDevice {
+export interface SessionDevice {
   id: string;
   deviceName: string;
   deviceType: "desktop" | "mobile" | "tablet";
@@ -29,53 +30,6 @@ interface SessionDevice {
   lastActive: string;
   isCurrent: boolean;
 }
-
-const MOCK_SESSIONS: SessionDevice[] = [
-  {
-    id: "sess-1",
-    deviceName: "MacBook Pro 16",
-    deviceType: "desktop",
-    browser: "Chrome 125",
-    os: "macOS 15.2",
-    ipAddress: "192.168.1.42",
-    location: "San Francisco, CA",
-    lastActive: "2026-06-26T10:30:00Z",
-    isCurrent: true,
-  },
-  {
-    id: "sess-2",
-    deviceName: "iPhone 16 Pro",
-    deviceType: "mobile",
-    browser: "Safari 18",
-    os: "iOS 19.0",
-    ipAddress: "203.0.113.45",
-    location: "San Francisco, CA",
-    lastActive: "2026-06-25T22:15:00Z",
-    isCurrent: false,
-  },
-  {
-    id: "sess-3",
-    deviceName: "Windows Desktop",
-    deviceType: "desktop",
-    browser: "Firefox 128",
-    os: "Windows 11",
-    ipAddress: "198.51.100.88",
-    location: "New York, NY",
-    lastActive: "2026-06-24T14:45:00Z",
-    isCurrent: false,
-  },
-  {
-    id: "sess-4",
-    deviceName: "iPad Air",
-    deviceType: "tablet",
-    browser: "Safari 18",
-    os: "iPadOS 19.0",
-    ipAddress: "203.0.113.102",
-    location: "Los Angeles, CA",
-    lastActive: "2026-06-20T09:00:00Z",
-    isCurrent: false,
-  },
-];
 
 function formatRelativeTime(isoString: string): string {
   const now = Date.now();
@@ -522,18 +476,48 @@ function DetailRow({
 
 /* ─── SessionManagement ────────────────────────────────────────────── */
 
-interface SessionManagementProps {
+export interface SessionManagementProps {
+  /**
+   * Initial list of sessions to display.
+   * Defaults to {@link MOCK_SESSIONS} so the component is usable as a demo
+   * without any props.
+   */
+  sessions?: SessionDevice[];
+  /**
+   * Called with the session id when the user confirms a single-session revoke.
+   * Should resolve on success and reject on failure.
+   */
+  onRevoke?: (sessionId: string) => Promise<void>;
+  /**
+   * Called when the user confirms "Sign out of all other devices".
+   * Should resolve on success and reject on failure.
+   */
+  onRevokeAll?: () => Promise<void>;
+
+  // ── Escape-hatch aliases kept for backward compatibility ──────────────
+  /** @deprecated Use `sessions` instead. */
   __initialSessions?: SessionDevice[];
+  /** @deprecated Use `onRevoke` instead. */
   __onRevokeSingle?: (sessionId: string) => Promise<void>;
+  /** @deprecated Use `onRevokeAll` instead. */
   __onRevokeAll?: () => Promise<void>;
 }
 
 export function SessionManagement({
-  __initialSessions = MOCK_SESSIONS,
+  sessions: sessionsProp,
+  onRevoke,
+  onRevokeAll,
+  // backward-compat aliases — take priority only when the canonical props are absent
+  __initialSessions,
   __onRevokeSingle,
   __onRevokeAll,
 }: SessionManagementProps) {
-  const [sessions, setSessions] = useState<SessionDevice[]>(__initialSessions);
+  const resolvedInitialSessions =
+    sessionsProp ?? __initialSessions ?? MOCK_SESSIONS;
+  const resolvedOnRevokeSingle = onRevoke ?? __onRevokeSingle;
+  const resolvedOnRevokeAll = onRevokeAll ?? __onRevokeAll;
+
+  const [sessions, setSessions] = useState<SessionDevice[]>(resolvedInitialSessions);
   const [drawerSession, setDrawerSession] = useState<SessionDevice | null>(null);
   const [dialogState, setDialogState] = useState<{
     type: "single" | "all";
@@ -578,8 +562,8 @@ export function SessionManagement({
     setRevokingId(sessionId);
 
     try {
-      if (__onRevokeSingle) {
-        await __onRevokeSingle(sessionId);
+      if (resolvedOnRevokeSingle) {
+        await resolvedOnRevokeSingle(sessionId);
       } else {
         await new Promise((r) => setTimeout(r, 800));
       }
@@ -596,7 +580,7 @@ export function SessionManagement({
       revokeInFlightRef.current = false;
       setRevokingId(null);
     }
-  }, [dialogState, __onRevokeSingle, announce]);
+  }, [dialogState, resolvedOnRevokeSingle, announce]);
 
   const handleRevokeAll = useCallback(async () => {
     if (revokeInFlightRef.current) return;
@@ -606,14 +590,15 @@ export function SessionManagement({
     setRevokingAll(true);
 
     try {
-      if (__onRevokeAll) {
-        await __onRevokeAll();
+      if (resolvedOnRevokeAll) {
+        await resolvedOnRevokeAll();
       } else {
         await new Promise((r) => setTimeout(r, 1200));
       }
 
       // Fail closed: only update the list once the revoke is confirmed.
-      setSessions((prev) => prev.filter((s) => !s.isCurrent));
+      // Keep the current session; remove all others.
+      setSessions((prev) => prev.filter((s) => s.isCurrent));
       setDialogState(null);
       announce("Signed out of all other devices");
     } catch {
@@ -623,7 +608,7 @@ export function SessionManagement({
       revokeInFlightRef.current = false;
       setRevokingAll(false);
     }
-  }, [__onRevokeAll, announce]);
+  }, [resolvedOnRevokeAll, announce]);
 
   const hasOtherSessions = sessions.some((s) => !s.isCurrent);
 

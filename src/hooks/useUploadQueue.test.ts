@@ -342,4 +342,257 @@ describe('useUploadQueue', () => {
       expect(result.current.queue[0].progress).toBe(100);
     });
   });
+
+  describe('concurrency limit and backoff retry', () => {
+    function deferredQueueUploader() {
+      const calls: Array<{
+        file: File;
+        resolve: () => void;
+        reject: (e: unknown) => void;
+        signal?: AbortSignal;
+      }> = [];
+      const uploader = vi.fn<Uploader>(
+        (file, _onProgress, signal) =>
+          new Promise<void>((resolve, reject) => {
+            calls.push({ file, resolve, reject, signal });
+          }),
+      );
+      return { uploader, calls };
+    }
+
+    it('limits concurrent uploads to maxConcurrent and starts next pending when one completes', async () => {
+      const { result } = renderHook(() => useUploadQueue({ maxConcurrent: 2 }));
+      act(() => {
+        result.current.addFiles([
+          makeFile('a.pdf'),
+          makeFile('b.pdf'),
+          makeFile('c.pdf'),
+          makeFile('d.pdf'),
+        ]);
+      });
+
+      const { uploader, calls } = deferredQueueUploader();
+      act(() => {
+        result.current.uploadFiles(uploader);
+      });
+
+      expect(uploader).toHaveBeenCalledTimes(2);
+      expect(result.current.uploadingCount).toBe(2);
+      expect(result.current.queue.map((f) => f.status)).toEqual([
+        'uploading',
+        'uploading',
+        'pending',
+        'pending',
+      ]);
+
+      await act(async () => {
+        calls[0].resolve();
+      });
+
+      expect(uploader).toHaveBeenCalledTimes(3);
+      expect(calls[2].file.name).toBe('c.pdf');
+      expect(result.current.successCount).toBe(1);
+      expect(result.current.uploadingCount).toBe(2);
+
+      await act(async () => {
+        calls[1].resolve();
+      });
+
+      expect(uploader).toHaveBeenCalledTimes(4);
+      expect(calls[3].file.name).toBe('d.pdf');
+
+      await act(async () => {
+        calls[2].resolve();
+        calls[3].resolve();
+      });
+
+      expect(result.current.successCount).toBe(4);
+      expect(result.current.uploadingCount).toBe(0);
+    });
+
+    it('queues retryFile when maxConcurrent slots are full and runs it when a slot frees', async () => {
+      const { result } = renderHook(() => useUploadQueue({ maxConcurrent: 1 }));
+      act(() => {
+        result.current.addFiles([makeFile('a.pdf'), makeFile('b.pdf')]);
+      });
+
+      const { uploader, calls } = deferredQueueUploader();
+      act(() => {
+        result.current.uploadFiles(uploader);
+      });
+
+      // Fail a.pdf so b.pdf starts immediately in the single slot
+      await act(async () => {
+        calls[0].reject(new Error('fail a'));
+      });
+      expect(result.current.queue[0].status).toBe('error');
+      expect(result.current.queue[1].status).toBe('uploading');
+      expect(uploader).toHaveBeenCalledTimes(2);
+
+      // Retry a.pdf while b.pdf is still uploading -> should stay pending until b.pdf finishes
+      act(() => {
+        result.current.retryFile(result.current.queue[0].id, uploader);
+      });
+      expect(uploader).toHaveBeenCalledTimes(2);
+      expect(result.current.queue[0].status).toBe('pending');
+
+      await act(async () => {
+        calls[1].resolve();
+      });
+      expect(uploader).toHaveBeenCalledTimes(3);
+      expect(calls[2].file.name).toBe('a.pdf');
+
+      await act(async () => {
+        calls[2].resolve();
+      });
+      expect(result.current.successCount).toBe(2);
+    });
+
+    it('retries failed uploads with exponential backoff and succeeds', async () => {
+      const { result } = renderHook(() =>
+        useUploadQueue({ maxRetries: 2, baseDelayMs: 100 }),
+      );
+      act(() => {
+        result.current.addFiles([makeFile('retry.pdf')]);
+      });
+
+      const { uploader, calls } = deferredQueueUploader();
+      act(() => {
+        result.current.uploadFiles(uploader);
+      });
+      expect(uploader).toHaveBeenCalledTimes(1);
+
+      // First failure -> enters retrying, waits 100ms (100 * 2^0)
+      await act(async () => {
+        calls[0].reject(new Error('transient 1'));
+      });
+      expect(result.current.queue[0].status).toBe('retrying');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(99);
+      });
+      expect(uploader).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(uploader).toHaveBeenCalledTimes(2);
+      expect(result.current.queue[0].status).toBe('uploading');
+
+      // Second failure -> enters retrying, waits 200ms (100 * 2^1)
+      await act(async () => {
+        calls[1].reject(new Error('transient 2'));
+      });
+      expect(result.current.queue[0].status).toBe('retrying');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(199);
+      });
+      expect(uploader).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1);
+      });
+      expect(uploader).toHaveBeenCalledTimes(3);
+
+      await act(async () => {
+        calls[2].resolve();
+      });
+      expect(result.current.queue[0].status).toBe('success');
+      expect(result.current.queue[0].progress).toBe(100);
+    });
+
+    it('sets status to error once maxRetries are exhausted', async () => {
+      const { result } = renderHook(() =>
+        useUploadQueue({ maxRetries: 1, baseDelayMs: 50 }),
+      );
+      act(() => {
+        result.current.addFiles([makeFile('fail.pdf')]);
+      });
+
+      const { uploader, calls } = deferredQueueUploader();
+      act(() => {
+        result.current.uploadFiles(uploader);
+      });
+
+      await act(async () => {
+        calls[0].reject(new Error('err 1'));
+      });
+      expect(result.current.queue[0].status).toBe('retrying');
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(uploader).toHaveBeenCalledTimes(2);
+
+      await act(async () => {
+        calls[1].reject(new Error('permanent error'));
+      });
+      expect(result.current.queue[0].status).toBe('error');
+      expect(result.current.queue[0].errorMessage).toBe('permanent error');
+      expect(result.current.errorCount).toBe(1);
+    });
+
+    it('stops retrying and frees slot when item is removed during backoff', async () => {
+      const { result } = renderHook(() =>
+        useUploadQueue({ maxConcurrent: 1, maxRetries: 3, baseDelayMs: 100 }),
+      );
+      act(() => {
+        result.current.addFiles([makeFile('a.pdf'), makeFile('b.pdf')]);
+      });
+
+      const { uploader, calls } = deferredQueueUploader();
+      act(() => {
+        result.current.uploadFiles(uploader);
+      });
+      expect(uploader).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        calls[0].reject(new Error('fail'));
+      });
+      expect(result.current.queue[0].status).toBe('retrying');
+
+      // Remove a.pdf while it is waiting on backoff timer
+      const removedId = result.current.queue[0].id;
+      await act(async () => {
+        result.current.removeFile(removedId);
+      });
+
+      // Slot freed -> b.pdf starts immediately
+      expect(uploader).toHaveBeenCalledTimes(2);
+      expect(calls[1].file.name).toBe('b.pdf');
+
+      // Advancing timers should NOT trigger a retry for removed a.pdf
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(uploader).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops retrying on unmount during backoff', async () => {
+      const { result, unmount } = renderHook(() =>
+        useUploadQueue({ maxRetries: 2, baseDelayMs: 100 }),
+      );
+      act(() => {
+        result.current.addFiles([makeFile('a.pdf')]);
+      });
+
+      const { uploader, calls } = deferredQueueUploader();
+      act(() => {
+        result.current.uploadFiles(uploader);
+      });
+
+      await act(async () => {
+        calls[0].reject(new Error('fail'));
+      });
+      expect(result.current.queue[0].status).toBe('retrying');
+
+      unmount();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      expect(uploader).toHaveBeenCalledTimes(1);
+    });
+  });
 });

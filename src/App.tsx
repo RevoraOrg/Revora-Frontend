@@ -2,6 +2,8 @@ import { useEffect, useState, type MouseEvent } from "react";
 import {
   createBrowserRouter,
   Link,
+  Navigate,
+  NavLink,
   Outlet,
   type RouteObject,
   RouterProvider,
@@ -28,10 +30,12 @@ import { RevenueReportForm } from "./components/RevenueReportForm";
 import { LedgerDemoPage } from "./pages/LedgerDemoPage";
 import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
-import { notificationsMock } from "./components/Notifications/notificationsData";
+import { NotificationProvider } from "./components/Notifications/NotificationProvider";
+import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
 import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
 import { StartupDashboard } from "./pages/StartupDashboard";
+import { KycWizardPage } from "./pages/KycWizardPage";
 import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
 import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
 import { PayoutSchedule } from "./pages/PayoutSchedule";
@@ -52,7 +56,7 @@ const STELLAR_EXPERT_URL = buildContractExplorerUrl();
 function SiteFooter() {
   const { data: contractSummary, isLoading, isError, error, retry } = useContractRead(
     getContractSummary,
-    { retryCount: 2, retryDelay: 1000 },
+    { key: 'contract-summary', retryCount: 2, retryDelay: 1000 },
   );
 
   return (
@@ -117,9 +121,12 @@ export const routes: RouteObject[] = [
       { path: "/forgot-password", element: <ForgotPassword /> },
       { path: "/recover-2fa", element: <TwoFactorRecoveryPage /> },
       { path: "/settings/2fa/backup-codes", element: <TwoFactorBackupCodesPage /> },
+      { path: "/settings/notifications", element: <NotificationSettingsPage /> },
 
       // Startup routes
+      { path: "/startup", element: <Navigate to="/startup/dashboard" replace /> },
       { path: "/startup/dashboard", element: <StartupDashboard /> },
+      { path: "/startup/kyc", element: <KycWizardPage /> },
       { path: "/startup/report-revenue", element: <RevenueReportForm /> },
       // Issue #199 – Inline document uploader (Offering Registration wizard)
       { path: "/startup/offering-registration", element: <OfferingRegistrationDemo /> },
@@ -129,6 +136,7 @@ export const routes: RouteObject[] = [
       { path: "/startup/governance/vote-receipt", element: <GovernanceVoteReceiptDemo /> },
 
       // Investor routes
+      { path: "/investor", element: <Navigate to="/investor/portal" replace /> },
       { path: "/investor/portal", element: <InvestorDiscovery /> },
       { path: "/investor/portfolio", element: <InvestorPortfolioSummary /> },
       { path: "/investor/payouts", element: <PayoutSchedule /> },
@@ -136,6 +144,7 @@ export const routes: RouteObject[] = [
       { path: "/investor/ledger", element: <LedgerDemoPage /> },
 
       // Admin routes
+      { path: "/admin", element: <Navigate to="/admin/alerts" replace /> },
       { path: "/admin/alerts", element: <AdminAlertsInbox /> },
       { path: "/admin/scheduled-exports", element: <ScheduledExportsPage /> },
 
@@ -201,12 +210,16 @@ function AppLayout() {
   };
 
   return (
-    <>
+    <NotificationProvider>
       <a href="#main-content" className="skip-link" onClick={handleSkipToContent}>
         Skip to main content
       </a>
       <header className="site-header">
         <Link to="/" className="site-header__brand">Revora</Link>
+        <nav className="site-header__nav" aria-label="Primary">
+          <NavLink to="/startup" className="site-link">Startup</NavLink>
+          <NavLink to="/investor" className="site-link">Investor</NavLink>
+          <NavLink to="/admin" className="site-link">Admin</NavLink>
         <nav className="site-header__nav" aria-label={t("header.primary-navigation")}>
           <Link to="/startup/dashboard" className="site-link">{t("header.startup")}</Link>
           <Link to="/investor/portal" className="site-link">{t("header.investor")}</Link>
@@ -239,11 +252,13 @@ function AppLayout() {
             <option value="ar-SA">العربية</option>
           </select>
         </nav>
+        <NotificationBell />
       </header>
       <main id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
       <SiteFooter />
+    </NotificationProvider>
       <CommandPalette
         isOpen={isPaletteOpen}
         onClose={closePalette}
@@ -266,10 +281,6 @@ function Home() {
   const { t } = useI18n();
   return (
     <div className="home-container animate-fade-in">
-      {/* Header bar with notification bell */}
-      <div className="w-full flex justify-end mb-4">
-        <NotificationBell notifications={notificationsMock} />
-      </div>
       <div className="home-card glass-card">
         <h1 className="home-title">
           {t("home.title")} <span className="text-primary">Stellar</span>
@@ -286,6 +297,23 @@ function Home() {
             <h2 className="home-section-title">{t("home.startup-dashboard")}</h2>
             <ul className="home-list">
               <li>
+                <Link to="/startup/dashboard" className="link-styled">Issuer Dashboard</Link>
+              </li>
+              <li>Configure RevenueShare offerings</li>
+              <li>
+                <Link to="/startup/kyc" className="link-styled">Complete identity verification (KYC)</Link>
+              </li>
+              <li>
+                <Link to="/startup/report-revenue" className="link-styled">Report monthly revenue</Link>
+              </li>
+              <li>
+                <Link to="/startup/offering-registration" className="link-styled">Register a RevenueShare offering</Link>
+              </li>
+              <li>
+                <Link to="/startup/governance/proposals/create" className="link-styled">Create a governance proposal</Link>
+              </li>
+              <li>
+                <Link to="/startup/governance/vote-receipt" className="link-styled">Governance vote receipt</Link>
                 • <Link to="/startup/dashboard" className="link-styled">{t("home.issuer-dashboard")}</Link>
               </li>
               <li>• {t("home.configure-offerings")}</li>
@@ -307,6 +335,11 @@ function Home() {
           <section className="home-section glass-card">
             <h2 className="home-section-title">{t("home.investor-portal")}</h2>
             <ul className="home-list">
+              <li><Link to="/investor/portal" className="link-styled">Discover offerings</Link></li>
+              <li>Invest using USDC on Stellar</li>
+              <li><Link to="/investor/portfolio" className="link-styled">View portfolio summary</Link></li>
+              <li><Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
+              <li><Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
               <li>• <Link to="/investor/portal" className="link-styled">{t("home.discover-offerings")}</Link></li>
               <li>• {t("home.invest-usdc")}</li>
               <li>• <Link to="/investor/portfolio" className="link-styled">{t("home.portfolio-summary")}</Link></li>
@@ -318,6 +351,15 @@ function Home() {
           <section className="home-section glass-card">
             <h2 className="home-section-title">{t("home.admin-account")}</h2>
             <ul className="home-list">
+              <li><Link to="/admin/alerts" className="link-styled">Alerts inbox</Link></li>
+              <li><Link to="/admin/scheduled-exports" className="link-styled">Scheduled exports</Link></li>
+              <li><Link to="/settings/2fa/backup-codes" className="link-styled">2FA backup codes</Link></li>
+              <li><Link to="/recover-2fa" className="link-styled">2FA recovery</Link></li>
+              <li>• <Link to="/admin/alerts" className="link-styled">Alerts inbox</Link></li>
+              <li>• <Link to="/admin/scheduled-exports" className="link-styled">Scheduled exports</Link></li>
+              <li>• <Link to="/settings/notifications" className="link-styled">Notification preferences</Link></li>
+              <li>• <Link to="/settings/2fa/backup-codes" className="link-styled">2FA backup codes</Link></li>
+              <li>• <Link to="/recover-2fa" className="link-styled">2FA recovery</Link></li>
               <li>• <Link to="/admin/alerts" className="link-styled">{t("home.alerts-inbox")}</Link></li>
               <li>• <Link to="/admin/scheduled-exports" className="link-styled">{t("home.scheduled-exports")}</Link></li>
               <li>• <Link to="/settings/2fa/backup-codes" className="link-styled">{t("home.backup-codes")}</Link></li>

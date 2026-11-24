@@ -29,6 +29,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { Button } from './Button';
+import { parseCsv } from '../utils/csv';
 import {
   BlacklistCsvImportProps,
   WizardStep,
@@ -43,39 +44,9 @@ import './BlacklistCsvImport.css';
 
 /* ─── Helpers ──────────────────────────────────────────────────────── */
 
-function parseCsvText(text: string): string[][] {
-  const lines = text.split(/\r?\n/).filter((line) => line.trim() !== '');
-  return lines.map((line) => {
-    const cells: string[] = [];
-    let current = '';
-    let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-      const ch = line[i];
-      if (inQuotes) {
-        if (ch === '"') {
-          if (i + 1 < line.length && line[i + 1] === '"') {
-            current += '"';
-            i++;
-          } else {
-            inQuotes = false;
-          }
-        } else {
-          current += ch;
-        }
-      } else {
-        if (ch === '"') {
-          inQuotes = true;
-        } else if (ch === ',') {
-          cells.push(current.trim());
-          current = '';
-        } else {
-          current += ch;
-        }
-      }
-    }
-    cells.push(current.trim());
-    return cells;
-  });
+interface ParsedDataRow {
+  row: CsvRow;
+  rowNumber: number;
 }
 
 function detectColumnMapping(headers: string[]): ColumnMapping {
@@ -105,12 +76,12 @@ function detectColumnMapping(headers: string[]): ColumnMapping {
 }
 
 function detectConflicts(
-  rows: CsvRow[],
+  rows: ParsedDataRow[],
   mapping: ColumnMapping,
   existingAddresses: string[],
 ): PreviewRow[] {
   const seen = new Set<string>();
-  return rows.map((row, idx) => {
+  return rows.map(({ row, rowNumber }) => {
     const address = (row[mapping.address] ?? '').trim();
     const checksum = mapping.checksum ? (row[mapping.checksum] ?? '').trim() : undefined;
 
@@ -132,7 +103,7 @@ function detectConflicts(
       checksum,
       conflictReason,
       conflictDetail,
-      rowNumber: idx + 1,
+      rowNumber,
     };
   });
 }
@@ -177,7 +148,7 @@ function StepIndicator({
 function UploadStep({
   onFileParsed,
 }: {
-  onFileParsed: (headers: string[], rows: CsvRow[]) => void;
+  onFileParsed: (headers: string[], rows: ParsedDataRow[]) => void;
 }) {
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -200,22 +171,20 @@ function UploadStep({
           return;
         }
 
-        // Strip BOM if present
-        const clean = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
-        const rows = parseCsvText(clean);
+        const rows = parseCsv(text, { trim: true });
 
         if (rows.length < 2) {
           setError('File must contain a header row and at least one data row.');
           return;
         }
 
-        const headers = rows[0];
-        const dataRows = rows.slice(1).map((cells) => {
+        const headers = rows[0].cells;
+        const dataRows: ParsedDataRow[] = rows.slice(1).map(({ cells, rowNumber }) => {
           const row: CsvRow = { address: '' };
           headers.forEach((h, i) => {
             row[h] = cells[i] ?? '';
           });
-          return row;
+          return { row, rowNumber };
         });
 
         onFileParsed(headers, dataRows);
@@ -563,7 +532,7 @@ export const BlacklistCsvImport: React.FC<BlacklistCsvImportProps> = ({
 }) => {
   const [step, setStep] = useState<WizardStep>('upload');
   const [headers, setHeaders] = useState<string[]>([]);
-  const [rawRows, setRawRows] = useState<CsvRow[]>([]);
+  const [rawRows, setRawRows] = useState<ParsedDataRow[]>([]);
   const [mapping, setMapping] = useState<ColumnMapping>({ address: '' });
   const [previewRows, setPreviewRows] = useState<PreviewRow[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -572,7 +541,7 @@ export const BlacklistCsvImport: React.FC<BlacklistCsvImportProps> = ({
 
   const stepIdx = STEPS.indexOf(step);
 
-  const handleFileParsed = useCallback((h: string[], rows: CsvRow[]) => {
+  const handleFileParsed = useCallback((h: string[], rows: ParsedDataRow[]) => {
     setHeaders(h);
     setRawRows(rows);
     setMapping(detectColumnMapping(h));

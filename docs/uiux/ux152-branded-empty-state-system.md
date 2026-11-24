@@ -193,7 +193,7 @@ import { EmptyState } from './components/designSystem/EmptyState';
 |---|---|---|---|
 | Distribution Dashboard | [`InvestorDiscovery`](src/components/InvestorDiscovery.tsx) | `distribution-dashboard` | `default` / `error` |
 | Payout Schedule | [`PayoutSchedule`](src/pages/PayoutSchedule.tsx) | `payout-schedule` | `default` |
-| Ledger | [`Ledger`](src/pages/Ledger.tsx) | `ledger` | `default` |
+| Ledger | [`LedgerDemoPage`](src/pages/LedgerDemoPage.tsx) | `ledger` | `default` |
 | Audit Trail | [`AuditTrail`](src/pages/AuditTrail.tsx) + [`ActivityFeed`](src/components/ActivityFeed.tsx) | `audit-trail` | `default` |
 | Notifications | [`NotificationPanel`](src/components/Notifications/NotificationPanel.tsx) | `notifications` | `default` |
 | Revenue Reports | [`RevenueReports`](src/pages/RevenueReports.tsx) | `revenue-reports` | `default` |

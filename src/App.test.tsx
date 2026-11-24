@@ -200,4 +200,64 @@ describe('App Components Accessibility', () => {
     expect(screen.getByRole('heading', { level: 1, name: /offering registration/i })).toBeInTheDocument();
     expect(screen.getByText('Upload KYC documents')).toBeInTheDocument();
   });
+
+  it('sets aria-current="page" on the Investor nav link for /investor/portfolio', () => {
+    renderAtPath('/investor/portfolio');
+
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const activeLinks = nav.querySelectorAll('[aria-current]');
+
+    expect(activeLinks).toHaveLength(1);
+    expect(screen.getByRole('link', { name: 'Investor' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Startup' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Admin' })).not.toHaveAttribute('aria-current');
+  });
+
+  it.each([
+    ['/startup/dashboard', 'Startup'],
+    ['/investor/portfolio', 'Investor'],
+    ['/admin/alerts', 'Admin'],
+  ])('marks exactly one primary nav link as current on %s', (path, activeName) => {
+    renderAtPath(path);
+
+    const nav = screen.getByRole('navigation', { name: 'Primary' });
+    const activeLinks = nav.querySelectorAll('[aria-current="page"]');
+
+    expect(activeLinks).toHaveLength(1);
+    expect(screen.getByRole('link', { name: activeName })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('renders home section list items without literal bullet characters and preserves plain-text items', () => {
+    renderAtPath('/');
+
+    const lists = screen.getAllByRole('list');
+    expect(lists.length).toBeGreaterThanOrEqual(3);
+
+    const items = screen.getAllByRole('listitem');
+    expect(items.length).toBeGreaterThan(0);
+
+    for (const item of items) {
+      expect(item.textContent).not.toContain('•');
+    }
+
+    const configureItem = screen.getByText('Configure RevenueShare offerings');
+    expect(configureItem.tagName.toLowerCase()).toBe('li');
+    expect(configureItem.querySelector('a')).toBeNull();
+
+    const investItem = screen.getByText('Invest using USDC on Stellar');
+    expect(investItem.tagName.toLowerCase()).toBe('li');
+    expect(investItem.querySelector('a')).toBeNull();
+  it.each(['/', '/startup/dashboard', '/investor/portal', '/settings/notifications'])(
+    'renders the notification bell in the header on %s',
+    (path) => {
+      renderAtPath(path);
+      expect(screen.getByTestId('notification-bell')).toBeInTheDocument();
+    },
+  );
+
+  it('renders the notification preferences route', () => {
+    renderAtPath('/settings/notifications');
+    expect(screen.getByRole('heading', { name: 'Notification settings' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /notification preferences/i, level: 2 })).toBeInTheDocument();
+  });
 });

@@ -1,12 +1,19 @@
 // WCAG 2.1 relative luminance + contrast ratio helpers
 
 function parseHex(hex: string): [number, number, number] | null {
-  const clean = hex.replace("#", "");
-  if (clean.length !== 6) return null;
+  const clean = hex.startsWith("#") ? hex.slice(1) : hex;
+  const expanded =
+    clean.length === 3
+      ? clean
+          .split("")
+          .map((c) => c + c)
+          .join("")
+      : clean;
+  if (!/^[0-9a-fA-F]{6}$/.test(expanded)) return null;
   return [
-    parseInt(clean.slice(0, 2), 16),
-    parseInt(clean.slice(2, 4), 16),
-    parseInt(clean.slice(4, 6), 16),
+    parseInt(expanded.slice(0, 2), 16),
+    parseInt(expanded.slice(2, 4), 16),
+    parseInt(expanded.slice(4, 6), 16),
   ];
 }
 

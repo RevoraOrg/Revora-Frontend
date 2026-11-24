@@ -395,53 +395,135 @@ export function toXlsxBytes(rows: string[][]): Uint8Array {
   return zipStore(xlsxParts(rows));
 }
 
-/* ── PDF (minimal single-page, Helvetica) ─────────────────────────── */
+/* ── PDF (multi-page, Helvetica with WinAnsiEncoding) ─────────────── */
+
+const WINANSI_MAP: Record<number, number> = {
+  0x20ac: 0x80, // €
+  0x201a: 0x82, // ‚
+  0x0192: 0x83, // ƒ
+  0x201e: 0x84, // „
+  0x2026: 0x85, // …
+  0x2020: 0x86, // †
+  0x2021: 0x87, // ‡
+  0x02c6: 0x88, // ˆ
+  0x2030: 0x89, // ‰
+  0x0160: 0x8a, // Š
+  0x2039: 0x8b, // ‹
+  0x0152: 0x8c, // Œ
+  0x017d: 0x8e, // Ž
+  0x2018: 0x91, // ‘
+  0x2019: 0x92, // ’
+  0x201c: 0x93, // “
+  0x201d: 0x94, // ”
+  0x2022: 0x95, // •
+  0x2013: 0x96, // –
+  0x2014: 0x97, // —
+  0x02dc: 0x98, // ˜
+  0x2122: 0x99, // ™
+  0x0161: 0x9a, // š
+  0x203a: 0x9b, // ›
+  0x0153: 0x9c, // œ
+  0x017e: 0x9e, // ž
+  0x0178: 0x9f, // Ÿ
+};
+
+function encodeWinAnsiByte(codePoint: number): number {
+  if (
+    (codePoint >= 0x20 && codePoint <= 0x7e) ||
+    (codePoint >= 0xa0 && codePoint <= 0xff)
+  ) {
+    return codePoint;
+  }
+  const mapped = WINANSI_MAP[codePoint];
+  if (mapped !== undefined) {
+    return mapped;
+  }
+  if (codePoint === 0x09 || codePoint === 0x0a || codePoint === 0x0d) {
+    return 0x20;
+  }
+  return 0x3f; // '?'
+}
 
 function escapePdfText(value: string): string {
-  return value.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)");
+  let out = "";
+  for (const ch of value) {
+    const byte = encodeWinAnsiByte(ch.codePointAt(0)!);
+    if (byte === 0x5c) {
+      out += "\\\\";
+    } else if (byte === 0x28) {
+      out += "\\(";
+    } else if (byte === 0x29) {
+      out += "\\)";
+    } else {
+      out += String.fromCharCode(byte);
+    }
+  }
+  return out;
+}
+
+function stringToLatin1Bytes(value: string): Uint8Array {
+  const bytes = new Uint8Array(value.length);
+  for (let i = 0; i < value.length; i += 1) {
+    bytes[i] = value.charCodeAt(i) & 0xff;
+  }
+  return bytes;
 }
 
 export function toPdfBytes(rows: string[][]): Uint8Array {
-  const encoder = new TextEncoder();
   const pageWidth = 612;
+  const pageHeight = 792;
   const leftMargin = 50;
+  const bottomMargin = 50;
   const lineHeight = 20;
   const top = 760;
 
-  const lines: string[] = [];
-  lines.push("Revenue Report");
-  rows.forEach((row) => {
+  const lines: string[] = ["Revenue Report"];
+  for (const row of rows) {
     lines.push(row.join("   "));
+  }
+
+  const pageStreams: string[] = [];
+  let currentOps: string[] = [];
+  let y = top;
+
+  for (const line of lines) {
+    if (y < bottomMargin && currentOps.length > 0) {
+      pageStreams.push(`BT\n/F1 12 Tf\n${currentOps.join("\n")}\nET`);
+      currentOps = [];
+      y = top;
+    }
+    currentOps.push(`1 0 0 1 ${leftMargin} ${y} Tm (${escapePdfText(line)}) Tj`);
+    y -= lineHeight;
+  }
+  pageStreams.push(`BT\n/F1 12 Tf\n${currentOps.join("\n")}\nET`);
+
+  const fontObjId = 3;
+  const firstPageObjId = 4;
+  const pageObjIds = pageStreams.map((_, idx) => firstPageObjId + idx * 2);
+
+  const objects: string[] = [
+    "<< /Type /Catalog /Pages 2 0 R >>",
+    `<< /Type /Pages /Kids [${pageObjIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageStreams.length} >>`,
+    "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+  ];
+
+  pageStreams.forEach((content, idx) => {
+    const contentObjId = firstPageObjId + idx * 2 + 1;
+    objects.push(
+      `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 ${fontObjId} 0 R >> >> /Contents ${contentObjId} 0 R >>`
+    );
+    // /Length and xref offsets are exact 1-byte WinAnsi/Latin-1 byte counts.
+    objects.push(`<< /Length ${content.length} >>\nstream\n${content}\nendstream`);
   });
 
-  let content = "BT\n/F1 12 Tf\n";
-  lines.forEach((line, index) => {
-    const y = top - index * lineHeight;
-    content += `1 0 0 1 ${leftMargin} ${y} Tm (${escapePdfText(line)}) Tj\n`;
-  });
-  content += "ET";
-
-  const objects: string[] = [];
-  objects.push("<< /Type /Catalog /Pages 2 0 R >>");
-  objects.push(
-    "<< /Type /Pages /Kids [3 0 R] /Count 1 >>"
-  );
-  objects.push(
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`
-  );
-  objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
-  // /Length and xref offsets are byte counts of the UTF-8 encoded document.
-  objects.push(`<< /Length ${encoder.encode(content).length} >>\nstream\n${content}\nendstream`);
-
-  let pdf =
-    "%PDF-1.4\n";
+  let pdf = "%PDF-1.4\n";
   const offsets: number[] = [];
-  let byteLength = encoder.encode(pdf).length;
+  let byteLength = pdf.length;
   objects.forEach((body, index) => {
     offsets.push(byteLength);
     const chunk = `${index + 1} 0 obj\n${body}\nendobj\n`;
     pdf += chunk;
-    byteLength += encoder.encode(chunk).length;
+    byteLength += chunk.length;
   });
 
   const xrefOffset = byteLength;
@@ -452,5 +534,5 @@ export function toPdfBytes(rows: string[][]): Uint8Array {
   });
   pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
 
-  return encoder.encode(pdf);
+  return stringToLatin1Bytes(pdf);
 }

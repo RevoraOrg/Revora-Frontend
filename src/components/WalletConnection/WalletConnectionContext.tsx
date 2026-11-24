@@ -12,6 +12,7 @@ import {
   getAddress,
   getNetworkDetails,
 } from "@stellar/freighter-api";
+import { ChainMetadata, getChainFromPassphrase } from "../../constants/chains";
 
 export const TESTNET_PASSPHRASE = "Test SDF Network ; September 2015";
 export type WalletError = {
@@ -48,6 +49,10 @@ const initial: WalletState = {
 };
 interface WalletContextValue extends WalletState {
   detection: Detection;
+  /** Chain metadata derived from the connected wallet's networkPassphrase, or null when disconnected */
+  chain: ChainMetadata | null;
+  /** Numeric chain ID derived from the connected wallet's networkPassphrase, or null when disconnected */
+  chainId: number | null;
   connect: (providerId: string) => Promise<void>;
   disconnect: () => void;
 }
@@ -195,9 +200,12 @@ export function WalletConnectionProvider({
     };
   }, [state.status, disconnect]);
 
+  const chain = getChainFromPassphrase(state.networkPassphrase);
+  const chainId = chain?.id ?? null;
+
   return (
     <WalletContext.Provider
-      value={{ ...state, detection, connect, disconnect }}
+      value={{ ...state, detection, chain, chainId, connect, disconnect }}
     >
       {children}
     </WalletContext.Provider>
@@ -208,4 +216,11 @@ export function useWalletConnection() {
   if (!context)
     throw new Error("useWalletConnection requires WalletConnectionProvider");
   return context;
+}
+/**
+ * Optional variant of useWalletConnection that returns null when rendered
+ * outside WalletConnectionProvider (e.g. standalone component tests).
+ */
+export function useOptionalWalletConnection() {
+  return useContext(WalletContext);
 }

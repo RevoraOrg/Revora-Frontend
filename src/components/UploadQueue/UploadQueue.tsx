@@ -38,6 +38,7 @@ function formatBytes(bytes: number): string {
 function statusLabel(status: UploadStatus, progress: number): string {
   switch (status) {
     case 'uploading': return `Uploading ${progress}%`;
+    case 'retrying':  return 'Retrying…';
     case 'success':   return 'Complete';
     case 'error':     return 'Failed';
     default:          return 'Pending';
@@ -67,6 +68,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ status, progress, size = 40
   const iconClass =
     status === 'success'  ? 'upload-queue__ring-icon--success'  :
     status === 'error'    ? 'upload-queue__ring-icon--error'    :
+    status === 'retrying' ? 'upload-queue__ring-icon--retrying' :
     status === 'uploading'? 'upload-queue__ring-icon--uploading':
     'upload-queue__ring-icon';
 
@@ -88,7 +90,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ status, progress, size = 40
         fill="none"
         strokeWidth={3}
       />
-      {status !== 'pending' && status !== 'error' && (
+      {status !== 'pending' && status !== 'error' && status !== 'retrying' && (
         <circle
           className={fillClass}
           cx={cx} cy={cy} r={r}
@@ -104,6 +106,7 @@ const ProgressRing: React.FC<ProgressRingProps> = ({ status, progress, size = 40
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16 }}>
           {status === 'success'  && <CheckCircle2 size={14} className={iconClass} />}
           {status === 'error'    && <AlertCircle  size={14} className={iconClass} />}
+          {status === 'retrying' && <RotateCcw    size={14} className={`${iconClass} animate-spin-loader`} />}
           {status === 'uploading'&& <Loader2      size={14} className={`${iconClass} animate-spin-loader`} />}
           {status === 'pending'  && <FileText     size={14} className={iconClass} />}
         </div>
@@ -125,8 +128,9 @@ const QueueRow: React.FC<QueueRowProps> = ({ item, onRemove, onRetry, labelId })
   const { id, file, status, progress, errorMessage } = item;
   const rowClass = [
     'upload-queue__row',
-    status === 'success' ? 'upload-queue__row--success' : '',
-    status === 'error'   ? 'upload-queue__row--error'   : '',
+    status === 'success'  ? 'upload-queue__row--success'  : '',
+    status === 'error'    ? 'upload-queue__row--error'    : '',
+    status === 'retrying' ? 'upload-queue__row--retrying' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -189,6 +193,7 @@ interface SummaryBarProps {
   successCount: number;
   errorCount: number;
   uploadingCount: number;
+  retryingCount: number;
   overallProgress: number;
   pendingCount: number;
   onUploadAll: () => void;
@@ -200,6 +205,7 @@ const SummaryBar: React.FC<SummaryBarProps> = ({
   successCount,
   errorCount,
   uploadingCount,
+  retryingCount,
   overallProgress,
   pendingCount,
   onUploadAll,
@@ -207,12 +213,15 @@ const SummaryBar: React.FC<SummaryBarProps> = ({
 }) => {
   const isComplete = totalCount > 0 && successCount + errorCount === totalCount;
   const isUploading = uploadingCount > 0;
+  const isRetrying = retryingCount > 0;
   const hasPending = pendingCount > 0;
 
   const summaryText = isComplete
     ? `${successCount} of ${totalCount} uploaded${errorCount > 0 ? `, ${errorCount} failed` : ''}`
     : isUploading
     ? `Uploading ${uploadingCount} of ${totalCount} files…`
+    : isRetrying
+    ? `Retrying ${retryingCount} of ${totalCount} files…`
     : `${totalCount} file${totalCount !== 1 ? 's' : ''} queued`;
 
   const barFillClass = [
@@ -243,9 +252,15 @@ const SummaryBar: React.FC<SummaryBarProps> = ({
               {uploadingCount} uploading
             </span>
           )}
+          {isRetrying && (
+            <span className="upload-queue__summary-stat upload-queue__summary-stat--retrying">
+              <RotateCcw size={12} className="animate-spin-loader" aria-hidden="true" />
+              {retryingCount} retrying
+            </span>
+          )}
         </div>
         <div className="upload-queue__summary-actions">
-          {hasPending && !isUploading && (
+          {hasPending && !isUploading && !isRetrying && (
             <button
               type="button"
               className="upload-queue__action-btn upload-queue__action-btn--primary"
@@ -309,6 +324,7 @@ export const UploadQueue: React.FC<UploadQueueProps> = ({
   const baseRowId = useId();
 
   const pendingCount = queue.filter((f) => f.status === 'pending').length;
+  const retryingCount = queue.filter((f) => f.status === 'retrying').length;
 
   const handleFiles = useCallback(
     (files: FileList | null) => {
@@ -354,6 +370,7 @@ export const UploadQueue: React.FC<UploadQueueProps> = ({
   /* Live-region announcement text */
   const announcement = (() => {
     if (uploadingCount > 0) return `Uploading ${uploadingCount} file${uploadingCount !== 1 ? 's' : ''}. ${overallProgress}% complete.`;
+    if (retryingCount > 0) return `Retrying ${retryingCount} file${retryingCount !== 1 ? 's' : ''}.`;
     if (successCount === totalCount && totalCount > 0) return `All ${totalCount} files uploaded successfully.`;
     if (errorCount > 0) return `${errorCount} file${errorCount !== 1 ? 's' : ''} failed to upload.`;
     return '';
@@ -415,6 +432,7 @@ export const UploadQueue: React.FC<UploadQueueProps> = ({
           successCount={successCount}
           errorCount={errorCount}
           uploadingCount={uploadingCount}
+          retryingCount={retryingCount}
           overallProgress={overallProgress}
           pendingCount={pendingCount}
           onUploadAll={onUploadAll}

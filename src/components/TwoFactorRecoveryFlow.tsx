@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Button } from './Button';
 import { FormError } from './FormError';
+import { ApiError, isApiError } from '../lib/api/errors';
 
 type Step = 1 | 2 | 3;
 
@@ -91,6 +92,7 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = (stepProps) => {
   const { onSend, defaultEmail = '', onSupport } = stepProps;
   const [email, setEmail] = useState(defaultEmail);
   const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [isSending, setIsSending] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -103,20 +105,27 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = (stepProps) => {
     const trimmed = email.trim();
 
     if (!trimmed) {
+      setApiError(null);
       setError('Please enter your recovery email address.');
       return;
     }
     if (!trimmed.includes('@') || !trimmed.includes('.')) {
+      setApiError(null);
       setError('Please enter a valid email address.');
       return;
     }
 
     setError(null);
+    setApiError(null);
     setIsSending(true);
     try {
       await onSend(trimmed);
-    } catch {
-      setError('Unable to send the recovery code. Please try again.');
+    } catch (err) {
+      if (isApiError(err)) {
+        setApiError(err);
+      } else {
+        setError('Unable to send the recovery code. Please try again.');
+      }
     } finally {
       setIsSending(false);
     }
@@ -124,9 +133,10 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = (stepProps) => {
 
   const emailId = useId();
   const errorId = useId();
+  const hasError = Boolean(error || apiError);
 
   return (
-    <form onSubmit={handleSubmit} className={`space-y-4 animate-fade-in ${error ? 'animate-shake' : ''}`} noValidate>
+    <form onSubmit={handleSubmit} className={`space-y-4 animate-fade-in ${hasError ? 'animate-shake' : ''}`} noValidate>
       <p className="text-muted text-sm">
         If you&#x27rve lost access to your authenticator device, we can send a recovery code to
         your registered recovery email.
@@ -139,7 +149,7 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = (stepProps) => {
         </p>
       </div>
 
-      <FormError message={error} id={errorId} />
+      <FormError message={error} apiError={apiError} id={errorId} />
 
       <div className="input-group">
         <label className="input-label" htmlFor={emailId}>
@@ -151,16 +161,17 @@ const RequestEmailStep: React.FC<RequestEmailStepProps> = (stepProps) => {
             ref={inputRef}
             id={emailId}
             type="email"
-            className={`input-field pl-10 ${error ? 'input-error' : ''}`}
+            className={`input-field pl-10 ${hasError ? 'input-error' : ''}`}
             placeholder="you@example.com"
             value={email}
             onChange={(e) => {
               setEmail(e.target.value);
               if (error) setError(null);
+              if (apiError) setApiError(null);
             }}
             required
             aria-required="true"
-            aria-describedby={error ? errorId : undefined}
+            aria-describedby={hasError ? errorId : undefined}
             disabled={isSending}
             autoComplete="email"
           />
@@ -198,6 +209,7 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
   const { onVerify, onResend, onBack, onSupport, email, maxAttempts, lockoutSeconds } = stepProps;
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<ApiError | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(COOLOWN_SECONDS);
@@ -248,6 +260,7 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
     const val = e.target.value.replace(/\D/g, '').slice(0, 6);
     setCode(val);
     if (error) setError(null);
+    if (apiError) setApiError(null);
   };
 
   const registerFailure = () => {
@@ -270,9 +283,12 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
     e.preventDefault();
     if (isLocked) return;
     if (code.length < 6) {
+      setApiError(null);
       setError('Please enter the full 6-digit recovery code.');
       return;
     }
+    setError(null);
+    setApiError(null);
     setIsVerifying(true);
     try {
       const valid = await onVerify(code);
@@ -280,9 +296,13 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
       if (!valid) {
         registerFailure();
       }
-    } catch {
+    } catch (err) {
       if (!mountedRef.current) return;
-      setError('Unable to verify the code right now. Please try again.');
+      if (isApiError(err)) {
+        setApiError(err);
+      } else {
+        setError('Unable to verify the code right now. Please try again.');
+      }
     } finally {
       if (mountedRef.current) setIsVerifying(false);
     }
@@ -291,12 +311,17 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
   const handleResend = async () => {
     if (cooldown > 0 || isResending) return;
     setIsResending(true);
+    setError(null);
+    setApiError(null);
     try {
       await onResend();
       setCooldown(COOLOWN_SECONDS);
-      setError(null);
-    } catch {
-      setError('Unable to resend the recovery code. Please try again.');
+    } catch (err) {
+      if (isApiError(err)) {
+        setApiError(err);
+      } else {
+        setError('Unable to resend the recovery code. Please try again.');
+      }
     } finally {
       setIsResending(false);
     }
@@ -310,16 +335,17 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
 
   const codeId = useId();
   const errorId = useId();
+  const hasError = Boolean(error || apiError);
 
   return (
-    <form onSubmit={handleVerify} className={`space-y-4 animate-fade-in ${error ? 'animate-shake' : ''}`} noValidate>
+    <form onSubmit={handleVerify} className={`space-y-4 animate-fade-in ${hasError ? 'animate-shake' : ''}`} noValidate>
       <p className="text-muted text-sm">
         We&#x27ve sent a 6-digit recovery code to{' '}
         <span className="text-main font-medium">{email}</span>.
         The code expires in 15 minutes.
       </p>
 
-      <FormError message={error} id={errorId} />
+      <FormError message={error} apiError={apiError} id={errorId} />
 
       <div className="input-group">
         <label className="input-label" htmlFor={codeId}>
@@ -334,13 +360,13 @@ const VerifyCodeStep: React.FC<VerifyCodeStepProps> = (stepProps) => {
             inputMode="numeric"
             pattern="\d{6}"
             maxLength={6}
-            className={`input-field pl-10 tfar-code-input ${error ? 'input-error' : ''}`}
+            className={`input-field pl-10 tfar-code-input ${hasError ? 'input-error' : ''}`}
             value={code}
             onChange={handleCodeChange}
             placeholder="000000"
             autoComplete="one-time-code"
             aria-required="true"
-            aria-describedby={error ? errorId : undefined}
+            aria-describedby={hasError ? errorId : undefined}
             disabled={isVerifying || isLocked}
           />
         </div>

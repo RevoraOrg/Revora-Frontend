@@ -27,6 +27,7 @@ import { ChainMismatchModal } from "../NetworkSwitcher/ChainMismatchModal";
 import { DEFAULT_STELLAR_APP_CHAIN_ID } from "../../constants/chains";
 import { Login } from "../../pages/Login";
 import { Signup } from "../../pages/Signup";
+import { I18nProvider } from "../../i18n/I18nProvider";
 
 vi.mock("@stellar/freighter-api", () => ({
   isConnected: vi.fn(),
@@ -53,9 +54,11 @@ afterEach(() => {
 });
 function mount(child = <ConnectWalletButton />) {
   return render(
-    <WalletConnectionProvider>
-      <MemoryRouter>{child}</MemoryRouter>
-    </WalletConnectionProvider>,
+    <I18nProvider>
+      <WalletConnectionProvider>
+        <MemoryRouter>{child}</MemoryRouter>
+      </WalletConnectionProvider>
+    </I18nProvider>,
   );
 }
 async function open() {

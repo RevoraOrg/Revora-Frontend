@@ -10,6 +10,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { RevenueReportForm } from "./RevenueReportForm";
+import { ApiError } from "../lib/api/errors";
+import { configureMockAdapter, resetMockAdapter } from "../lib/api/mockAdapter";
 
 function setup() {
   const user = userEvent.setup();
@@ -28,6 +30,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  resetMockAdapter();
   vi.restoreAllMocks();
 });
 
@@ -234,5 +237,47 @@ describe("RevenueReportForm – revenue parsing correctness (regression tests fo
 
     const exportButton = screen.getByRole("button", { name: /Export CSV/i });
     expect(exportButton).not.toBeDisabled();
+  });
+});
+
+describe("RevenueReportForm – API submission and error recovery", () => {
+  it("submits the revenue report via the API client and shows confirmation", async () => {
+    configureMockAdapter({ latencyMs: 0 });
+    const { user } = setup();
+
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "50000");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Report submitted/i })).toBeInTheDocument();
+    });
+  });
+
+  it("surfaces retryable ApiError through FormError and succeeds on retry", async () => {
+    configureMockAdapter({
+      latencyMs: 0,
+      failNext: new ApiError({
+        code: "SERVER_ERROR",
+        message: "Revenue service temporarily unavailable.",
+        status: 503,
+        retryable: true,
+      }),
+    });
+    const { user } = setup();
+
+    await user.type(screen.getByRole("textbox", { name: /Gross revenue/i }), "50000");
+    await user.click(screen.getByRole("button", { name: /Submit report/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent(
+        /Revenue service temporarily unavailable/i
+      );
+    });
+
+    await user.click(screen.getByRole("button", { name: /^Retry$/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("heading", { name: /Report submitted/i })).toBeInTheDocument();
+    });
   });
 });

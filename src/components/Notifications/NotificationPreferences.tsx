@@ -1,73 +1,18 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, BellOff, Info, Shield } from 'lucide-react';
 
-type ChannelKey = 'inApp' | 'email' | 'sms';
-type CategoryKey = 'distribution' | 'report' | 'compliance' | 'governance';
+import {
+  CATEGORIES,
+  CHANNELS,
+  createDefaultNotificationPreferences,
+  getLocalTimeZone,
+  normalizeTimeString,
+  type CategoryKey,
+  type ChannelKey,
+  type NotificationPreferencesValue,
+} from './notificationPreferences';
 
-export type NotificationPreferencesValue = {
-  matrix: Record<CategoryKey, Record<ChannelKey, boolean>>;
-  quietHours: {
-    enabled: boolean;
-    startTime: string; // HH:mm
-    endTime: string; // HH:mm
-    timeZone: string;
-  };
-  /** Per-category quiet-hours override: when true, the category always delivers notifications */
-  quietHoursOverride: Record<CategoryKey, boolean>;
-};
-
-const CATEGORIES: Array<{ key: CategoryKey; label: string; description?: string }> = [
-  { key: 'distribution', label: 'Distribution', description: 'Payout and revenue notifications' },
-  { key: 'report', label: 'Report', description: 'Scheduled report notifications' },
-  { key: 'compliance', label: 'Compliance', description: 'Regulatory and compliance alerts' },
-  { key: 'governance', label: 'Governance', description: 'Voting and proposal notifications' },
-];
-
-const CHANNELS: Array<{ key: ChannelKey; label: string }> = [
-  { key: 'inApp', label: 'In-App' },
-  { key: 'email', label: 'Email' },
-  { key: 'sms', label: 'SMS' },
-];
-
-function buildDefaultValue(timeZone: string): NotificationPreferencesValue {
-  const emptyMatrix = CATEGORIES.reduce((acc, c) => {
-    acc[c.key] = {
-      inApp: false,
-      email: false,
-      sms: false,
-    };
-    return acc;
-  }, {} as Record<CategoryKey, Record<ChannelKey, boolean>>);
-
-  const allOverrides = CATEGORIES.reduce((acc, c) => {
-    acc[c.key] = false;
-    return acc;
-  }, {} as Record<CategoryKey, boolean>);
-
-  return {
-    matrix: emptyMatrix,
-    quietHours: {
-      enabled: false,
-      startTime: '22:00',
-      endTime: '07:00',
-      timeZone,
-    },
-    quietHoursOverride: allOverrides,
-  };
-}
-
-function normalizeTimeString(v: string): string {
-  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(v);
-  return m ? `${m[1]}:${m[2]}` : v;
-}
-
-function getLocalTimeZone(): string {
-  try {
-    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-  } catch {
-    return 'UTC';
-  }
-}
+export type { CategoryKey, ChannelKey, NotificationPreferencesValue } from './notificationPreferences';
 
 function CheckboxCell(props: {
   id: string;
@@ -361,7 +306,7 @@ export default function NotificationPreferences(props: NotificationPreferencesPr
 
   const [internalTZ] = useState(() => getLocalTimeZone());
   const [internalValue, setInternalValue] = useState<NotificationPreferencesValue>(() =>
-    buildDefaultValue(internalTZ),
+    createDefaultNotificationPreferences(internalTZ),
   );
 
   // Keep internal state in sync if controlled value changes.

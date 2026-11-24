@@ -1,12 +1,76 @@
 import React, { useState } from "react";
-import { Globe, DollarSign, Settings as SettingsIcon } from "lucide-react";
+import { Navigate, useInRouterContext, useNavigate, useParams } from "react-router-dom";
+import { Settings as SettingsIcon } from "lucide-react";
 import { I18nFormatterPreview } from "../components/I18nFormatterPreview";
 import { PayoutSettingsTab } from "../components/PayoutSettingsTab";
+import { ComplianceSettingsTab } from "../components/ComplianceSettingsTab";
+import { OfferingSettingsGeneralTab } from "../components/OfferingSettingsGeneralTab";
+import Tabs, { type Tab } from "../components/Tabs";
 
-export type SettingsTab = "i18n" | "payouts";
+export type SettingsTab = "i18n" | "payouts" | "compliance" | "general";
 
-export const SettingsPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("i18n");
+export const DEFAULT_SETTINGS_TAB: SettingsTab = "i18n";
+
+export const SETTINGS_TABS: Array<Tab & { id: SettingsTab }> = [
+  { id: "i18n", label: "Localization & Formatting" },
+  { id: "payouts", label: "Payout Settings" },
+  { id: "compliance", label: "Compliance & Regions" },
+  { id: "general", label: "General Offering Settings" },
+];
+
+const VALID_TABS = new Set<SettingsTab>(SETTINGS_TABS.map((tab) => tab.id));
+
+export function isSettingsTab(value: string | undefined): value is SettingsTab {
+  return typeof value === "string" && VALID_TABS.has(value as SettingsTab);
+}
+
+const DEFAULT_GENERAL_OFFERING = {
+  name: "Revora Revenue Share Series A",
+  description:
+    "Tokenized revenue-sharing offering configured on the Stellar network with automated pro-rata distributions.",
+  metadata: "Series A • Stellar Testnet",
+};
+
+const SettingsPageWithRouter: React.FC = () => {
+  const { tab } = useParams<{ tab?: string }>();
+  const navigate = useNavigate();
+
+  if (tab !== undefined && !isSettingsTab(tab)) {
+    return <Navigate to={`/settings/${DEFAULT_SETTINGS_TAB}`} replace />;
+  }
+
+  const activeTab: SettingsTab = isSettingsTab(tab) ? tab : DEFAULT_SETTINGS_TAB;
+
+  const handleTabChange = (nextTabId: string) => {
+    if (!isSettingsTab(nextTabId) || nextTabId === activeTab) return;
+    navigate(`/settings/${nextTabId}`);
+  };
+
+  return <SettingsPageContent activeTab={activeTab} onTabChange={handleTabChange} />;
+};
+
+const SettingsPageStandalone: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<SettingsTab>(DEFAULT_SETTINGS_TAB);
+
+  const handleTabChange = (nextTabId: string) => {
+    if (isSettingsTab(nextTabId)) {
+      setActiveTab(nextTabId);
+    }
+  };
+
+  return <SettingsPageContent activeTab={activeTab} onTabChange={handleTabChange} />;
+};
+
+interface SettingsPageContentProps {
+  activeTab: SettingsTab;
+  onTabChange: (tabId: string) => void;
+}
+
+const SettingsPageContent: React.FC<SettingsPageContentProps> = ({
+  activeTab,
+  onTabChange,
+}) => {
+  const [generalOfferingData, setGeneralOfferingData] = useState(DEFAULT_GENERAL_OFFERING);
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 animate-fade-in">
@@ -24,56 +88,50 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* Tabs Navigation */}
-      <div className="flex border-b border-slate-800 gap-2" role="tablist" aria-label="Settings tabs">
-        <button
-          type="button"
-          role="tab"
-          id="tab-i18n"
-          aria-selected={activeTab === "i18n"}
-          aria-controls="panel-i18n"
-          onClick={() => setActiveTab("i18n")}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-colors ${
-            activeTab === "i18n"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted hover:text-main"
-          }`}
-        >
-          <Globe size={18} />
-          <span>Localization & Formatting</span>
-        </button>
-
-        <button
-          type="button"
-          role="tab"
-          id="tab-payouts"
-          aria-selected={activeTab === "payouts"}
-          aria-controls="panel-payouts"
-          onClick={() => setActiveTab("payouts")}
-          className={`flex items-center gap-2 px-5 py-3 font-semibold text-sm border-b-2 transition-colors ${
-            activeTab === "payouts"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted hover:text-main"
-          }`}
-        >
-          <DollarSign size={18} />
-          <span>Payout Settings</span>
-        </button>
-      </div>
+      <Tabs
+        tabs={SETTINGS_TABS}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        ariaLabel="Settings tabs"
+        className="border-b border-slate-800 pb-3"
+      />
 
       {/* Tab Panels */}
       <div className="tab-content">
         {activeTab === "i18n" && (
-          <div id="panel-i18n" role="tabpanel" aria-labelledby="tab-i18n">
+          <div id="tabpanel-i18n" role="tabpanel" aria-labelledby="tab-i18n">
             <I18nFormatterPreview />
           </div>
         )}
 
         {activeTab === "payouts" && (
-          <div id="panel-payouts" role="tabpanel" aria-labelledby="tab-payouts">
+          <div id="tabpanel-payouts" role="tabpanel" aria-labelledby="tab-payouts">
             <PayoutSettingsTab />
+          </div>
+        )}
+
+        {activeTab === "compliance" && (
+          <div id="tabpanel-compliance" role="tabpanel" aria-labelledby="tab-compliance">
+            <ComplianceSettingsTab />
+          </div>
+        )}
+
+        {activeTab === "general" && (
+          <div id="tabpanel-general" role="tabpanel" aria-labelledby="tab-general">
+            <h2 className="sr-only">General Offering Settings</h2>
+            <OfferingSettingsGeneralTab
+              initialData={generalOfferingData}
+              onSave={(data) => setGeneralOfferingData((prev) => ({ ...prev, ...data }))}
+            />
           </div>
         )}
       </div>
     </div>
   );
 };
+
+export const SettingsPage: React.FC = () => {
+  const inRouter = useInRouterContext();
+  return inRouter ? <SettingsPageWithRouter /> : <SettingsPageStandalone />;
+};
+

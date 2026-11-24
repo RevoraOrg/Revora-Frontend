@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import "./SessionManagement.css";
 import { MOCK_SESSIONS } from "./sessionsMock";
+import { useFocusTrap } from "../../hooks/useFocusTrap";
 
 export interface SessionDevice {
   id: string;
@@ -99,52 +100,20 @@ function ConfirmDialog({
   const titleId = useId();
   const descriptionId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
-  const previousFocusRef = useRef<HTMLElement | null>(null);
-  const FOCUSABLE_SELECTOR =
-    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
+  useFocusTrap(dialogRef, isOpen);
+
+  // Escape to cancel
   useEffect(() => {
-    if (isOpen) {
-      previousFocusRef.current = document.activeElement as HTMLElement;
-    } else if (previousFocusRef.current) {
-      previousFocusRef.current.focus({ preventScroll: true });
-      previousFocusRef.current = null;
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (!isOpen || !dialogRef.current) return;
-
-    const dialog = dialogRef.current;
-    const focusable = dialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-
-    if (focusable.length > 0) {
-      focusable[0].focus();
-    }
-
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         onCancel();
-        return;
-      }
-
-      if (e.key === "Tab" && focusable.length > 0) {
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
       }
     };
-
-    dialog.addEventListener("keydown", handleKeyDown);
-    return () => dialog.removeEventListener("keydown", handleKeyDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onCancel]);
 
   useEffect(() => {
@@ -297,16 +266,9 @@ function DeviceDetailDrawer({
   const drawerId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
 
+  useFocusTrap(drawerRef, true, { returnFocus: true });
+
   useEffect(() => {
-    if (!drawerRef.current) return;
-
-    const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    if (focusable.length > 0) {
-      focusable[0].focus();
-    }
-
     const original = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
@@ -314,38 +276,17 @@ function DeviceDetailDrawer({
     };
   }, []);
 
+  // Escape to close
   useEffect(() => {
-    if (!drawerRef.current) return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         e.preventDefault();
         onClose();
-        return;
-      }
-
-      const focusable = drawerRef.current?.querySelectorAll<HTMLElement>(
-        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      );
-      if (!focusable || focusable.length === 0) return;
-
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (e.key === "Tab") {
-        if (e.shiftKey && document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        } else if (!e.shiftKey && document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
       }
     };
-
     const drawer = drawerRef.current;
-    drawer.addEventListener("keydown", handleKeyDown);
-    return () => drawer.removeEventListener("keydown", handleKeyDown);
+    drawer?.addEventListener("keydown", handleKeyDown);
+    return () => drawer?.removeEventListener("keydown", handleKeyDown);
   }, [onClose]);
 
   const locationLabel = session.location || "Unknown";

@@ -57,7 +57,9 @@ import {
   LoaderCircle,
   type LucideIcon,
 } from 'lucide-react';
-import type { CommandItem, CommandGroup } from './commandPaletteData';
+import type {
+  CommandItem, CommandGroup, CommandSearchResult, MatchRange,
+} from './commandPaletteData';
 import {
   COMMAND_GROUPS,
   groupSearchResults,
@@ -131,6 +133,18 @@ export interface CommandPaletteProps {
 
 const FOCUSABLE_SELECTOR =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+function highlightMatches(text: string, ranges: MatchRange[] = []) {
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  for (const { start, end } of ranges) {
+    parts.push(text.slice(cursor, start));
+    parts.push(<mark className="cp-match" key={start}>{text.slice(start, end)}</mark>);
+    cursor = end;
+  }
+  parts.push(text.slice(cursor));
+  return parts;
+}
 
 // ---------------------------------------------------------------------------
 // Component
@@ -506,18 +520,27 @@ export function CommandPalette({
     );
   }
 
-  function renderResultItem(item: CommandItem, index: number) {
+  function renderResultItem(
+    item: CommandItem, index: number, matches?: CommandSearchResult['matches'],
+  ) {
     // If this item is in confirmation mode, skip it (confirm row is rendered separately)
     if (item.id === confirmingItemId) {
       return null;
     }
 
     const isActive = index === activeIndex;
+    // A whole-text name avoids pauses between individual highlighted letters.
+    const accessibleName = [
+      item.label,
+      item.description,
+      item.shortcutKeys?.length ? shortcutAriaLabel(item.shortcutKeys, isMac) : '',
+    ].filter(Boolean).join(' ');
     return (
       <li key={item.id} role="none">
         <button
           type="button"
           role="option"
+          aria-label={accessibleName}
           aria-selected={isActive}
           className="cp-result-item"
           data-cp-index={index}
@@ -529,9 +552,9 @@ export function CommandPalette({
             <CommandIcon name={item.icon} size={16} />
           </span>
           <span className="cp-result-text">
-            <span className="cp-result-label">{item.label}</span>
+            <span className="cp-result-label">{highlightMatches(item.label, matches?.label)}</span>
             {item.description && (
-              <span className="cp-result-desc">{item.description}</span>
+              <span className="cp-result-desc">{highlightMatches(item.description, matches?.description)}</span>
             )}
           </span>
           {renderShortcut(item)}
@@ -548,7 +571,7 @@ export function CommandPalette({
     let runningIndex = 0;
     return searchResultGroups.map(({ group, items }) => {
       const sectionItems = items.map((item) => {
-        const el = renderResultItem(item, runningIndex);
+        const el = renderResultItem(item, runningIndex, item.matches);
         runningIndex++;
         return el;
       });

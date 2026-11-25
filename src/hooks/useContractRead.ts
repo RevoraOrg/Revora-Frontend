@@ -9,6 +9,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const DEFAULT_CACHE_TTL = 30_000;
 
+/**
+ * Sentinel key prefix used by callers that want cache sharing but do not
+ * supply a key. Exported so tests can assert on keyed entries.
+ */
+export const CONTRACT_READ_KEY_PREFIX = 'contract-read:';
+
 interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;

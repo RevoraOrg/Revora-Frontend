@@ -64,13 +64,12 @@ export const createRpcServer = () => new rpc.Server(RPC_URL);
 /**
  * Internal: get RPC server (allows override in tests)
  */
-let _rpcServerFactory = createRpcServer;
+let _rpcServerFactory: () => ReturnType<typeof createRpcServer> = createRpcServer;
 
 export function getRpcServer() {
   return _rpcServerFactory();
 }
 
-export function setRpcServerFactory(factory: () => any) {
 export function setRpcServerFactory(factory: () => ReturnType<typeof createRpcServer>) {
   _rpcServerFactory = factory;
 }
@@ -184,7 +183,7 @@ export async function getUnclaimedSummary(): Promise<UnclaimedEntry[]> {
     undefined,
     NETWORK_PASSPHRASE,
   );
-  
+
   // Convert Record to array of entries
   return Object.entries(result).map(([periodId, amount]) => ({
     period_id: Number(periodId),

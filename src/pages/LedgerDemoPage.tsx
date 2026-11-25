@@ -1,6 +1,7 @@
 import React from 'react';
 import LedgerTable from '../components/LedgerTable/LedgerTable';
 import type { Column } from '../components/LedgerTable/LedgerTable';
+import OnChainPeriodsPanel from '../components/OnChainPeriodsPanel/OnChainPeriodsPanel';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 
 interface LedgerEntry {
@@ -165,6 +166,8 @@ export const LedgerDemoPage: React.FC = () => {
           );
         }}
       />
+
+      <OnChainPeriodsPanel />
     </div>
   );
 };

@@ -135,6 +135,14 @@ function Counter({
 
 const SIZE_ICON_MAP = { sm: 12, md: 14, lg: 18 } as const;
 
+/**
+ * Clamps a confirmation count to a finite, non-negative integer so that
+ * NaN/Infinity/negative inputs never leak into the tooltip or ARIA label.
+ */
+function sanitizeCount(value: number): number {
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
 function hasTooltipableMetadata(
   metadata: OnchainBadgeMetadata | undefined,
   transactionHash: string,
@@ -174,6 +182,8 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
   const label = getAriaLabel(variant, currentConfirmations, targetConfirmations);
   const iconSize = SIZE_ICON_MAP[size];
   const showCounter = variant === 'confirming' || variant === 'confirmed';
+  const safeCurrent = sanitizeCount(currentConfirmations);
+  const safeTarget = sanitizeCount(targetConfirmations);
 
   const [open, setOpen] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -345,7 +355,7 @@ export const OnchainBadge: React.FC<OnchainBadgeProps> = ({
             className="ob-tooltip-value"
             data-testid="ob-tooltip-confirmations"
           >
-            {formatConfirmations(currentConfirmations)} / {formatConfirmations(targetConfirmations)}
+            {formatConfirmations(safeCurrent)} / {formatConfirmations(safeTarget)}
           </span>
           {metadata?.confirmedAt && (
             <>

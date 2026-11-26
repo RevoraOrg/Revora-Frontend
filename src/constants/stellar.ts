@@ -119,6 +119,14 @@ export function buildStellarLabUrl(contractId: string = CONTRACT_ID): string {
   return `${STELLAR_LAB_BASE}/contract/${contractId}`;
 }
 
+/**
+ * Builds an explorer URL for a specific contract, defaulting to the configured contract ID.
+ * Used by the on-chain periods panel to link investors to the live contract.
+ */
+export function buildContractExplorerLink(contractId: string = CONTRACT_ID): string {
+  return buildContractExplorerUrl(contractId);
+}
+
 export function isValidTxHash(txHash: string): boolean {
   return typeof txHash === 'string' && /^[0-9a-fA-F]{64}$/.test(txHash);
 }

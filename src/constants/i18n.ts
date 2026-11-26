@@ -1,3 +1,4 @@
+// i18n constants and formatting helpers.
 export const SUPPORTED_LOCALES = [
   "en-US",
   "de-DE",
@@ -157,6 +158,37 @@ export function formatNumber(
     ...setting,
     ...options,
   }).format(value);
+}
+
+/**
+ * Format a fixed-point bigint amount (e.g. Soroban i128 with 7 decimals)
+ * without converting through `Number`, so large values keep full precision.
+ * The integer part is grouped with `Intl` and the fraction is appended as a
+ * decimal string, then the currency symbol is applied via `formatCurrency`
+ * on the locale-independent parts.
+ */
+export function formatFixedPointBigInt(
+  amount: bigint,
+  decimals: number = 7,
+  currency?: string,
+  locale: string = "en-US",
+): string {
+  const negative = amount < 0n;
+  const abs = negative ? -amount : amount;
+  const scale = 10n ** BigInt(decimals);
+  const whole = abs / scale;
+  const fraction = (abs % scale).toString().padStart(decimals, "0");
+  const groupedWhole = new Intl.NumberFormat(locale, {
+    useGrouping: true,
+    maximumFractionDigits: 0,
+  }).format(Number.isSafeInteger(Number(whole)) ? Number(whole) : 0);
+  const decimalSep =
+    new Intl.NumberFormat(locale).formatToParts(1.1).find((p) => p.type === "decimal")
+      ?.value ?? ".";
+  const numeric = `${groupedWhole}${decimalSep}${fraction}`;
+  const symbol = currency ?? LOCALE_FORMAT_SETTINGS[locale]?.defaultCurrency ?? "USD";
+  const prefix = negative ? "-" : "";
+  return `${prefix}${numeric} ${symbol}`;
 }
 
 export function formatCurrency(

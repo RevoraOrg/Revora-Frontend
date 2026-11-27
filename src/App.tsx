@@ -1,5 +1,4 @@
-import { useEffect, useState, type MouseEvent } from "react";
-import { lazy, Suspense, useState, type MouseEvent } from "react";
+import { lazy, Suspense, useEffect, useState, type MouseEvent } from "react";
 import {
   createBrowserRouter,
   Link,
@@ -8,6 +7,7 @@ import {
   Outlet,
   type RouteObject,
   RouterProvider,
+  useLocation,
   useNavigate,
 } from "react-router-dom";
 import { Search } from "lucide-react";
@@ -17,68 +17,38 @@ import {
   useOptionalAuth,
   writeStoredAuthSession,
 } from "./components/AuthProvider";
-  useLocation,
-} from "react-router-dom";
 import { ErrorBoundary } from "./components/ErrorBoundary/ErrorBoundary";
-import { Login } from "./pages/Login";
-import { Signup } from "./pages/Signup";
-import { I18nProvider, useI18n } from "./i18n/I18nProvider";
-import { I18N_LOCALES } from "./i18n/locales";
 import { CommandPalette } from "./components/CommandPalette/CommandPalette";
 import type { CommandItem } from "./components/CommandPalette/commandPaletteData";
 import { KeyboardShortcutsOverlay } from "./components/KeyboardShortcutsOverlay/KeyboardShortcutsOverlay";
-import { useCommandPalette } from "./hooks/useCommandPalette";
-import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
-import { formatKeyLabels } from "./utils/keyLabels";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { TwoFactorRecoveryPage } from "./pages/TwoFactorRecoveryPage";
-import TwoFactorBackupCodesPage from "./pages/TwoFactorBackupCodesPage";
-import { SecuritySettingsPage } from "./pages/SecuritySettingsPage";
-import { DesignTokensPage } from "./pages/DesignTokens/DesignTokensPage";
-import { OfferingProspectusPage } from "./pages/OfferingProspectusPage";
-import { InvestorDiscovery } from "./components/InvestorDiscovery"; // Import here
-import { InvestorPortfolioSummary } from "./pages/InvestorPortfolioSummary";
-import { RevenueReportSubmission } from "./pages/RevenueReportSubmission";
-import { RevenueReports } from "./pages/RevenueReports";
-import { RevenueReportsProvider } from "./lib/revenueReportsStore";
-import { LedgerDemoPage } from "./pages/LedgerDemoPage";
-import { OfferingRegistrationDemo } from "./pages/OfferingRegistrationDemo";
 import NotificationBell from "./components/Notifications/NotificationBell";
 import { NotificationProvider } from "./components/Notifications/NotificationProvider";
-import NotificationSettingsPage from "./pages/NotificationSettingsPage";
-import { OfferingWizardSummary } from "./pages/OfferingWizardSummary";
-import { notificationsMock } from "./components/Notifications/notificationsData";
-import { ScheduledExportsPage } from "./pages/ScheduledExportsPage";
-import { StartupDashboard } from "./pages/StartupDashboard";
-import { KycWizardPage } from "./pages/KycWizardPage";
-import { GovernanceProposalCreatePage } from "./pages/GovernanceProposalCreatePage";
-import { GovernanceProposalsPage } from "./pages/GovernanceProposalsPage";
-import { GovernanceProposalDetailPage } from "./pages/GovernanceProposalDetailPage";
-import { GovernanceDelegationPage } from "./pages/GovernanceDelegationPage";
+import { ThemeToggle } from "./components/ThemeToggle";
 import { GovernanceProposalsProvider } from "./context/GovernanceProposalsContext";
-import { AdminAlertsInbox } from "./pages/AdminAlertsInbox";
+import { I18nProvider, useI18n } from "./i18n/I18nProvider";
+import { I18N_LOCALES } from "./i18n/locales";
+import { RevenueReportsProvider } from "./lib/revenueReportsStore";
 import { AuditTrailPage } from "./pages/AuditTrailPage";
-import { PayoutSchedule } from "./pages/PayoutSchedule";
+import { GovernanceDelegationPage } from "./pages/GovernanceDelegationPage";
+import { GovernanceProposalDetailPage } from "./pages/GovernanceProposalDetailPage";
+import { GovernanceProposalsPage } from "./pages/GovernanceProposalsPage";
 import { MultiIssuerComparisonView } from "./pages/MultiIssuerComparisonView";
-import { GovernanceVoteReceiptDemo } from "./pages/GovernanceVoteReceiptDemo";
+import { OfferingProspectusPage } from "./pages/OfferingProspectusPage";
+import { SecuritySettingsPage } from "./pages/SecuritySettingsPage";
 import { SettingsPage } from "./pages/SettingsPage";
-  useLocation,
-} from "react-router-dom";
-import NotificationBell from "./components/Notifications/NotificationBell";
-  useLocation,
-} from "react-router-dom";
-import NotificationBell from "./components/Notifications/NotificationBell";
-import { notificationsMock } from "./components/Notifications/notificationsData";
+import NotificationSettingsPage from "./pages/NotificationSettingsPage";
 import { PageLoader } from "./components/PageLoader";
 import { RouteErrorBoundary } from "./components/RouteErrorBoundary";
+import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useContractRead } from "./hooks/useContractRead";
 import { useDocumentTitle } from "./hooks/useDocumentTitle";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { formatKeyLabels } from "./utils/keyLabels";
 import {
   CONTRACT_ID,
   buildContractExplorerUrl,
   buildStellarLabUrl,
 } from "./constants/stellar";
-import { ThemeToggle } from "./components/ThemeToggle";
 import { LIVE_URL, REPO_URL } from "./constants/links";
 
 const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
@@ -94,9 +64,6 @@ const InvestorDiscovery = lazy(() =>
 const InvestorPortfolioSummary = lazy(() =>
   import("./pages/InvestorPortfolioSummary").then((m) => ({ default: m.InvestorPortfolioSummary })),
 );
-const RevenueReportForm = lazy(() =>
-  import("./components/RevenueReportForm").then((m) => ({ default: m.RevenueReportForm })),
-);
 const LedgerDemoPage = lazy(() =>
   import("./pages/LedgerDemoPage").then((m) => ({ default: m.LedgerDemoPage })),
 );
@@ -128,57 +95,17 @@ const GovernanceVoteReceiptDemo = lazy(() =>
     default: m.GovernanceVoteReceiptDemo,
   })),
 );
-
-const Login = lazy(() => import("./pages/Login").then((m) => ({ default: m.Login })));
-const Signup = lazy(() => import("./pages/Signup").then((m) => ({ default: m.Signup })));
-const ForgotPassword = lazy(() => import("./pages/ForgotPassword").then((m) => ({ default: m.ForgotPassword })));
-const TwoFactorRecoveryPage = lazy(() =>
-  import("./pages/TwoFactorRecoveryPage").then((m) => ({ default: m.TwoFactorRecoveryPage })),
+const AdminCompliancePage = lazy(() =>
+  import("./pages/AdminCompliancePage").then((m) => ({ default: m.AdminCompliancePage })),
 );
-const TwoFactorBackupCodesPage = lazy(() => import("./pages/TwoFactorBackupCodesPage"));
-const InvestorDiscovery = lazy(() =>
-  import("./components/InvestorDiscovery").then((m) => ({ default: m.InvestorDiscovery })),
-);
-const InvestorPortfolioSummary = lazy(() =>
-  import("./pages/InvestorPortfolioSummary").then((m) => ({ default: m.InvestorPortfolioSummary })),
-);
-const RevenueReportForm = lazy(() =>
-  import("./components/RevenueReportForm").then((m) => ({ default: m.RevenueReportForm })),
-);
-const LedgerDemoPage = lazy(() =>
-  import("./pages/LedgerDemoPage").then((m) => ({ default: m.LedgerDemoPage })),
-);
-const OfferingRegistrationDemo = lazy(() =>
-  import("./pages/OfferingRegistrationDemo").then((m) => ({ default: m.OfferingRegistrationDemo })),
-);
-const ScheduledExportsPage = lazy(() =>
-  import("./pages/ScheduledExportsPage").then((m) => ({ default: m.ScheduledExportsPage })),
-);
-const StartupDashboard = lazy(() =>
-  import("./pages/StartupDashboard").then((m) => ({ default: m.StartupDashboard })),
-);
-const KycWizardPage = lazy(() =>
-  import("./pages/KycWizardPage").then((m) => ({ default: m.KycWizardPage })),
-);
-const GovernanceProposalCreatePage = lazy(() =>
-  import("./pages/GovernanceProposalCreatePage").then((m) => ({
-    default: m.GovernanceProposalCreatePage,
+const RevenueReportSubmission = lazy(() =>
+  import("./pages/RevenueReportSubmission").then((m) => ({
+    default: m.RevenueReportSubmission,
   })),
 );
-const AdminAlertsInbox = lazy(() =>
-  import("./pages/AdminAlertsInbox").then((m) => ({ default: m.AdminAlertsInbox })),
+const RevenueReports = lazy(() =>
+  import("./pages/RevenueReports").then((m) => ({ default: m.RevenueReports })),
 );
-const PayoutSchedule = lazy(() =>
-  import("./pages/PayoutSchedule").then((m) => ({ default: m.PayoutSchedule })),
-);
-const GovernanceVoteReceiptDemo = lazy(() =>
-  import("./pages/GovernanceVoteReceiptDemo").then((m) => ({
-    default: m.GovernanceVoteReceiptDemo,
-  })),
-);
-
-const LIVE_URL = "https://revora-frontend-omega.vercel.app";
-const REPO_URL = "https://github.com/RevoraOrg/Revora-Frontend";
 const STELLAR_LAB_URL = buildStellarLabUrl();
 const STELLAR_EXPERT_URL = buildContractExplorerUrl();
 
@@ -305,6 +232,7 @@ export const routes: RouteObject[] = [
         children: [
           { index: true, element: <Navigate to="/admin/alerts" replace /> },
           { path: "alerts", element: <AdminAlertsInbox /> },
+          { path: "compliance", element: <AdminCompliancePage /> },
           { path: "scheduled-exports", element: <ScheduledExportsPage /> },
         ],
       },
@@ -365,7 +293,6 @@ function AppLayout() {
   };
   const paletteShortcut = formatKeyLabels(["mod", "k"], paletteIsMac).join("+");
   const auth = useOptionalAuth();
-  const navigate = useNavigate();
   const currentUser = auth ? auth.user : readStoredAuthSession();
   const currentRole = currentUser?.role ?? null;
 
@@ -395,13 +322,6 @@ function AppLayout() {
       <header className="site-header">
         <Link to="/" className="site-header__brand">Revora</Link>
         <nav className="site-header__nav" aria-label="Primary">
-          <NavLink to="/startup" className="site-link">Startup</NavLink>
-          <NavLink to="/investor" className="site-link">Investor</NavLink>
-          <NavLink to="/admin" className="site-link">Admin</NavLink>
-        <nav className="site-header__nav" aria-label={t("header.primary-navigation")}>
-          <Link to="/startup/dashboard" className="site-link">{t("header.startup")}</Link>
-          <Link to="/investor/portal" className="site-link">{t("header.investor")}</Link>
-          <Link to="/admin/alerts" className="site-link">{t("header.admin")}</Link>
           <NavLink to="/settings/security" className="site-link">Security</NavLink>
           <NavLink to="/settings" className="site-link">Settings</NavLink>
           <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -440,7 +360,6 @@ function AppLayout() {
           {(!currentRole || currentRole === "admin") && (
             <NavLink to="/admin" className="site-link">Admin</NavLink>
           )}
-          <a href={REPO_URL} className="site-link" target="_blank" rel="noopener noreferrer">GitHub</a>
           {currentUser ? (
             <button
               type="button"
@@ -458,20 +377,17 @@ function AppLayout() {
         <ThemeToggle compact />
       </header>
       <main id="main-content" tabIndex={-1}>
-        <GovernanceProposalsProvider>
-          <Outlet />
-        </GovernanceProposalsProvider>
         <ErrorBoundary resetKey={location.key}>
-          <Outlet />
+          <RouteErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<PageLoader label="Loading page..." />}>
+              <GovernanceProposalsProvider>
+                <Outlet />
+              </GovernanceProposalsProvider>
+            </Suspense>
+          </RouteErrorBoundary>
         </ErrorBoundary>
-        <RouteErrorBoundary resetKey={location.pathname}>
-          <Suspense fallback={<PageLoader label="Loading page..." />}>
-            <Outlet />
-          </Suspense>
-        </RouteErrorBoundary>
       </main>
       <SiteFooter />
-    </NotificationProvider>
       <CommandPalette
         isOpen={isPaletteOpen}
         onClose={closePalette}
@@ -486,7 +402,7 @@ function AppLayout() {
         isMac={shortcutsIsMac}
         isMobile={isMobile}
       />
-    </>
+    </NotificationProvider>
   );
 }
 
@@ -535,20 +451,6 @@ function Home() {
               </li>
               <li>
                 <Link to="/startup/governance/vote-receipt" className="link-styled">Governance vote receipt</Link>
-                • <Link to="/startup/dashboard" className="link-styled">{t("home.issuer-dashboard")}</Link>
-              </li>
-              <li>• {t("home.configure-offerings")}</li>
-              <li>
-                • <Link to="/startup/report-revenue" className="link-styled">{t("home.report-revenue")}</Link>
-              </li>
-              <li>
-                • <Link to="/startup/offering-registration" className="link-styled">{t("home.register-offering")}</Link>
-              </li>
-              <li>
-                • <Link to="/startup/governance/proposals/create" className="link-styled">{t("home.create-proposal")}</Link>
-              </li>
-              <li>
-                • <Link to="/startup/governance/vote-receipt" className="link-styled">{t("home.vote-receipt")}</Link>
               </li>
             </ul>
           </section>
@@ -562,11 +464,6 @@ function Home() {
               <li><Link to="/investor/compare" className="link-styled">Compare issuers</Link></li>
               <li><Link to="/investor/ledger" className="link-styled">Browse ledger entries</Link></li>
               <li><Link to="/investor/payouts" className="link-styled">View payout schedule</Link></li>
-              <li>• <Link to="/investor/portal" className="link-styled">{t("home.discover-offerings")}</Link></li>
-              <li>• {t("home.invest-usdc")}</li>
-              <li>• <Link to="/investor/portfolio" className="link-styled">{t("home.portfolio-summary")}</Link></li>
-              <li>• <Link to="/investor/ledger" className="link-styled">{t("home.ledger-entries")}</Link></li>
-              <li>• <Link to="/investor/payouts" className="link-styled">{t("home.payout-schedule")}</Link></li>
             </ul>
           </section>
 
@@ -574,19 +471,11 @@ function Home() {
             <h2 className="home-section-title">{t("home.admin-account")}</h2>
             <ul className="home-list">
               <li><Link to="/admin/alerts" className="link-styled">Alerts inbox</Link></li>
+              <li><Link to="/admin/compliance" className="link-styled">Compliance workflow</Link></li>
               <li><Link to="/admin/audit" className="link-styled">Audit trail</Link></li>
               <li><Link to="/admin/scheduled-exports" className="link-styled">Scheduled exports</Link></li>
               <li><Link to="/settings/2fa/backup-codes" className="link-styled">2FA backup codes</Link></li>
               <li><Link to="/recover-2fa" className="link-styled">2FA recovery</Link></li>
-              <li>• <Link to="/admin/alerts" className="link-styled">Alerts inbox</Link></li>
-              <li>• <Link to="/admin/scheduled-exports" className="link-styled">Scheduled exports</Link></li>
-              <li>• <Link to="/settings/notifications" className="link-styled">Notification preferences</Link></li>
-              <li>• <Link to="/settings/2fa/backup-codes" className="link-styled">2FA backup codes</Link></li>
-              <li>• <Link to="/recover-2fa" className="link-styled">2FA recovery</Link></li>
-              <li>• <Link to="/admin/alerts" className="link-styled">{t("home.alerts-inbox")}</Link></li>
-              <li>• <Link to="/admin/scheduled-exports" className="link-styled">{t("home.scheduled-exports")}</Link></li>
-              <li>• <Link to="/settings/2fa/backup-codes" className="link-styled">{t("home.backup-codes")}</Link></li>
-              <li>• <Link to="/recover-2fa" className="link-styled">{t("home.two-factor-recovery")}</Link></li>
             </ul>
           </section>
         </div>

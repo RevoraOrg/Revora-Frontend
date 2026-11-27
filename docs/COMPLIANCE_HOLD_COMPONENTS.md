@@ -4,25 +4,35 @@
 
 The Compliance Hold components provide clear, non-punitive messaging and actionable steps for users to resolve compliance holds on their accounts or offerings.
 
+## Admin Compliance Workflow
+
+The admin workflow is available at `/admin/compliance` and brings the hold banner, appeal form, KYC rejection reasons, remediation checklist, and resubmission timeline together on one screen. Access is restricted to admin users.
+
+The page uses a reducer to track the active hold, appeal submission, remediation progress, and resubmission count. Workflow state is saved in browser `localStorage` and restored when the page is reloaded. Appeal details and attachment names are saved as workflow metadata; uploaded file contents are not stored. If stored data cannot be read or saved, the page displays an error rather than silently discarding the workflow.
+
+Submitting an appeal changes the hold banner to an appeal-under-review state and starts an appeal timeline. Remediation actions update checklist progress, and corrected information can only be resubmitted after every step is complete. A resubmission clears the current rejection reasons and starts its own review timeline. The former standalone `ComplianceHoldDemo` has been retired; use the routed workflow to exercise the complete flow.
+
 ## Components
 
 ### ComplianceHoldBanner
 
-Displays compliance holds with severity variants (info, warning, blocking).
+Displays compliance holds with severity variants (advisory, warning, blocking).
 
 **Props:**
 - `holds`: Array of `ComplianceHold` objects
 - `onDismiss?`: Optional callback when a hold is dismissed
+- `onAppeal?`: Optional callback when an appeal is submitted
 - `className?`: Optional CSS class name
 - `id?`: Optional HTML id (default: "compliance-hold-banner")
 
 **ComplianceHold Interface:**
 - `id`: Unique identifier
 - `type`: Type of compliance hold (e.g., "kyc", "aml", "document")
-- `severity`: "info" | "warning" | "blocking"
+- `severity`: "advisory" | "warning" | "blocking"
 - `title`: Short, descriptive title
 - `message`: Detailed explanation
 - `canDismiss?`: Whether the hold can be dismissed
+- `appealable?`: Whether to show the appeal action when `onAppeal` is provided
 
 ### RemediationChecklist
 
@@ -43,6 +53,22 @@ Displays actionable steps to resolve compliance holds with progress tracking.
 - `actionUrl?`: External URL for action
 - `onAction?`: Callback for action button
 - `disabled?`: Whether the step is disabled
+
+### ComplianceAppealForm
+
+Opened from an appealable `ComplianceHoldBanner` hold. The form collects a reason, explanation, and optional files, then calls `onSubmit` with the hold ID and submitted data. The admin workflow records the submitted reason, explanation, attachment names, and timestamp in its persisted state; it does not persist file contents.
+
+### KycRejectionPanel
+
+Displays canonical KYC rejection reasons and corrective actions. Pass `reasons` using the `KycRejectionReason` shape; use `onNavigateToStep` to direct the user to the corresponding remediation action.
+
+### KycResubmissionTimeline
+
+Shows submission, review, and decision milestones with business-day turnaround guidance. `submissionKind` may be `appeal` or `resubmission` (default) to match the first milestone copy, and `title` can customize the heading.
+
+### ComplianceSeverityBadge
+
+Displays an advisory, warning, or blocking severity with both an icon and label. `ComplianceHoldBanner` includes the compact badge for each active hold.
 
 ## Microcopy Guidelines
 
@@ -126,7 +152,7 @@ Displays actionable steps to resolve compliance holds with progress tracking.
 
 ## Usage Examples
 
-### Basic Usage
+### Component Usage
 
 ```tsx
 import { ComplianceHoldBanner, RemediationChecklist } from '@/components';

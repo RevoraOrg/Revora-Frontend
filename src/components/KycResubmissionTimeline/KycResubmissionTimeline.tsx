@@ -7,6 +7,8 @@ export type KycReviewStatus = 'submitted' | 'under-review' | 'decision' | 'cance
 export interface KycResubmissionTimelineProps {
   status: KycReviewStatus;
   submittedAt: string | Date;
+  submissionKind?: 'appeal' | 'resubmission';
+  title?: string;
   reviewStartedAt?: string | Date;
   decidedAt?: string | Date;
   decisionLabel?: 'Approved' | 'More information needed';
@@ -92,13 +94,17 @@ export function getTurnaroundMessage({ status, submittedAt, slaBusinessDays = 3,
 }
 
 export const KycResubmissionTimeline: React.FC<KycResubmissionTimelineProps> = ({
-  status, submittedAt, reviewStartedAt, decidedAt, decisionLabel = 'Approved', slaBusinessDays = 3,
+  status, submittedAt, submissionKind = 'resubmission', title, reviewStartedAt, decidedAt, decisionLabel = 'Approved', slaBusinessDays = 3,
   holidays = [], now = new Date(), escalationHref = '/support?topic=kyc-review',
 }) => {
   const currentIndex = status === 'submitted' ? 0 : status === 'under-review' ? 1 : 2;
   const turnaround = getTurnaroundMessage({ status, submittedAt, slaBusinessDays, holidays, now });
   const steps = [
-    { label: 'Submitted', description: 'We received your updated documents.', date: submittedAt },
+    {
+      label: 'Submitted',
+      description: submissionKind === 'appeal' ? 'We received your appeal.' : 'We received your updated documents.',
+      date: submittedAt,
+    },
     { label: 'Under review', description: 'Our compliance team checks your information.', date: reviewStartedAt },
     { label: status === 'canceled' ? 'Canceled' : decisionLabel === 'Approved' ? 'Decision' : decisionLabel,
       description: status === 'canceled' ? 'The application will not be reviewed.' : 'We’ll notify you as soon as the review is complete.', date: decidedAt },
@@ -107,7 +113,7 @@ export const KycResubmissionTimeline: React.FC<KycResubmissionTimelineProps> = (
   return (
     <section className={`kyc-resubmission${turnaround.overdue ? ' kyc-resubmission--overdue' : ''}`} aria-labelledby="kyc-resubmission-title">
       <div className="kyc-resubmission__header">
-        <div><p className="kyc-resubmission__eyebrow">Identity verification</p><h2 id="kyc-resubmission-title">Your resubmission progress</h2></div>
+        <div><p className="kyc-resubmission__eyebrow">Identity verification</p><h2 id="kyc-resubmission-title">{title ?? 'Your resubmission progress'}</h2></div>
         <span className="kyc-resubmission__status">{status === 'canceled' ? 'Canceled' : steps[currentIndex].label}</span>
       </div>
       <ol className="kyc-resubmission__timeline" aria-label="KYC resubmission progress">
